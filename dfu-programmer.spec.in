@@ -1,0 +1,43 @@
+Name:       @PACKAGE_NAME@
+Summary:    A Device Firmware Update based USB programmer for Atmel chips.
+Version:    @VERSION@
+Release:    fc4
+Group:      Development/Tools
+License:    GPL
+URL:        http://dfu-programmer.sourceforge.net/
+Packager:   Weston Schmidt <weston_schmidt@yahoo.com>
+Source:     %{name}-%{version}.tar.gz
+BuildRoot:  %{_tmppath}/%{name}-%{version}-%{release}-root
+Requires:   libusb >= 0.1.10a
+
+%description 
+A linux based command-line programmer for Atmel chips with a USB
+bootloader supporting ISP. This is a mostly Device Firmware Update
+(DFU) 1.0 compliant user-space application.
+Currently supported chips: at89c51snd1c
+
+%prep
+%setup -q
+
+%build
+%configure
+make
+
+%install
+rm -rf ${buildroot}
+
+%makeinstall
+
+%clean
+rm -rf ${buildroot}
+
+%files
+%defattr(-,root,root,-)
+%doc %attr(0644, root, root) AUTHORS ChangeLog NEWS README COPYING
+%{_bindir}/dfu-programmer
+%{_mandir}/man1/%{name}.1*
+
+%changelog
+
+* Wed Aug 31 2005 Weston Schmidt <weston_schmidt@yahoo.com>
+- initial creation

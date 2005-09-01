@@ -1,0 +1,46 @@
+.TH dfu-programmer 1 "Sept 1, 2005" "dfu-programmer"
+.SH NAME
+dfu-programmer \- Device Firmware Upgrade based USB flash program
+
+.SH SYNOPSIS
+.B dfu-programmer
+target
+command
+[
+command-options
+]
+[
+global-options
+]
+[
+file | data
+]
+
+.SH DESCRIPTION
+This manual page documents briefly the
+.B dfu-programmer
+command.
+.PP
+.B dfu-programmer
+is a linux command-line Device Firmware Upgrade (DFU) based USB programmer
+for Atmel chips with a USB bootloader supporting ISP.  The programmer
+is mostly DFU 1.0 compliant.
+
+.SH SUPPORTED CHIPS
+at89c51snd1c
+
+.SH COMMANDS
+.B configure
+register
+[
+\-\-suppress-validation
+]
+[
+global-options
+]
+
+.SH AUTHOR
+dfu-programmer and this manual page was written by Weston Schmidt <weston_schmidt@yahoo.com>
+
+.SH SEE ALSO
+sdcc, libusb, www.usb.org, www.atmel.com
