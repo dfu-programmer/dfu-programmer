@@ -1,0 +1,5 @@
+bin_PROGRAMS = dfu-programmer
+dfu_programmer_SOURCES = main.c arguments.c arguments.h atmel.c atmel.h \
+                         commands.c commands.h dfu.c dfu.h \
+                         intel_hex.c intel_hex.h
+
