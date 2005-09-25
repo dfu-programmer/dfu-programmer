@@ -35,7 +35,7 @@
  *  get {bootloader-version|ID1|ID2|BSB|SBV|SSB|EB|manufacturer|family|product-name|product-revision|HSB} [--quiet, --debug level]
  */
 
-enum targets_enum { tar_none, tar_at89c51snd1c };
+enum targets_enum { tar_none, tar_at89c51snd1c, tar_at89c5131 };
 
 enum commands_enum { com_none, com_erase, com_flash,
                      com_configure, com_get, com_dump, com_start_app };

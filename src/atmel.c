@@ -44,23 +44,23 @@ static int atmel_read_command( struct usb_dev_handle *device,
     command[2] = data1;
 
     if( 3 != dfu_download(device, interface, 3, command) ) {
-        //fprintf( stderr, "%s: download failed.\n", __FUNCTION__ );
+        fprintf( stderr, "%s: download failed.\n", __FUNCTION__ );
         return -1;
     }
 
     if( 6 != dfu_get_status(device, interface, &status) ) {
-        //fprintf( stderr, "%s: status failed.\n", __FUNCTION__ );
+        fprintf( stderr, "%s: status failed.\n", __FUNCTION__ );
         return -2;
     }
 
     if( DFU_STATUS_OK != status.bStatus ) {
-        //fprintf( stderr, "%s: status(%s) was not OK.\n",
-        //         __FUNCTION__, dfu_state_to_string(status.bStatus) );
+        fprintf( stderr, "%s: status(%s) was not OK.\n",
+                 __FUNCTION__, dfu_state_to_string(status.bStatus) );
         return -3;
     }
 
     if( 1 != dfu_upload(device, interface, 1, data) ) {
-        //fprintf( stderr, "%s: upload failed.\n", __FUNCTION__ );
+        fprintf( stderr, "%s: upload failed.\n", __FUNCTION__ );
         return -4;
     }
 

@@ -33,12 +33,15 @@ static int execute_erase( struct usb_dev_handle *device,
                           struct programmer_arguments args )
 {
     int result = 0;
+    int size = 0xffff;
+
+    if (args.target == tar_at89c5131) size = 0x7fff;
 
     result = atmel_erase_flash( device, interface, ATMEL_ERASE_ALL );
     if( 0 != result )
         return result;
 
-    return atmel_blank_check( device, interface, 0, 0xffff );
+    return atmel_blank_check( device, interface, 0, size );
 }
 
 
@@ -47,10 +50,13 @@ static int execute_flash( struct usb_dev_handle *device,
                           struct programmer_arguments args )
 {
     char *hex_data = NULL;
-    int usage = 0;
-    int retval = -1;
-    int result = 0;
-        char buffer[0x10000];
+    int   usage = 0;
+    int   retval = -1;
+    int   result = 0;
+    char  buffer[0x10000];
+    int   size = 0xffff;
+
+    if (args.target == tar_at89c5131) size = 0x7fff;
 
     hex_data = intel_hex_to_buffer( args.com_flash_data.file, 0x10000, 0xff, &usage );
     if( NULL == hex_data ) {
@@ -58,22 +64,22 @@ static int execute_flash( struct usb_dev_handle *device,
         goto error;
     }
     
-    result = atmel_flash( device, interface, 0, 0xffff, hex_data );
-    if( 0x10000 != result ) {
+    result = atmel_flash( device, interface, 0, size, hex_data );
+    if((size+1) != result ) {
         fprintf( stderr, "Error while flashing. (%d)\n", result );
         goto error;
     }
 
     if( 0 == args.com_flash_data.suppress_validation ) {
         fprintf( stderr, "Validating...\n" );
-        if( 0x10000 != atmel_read_flash(device, interface, 0,
-                                  0xffff, buffer, 0x10000) )
+        if((size+1) != atmel_read_flash(device, interface, 0,
+                                  size, buffer, 0x10000) )
         {
             fprintf( stderr, "Error while validating.\n" );
             goto error;
         }
 
-        if( 0 != memcmp(hex_data, buffer, 0x10000) ) {
+        if( 0 != memcmp(hex_data, buffer, size+1) ) {
             fprintf( stderr, "Image did not validate.\n" );
             goto error;
         }
@@ -81,7 +87,7 @@ static int execute_flash( struct usb_dev_handle *device,
 
     if( 0 == args.quiet ) {
         fprintf( stderr, "%d bytes used (%.02f%%)\n", usage,
-                         ((float)(usage*100)/(float)0x10000) );
+                         ((float)(usage*100)/(float)(size+1)) );
     }
 
     retval = 0;

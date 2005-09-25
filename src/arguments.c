@@ -41,6 +41,7 @@ struct target_mapping_structure {
 /* ----- target specific structures ----------------------------------------- */
 static struct target_mapping_structure target_map[] = {
     { "at89c51snd1c", tar_at89c51snd1c, 0x2FFF, 0x03eb },
+    { "at89c5131",    tar_at89c5131,    0x2FFD, 0x03eb },
     { NULL }
 };
 
@@ -89,6 +90,7 @@ static void usage()
                      "[global-options] [file|data]\n" );
     fprintf( stderr, "targets:\n" );
     fprintf( stderr, "        at89c51snd1c\n" );
+    fprintf( stderr, "        at89c5131\n" );
     fprintf( stderr, "global-options: --quiet, --debug level\n" );
     fprintf( stderr, "commands:\n" );
     fprintf( stderr, "        configure {BSB|SBV|SSB|EB|HSB} "
