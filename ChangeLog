@@ -1,5 +1,21 @@
 2005-09-24 Weston Schmidt <weston_schmidt AT yahoo.com>
 
+	* configure.ac: Incremented the release number
+	* NEWS: Updated the latest news about the 0.2.0 release
+	* src/commands.c: Removed the hardcoded restrictions on sizes and
+	  instead malloc the space needed.  Additionally the size is gotten
+	  from the arguments data structure, so that adding future devices
+	  should be easier.
+	* src/arguments.h: Added memory_size to the programmer_arguments
+	  data structure.  Restructured the targets_enum so that it can
+	  be used as keys into the target_map data structure for target
+	  to name resolution without needing to duplicate data.
+	* src/arguments.c: Made the changes needed to take advantage of the
+	  memory size restructuring and changed the usage() function to
+	  use iteration instead of duplication to display supported chips
+
+2005-09-24 Weston Schmidt <weston_schmidt AT yahoo.com>
+
 	* src/{*.c,*.h}, AUTHORS: removed the copyright information from the
 	  file so that the AUTHORS file can manage this information for the
 	  entire project

@@ -31,15 +31,12 @@ static int execute_erase( struct usb_dev_handle *device,
                           struct programmer_arguments args )
 {
     int result = 0;
-    int size = 0xffff;
-
-    if (args.target == tar_at89c5131) size = 0x7fff;
 
     result = atmel_erase_flash( device, interface, ATMEL_ERASE_ALL );
     if( 0 != result )
         return result;
 
-    return atmel_blank_check( device, interface, 0, size );
+    return atmel_blank_check( device, interface, 0, args.memory_size );
 }
 
 
@@ -51,33 +48,39 @@ static int execute_flash( struct usb_dev_handle *device,
     int   usage = 0;
     int   retval = -1;
     int   result = 0;
-    char  buffer[0x10000];
-    int   size = 0xffff;
+    char  *buffer = NULL;
 
-    if (args.target == tar_at89c5131) size = 0x7fff;
+    buffer = (char *) malloc( (args.memory_size+1) );
+    if( NULL == buffer ) {
+        fprintf( stderr, "Request for %d bytes of memory failed.\n",
+                 (args.memory_size+1) );
+        goto error;
+    }
 
-    hex_data = intel_hex_to_buffer( args.com_flash_data.file, 0x10000, 0xff, &usage );
+    hex_data = intel_hex_to_buffer( args.com_flash_data.file,
+                                    (args.memory_size+1), 0xff, &usage );
     if( NULL == hex_data ) {
         fprintf( stderr, "Something went wrong with creating the memory image.\n" );
         goto error;
     }
     
-    result = atmel_flash( device, interface, 0, size, hex_data );
-    if((size+1) != result ) {
+    result = atmel_flash( device, interface, 0, args.memory_size, hex_data );
+    if((args.memory_size+1) != result ) {
         fprintf( stderr, "Error while flashing. (%d)\n", result );
         goto error;
     }
 
     if( 0 == args.com_flash_data.suppress_validation ) {
         fprintf( stderr, "Validating...\n" );
-        if((size+1) != atmel_read_flash(device, interface, 0,
-                                  size, buffer, 0x10000) )
+        if((args.memory_size+1) != atmel_read_flash(device, interface, 0,
+                                  args.memory_size, buffer,
+                                  (args.memory_size+1)) )
         {
             fprintf( stderr, "Error while validating.\n" );
             goto error;
         }
 
-        if( 0 != memcmp(hex_data, buffer, size+1) ) {
+        if( 0 != memcmp(hex_data, buffer, (args.memory_size+1)) ) {
             fprintf( stderr, "Image did not validate.\n" );
             goto error;
         }
@@ -85,12 +88,17 @@ static int execute_flash( struct usb_dev_handle *device,
 
     if( 0 == args.quiet ) {
         fprintf( stderr, "%d bytes used (%.02f%%)\n", usage,
-                         ((float)(usage*100)/(float)(size+1)) );
+                         ((float)(usage*100)/(float)(args.memory_size+1)) );
     }
 
     retval = 0;
 
 error:
+    if( NULL != buffer ) {
+        free( buffer );
+        buffer = NULL;
+    }
+
     if( NULL != hex_data ) {
         free( hex_data );
         hex_data = NULL;
@@ -189,21 +197,35 @@ static int execute_dump( struct usb_dev_handle *device,
                          int interface,
                          struct programmer_arguments args )
 {
-    char buffer[0x10000];
     int i = 0;
+    char  *buffer = NULL;
 
-    if( 0x10000 != atmel_read_flash(device, interface, 0,
-                                  0xffff, buffer, 0x10000) )
+    buffer = (char *) malloc( (args.memory_size+1) );
+    if( NULL == buffer ) {
+        fprintf( stderr, "Request for %d bytes of memory failed.\n",
+                 (args.memory_size+1) );
+        goto error;
+    }
+
+    if( (args.memory_size+1) != atmel_read_flash(device, interface, 0,
+                                  args.memory_size, buffer,
+                                  (args.memory_size+1)) )
     {
         fprintf( stderr, "Error while validating.\n" );
         return -1;
     }
 
-    for( i = 0; i < 0x10000; i++ ) {
+    for( i = 0; i < (args.memory_size+1); i++ ) {
         fprintf( stdout, "%c", buffer[i] );
     }
 
     fflush( stdout );
+
+error:
+    if( NULL != buffer ) {
+        free( buffer );
+        buffer = NULL;
+    }
 
     return 0;
 }

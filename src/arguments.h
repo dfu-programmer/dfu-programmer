@@ -33,7 +33,11 @@
  *  get {bootloader-version|ID1|ID2|BSB|SBV|SSB|EB|manufacturer|family|product-name|product-revision|HSB} [--quiet, --debug level]
  */
 
-enum targets_enum { tar_none, tar_at89c51snd1c, tar_at89c5131 };
+enum targets_enum { tar_at89c51snd1c = 0,
+                    tar_at89c5130    = 1,
+                    tar_at89c5131    = 2,
+                    tar_at89c5132    = 3,
+                    tar_none         = 4 };
 
 enum commands_enum { com_none, com_erase, com_flash,
                      com_configure, com_get, com_dump, com_start_app };
@@ -55,6 +59,7 @@ struct programmer_arguments {
     int  chip_id;
     int  debug;
     int  quiet;
+    unsigned int memory_size;
     union {
         struct com_configure_struct {
             enum configure_enum name;

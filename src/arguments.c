@@ -34,12 +34,15 @@ struct target_mapping_structure {
     int value;
     unsigned short chip_id;
     unsigned short vendor_id;
+    unsigned int memory_size;
 };
 
 /* ----- target specific structures ----------------------------------------- */
 static struct target_mapping_structure target_map[] = {
-    { "at89c51snd1c", tar_at89c51snd1c, 0x2FFF, 0x03eb },
-    { "at89c5131",    tar_at89c5131,    0x2FFD, 0x03eb },
+    { "at89c51snd1c", tar_at89c51snd1c, 0x2FFF, 0x03eb, 0xffff },
+    { "at89c5130",    tar_at89c5130,    0x2FFD, 0x03eb, 0x3fff },
+    { "at89c5131",    tar_at89c5131,    0x2FFD, 0x03eb, 0x7fff },
+    { "at89c5132",    tar_at89c5132,    0x2FFF, 0x03eb, 0xffff },
     { NULL }
 };
 
@@ -84,11 +87,17 @@ static struct option_mapping_structure get_map[] = {
 
 static void usage()
 {
+    struct target_mapping_structure *map = NULL;
+
+    map = target_map;
+
     fprintf( stderr, "Usage: dfu-programmer target command [command-options] "
                      "[global-options] [file|data]\n" );
     fprintf( stderr, "targets:\n" );
-    fprintf( stderr, "        at89c51snd1c\n" );
-    fprintf( stderr, "        at89c5131\n" );
+    while( 0 != *((int *) map) ) {
+        fprintf( stderr, "        %s\n", map->name );
+        map++;
+    }
     fprintf( stderr, "global-options: --quiet, --debug level\n" );
     fprintf( stderr, "commands:\n" );
     fprintf( stderr, "        configure {BSB|SBV|SSB|EB|HSB} "
@@ -132,6 +141,7 @@ static int assign_target( struct programmer_arguments *args,
             args->target  = map->value;
             args->chip_id = map->chip_id;
             args->vendor_id = map->vendor_id;
+            args->memory_size = map->memory_size;
             return 0;
         }
 
@@ -313,10 +323,14 @@ static int assign_command_options( struct programmer_arguments *args,
 static void print_args( struct programmer_arguments *args )
 {
     char *command = NULL;
+    char *target = NULL;
 
-    printf( " target: %s\n", 
-                (args->target == tar_none) ? "none" : "at89c51snd1c" );
-    printf( "chip_id: 0x%04x\n", args->chip_id );
+    if( tar_none != args->target ) {
+        printf( "   target: %s\n", target_map[args->target] );
+    } else {
+        printf( "   target: none\n" );
+    }
+    printf( "  chip_id: 0x%04x\n", args->chip_id );
     printf( "vendor_id: 0x%04x\n", args->vendor_id );
 
     switch( args->command ) {

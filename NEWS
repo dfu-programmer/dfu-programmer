@@ -1,2 +1,6 @@
+Release 0.2
+* Limited support for the at89c5132, at89c5131 and at89c5130 chip is added.
+  where the known limitations now have to do with P1_CF, P3_CF, P4_CF not
+  being supported (read or write).
 Release 0.1
 * Initial release
