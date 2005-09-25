@@ -1,4 +1,10 @@
 2005-09-24 Weston Schmidt <weston_schmidt AT yahoo.com>
 
+	* src/{*.c,*.h}, AUTHORS: removed the copyright information from the
+	  file so that the AUTHORS file can manage this information for the
+	  entire project
+
+2005-09-24 Weston Schmidt <weston_schmidt AT yahoo.com>
+
 	* src/{arguments.c,arguments.h,atmel.c,commands.c}: applied
 	  Reinhard Arlt's patch that adds support for the at89c5131 chip
