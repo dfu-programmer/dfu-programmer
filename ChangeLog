@@ -1,5 +1,10 @@
 2005-11-21 Weston Schmidt <weston_schmidt AT alumni.purdue.edu>
 
+	* configure.ac: Incremented the release number
+	* NEWS: Updated the latest news about the 0.2.1 release
+
+2005-11-21 Weston Schmidt <weston_schmidt AT alumni.purdue.edu>
+
 	* docs/dfu-programmer.1: Bring the man page inline with the
 	  built in help, plus a bit more info.
 
