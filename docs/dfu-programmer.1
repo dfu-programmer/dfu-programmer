@@ -1,20 +1,10 @@
-.TH dfu-programmer 1 "Sept 1, 2005" "dfu-programmer"
+.TH dfu-programmer 1 "Nov 21, 2005" "dfu-programmer"
 .SH NAME
 dfu-programmer \- Device Firmware Upgrade based USB flash program
 
 .SH SYNOPSIS
 .B dfu-programmer
-target
-command
-[
-command-options
-]
-[
-global-options
-]
-[
-file | data
-]
+target command [command-options] [global-options] [file | data]
 
 .SH DESCRIPTION
 This manual page documents briefly the
@@ -22,25 +12,98 @@ This manual page documents briefly the
 command.
 .PP
 .B dfu-programmer
-is a linux command-line Device Firmware Upgrade (DFU) based USB programmer
-for Atmel chips with a USB bootloader supporting ISP.  The programmer
+is a Linux command-line Device Firmware Upgrade (DFU) based USB programmer
+for Atmel chips with a USB boot-loader supporting ISP.  The programmer
 is mostly DFU 1.0 compliant.
 
 .SH SUPPORTED CHIPS
 at89c51snd1c
+.br
+at89c5130
+.br
+at89c5131
+.br
+at89c5132
 
 .SH COMMANDS
 .B configure
-register
-[
-\-\-suppress-validation
-]
-[
-global-options
-]
+configure_register
+[\-\-suppress-validation]
+[global-options]
+data
+
+.B dump
+[global-options]
+.br
+
+.B erase
+[\-\-suppress-validation]
+[global-options]
+.br
+
+.B flash
+[\-\-suppress-validation]
+[global-options]
+file
+.br
+
+.B get
+get_register
+[global-options]
+.br
+
+.B start
+[global-options]
+
+.SS GLOBAL OPTIONS
+\-\-quiet \- minimizes the output
+
+\-\-debug level \- enables verbose output
+
+.SS CONFIGURE REGISTERS
+BSB \- boot status byte
+.br
+SBV \- software boot vector
+.br
+SSB \- software security byte
+.br
+EB  \- extra byte
+.br
+HSB \- hardware security byte
+
+.SS GET REGISTERS
+bootloader-version \- currently flashed boot-loader version
+.br
+ID1 \- device boot identification 1
+.br
+ID2 \- device boot identification 2
+.br
+BSB \- same as the configure_register version
+.br
+SBV \- same as the configure_register version
+.br
+SSB \- same as the configure_register version
+.br
+EB  \- same as the configure_register version
+.br
+manufacturer \- the hardware manufacturer code
+.br
+family \- the product family code
+.br
+product-name \- the product name
+.br
+product-revision \- the product revision
+.br
+HSB \- same as the configure_register version
 
 .SH AUTHOR
-dfu-programmer and this manual page was written by Weston Schmidt <weston_schmidt@yahoo.com>
+dfu-programmer and this manual page was written by Weston Schmidt <weston_schmidt@alumni.purdue.edu>
 
 .SH SEE ALSO
-sdcc, libusb, www.usb.org, www.atmel.com
+www.atmel.com
+.br
+www.libusb.sourceforge.net
+.br
+www.sdcc.sourceforge.net
+.br
+www.usb.org

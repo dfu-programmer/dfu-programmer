@@ -1,5 +1,10 @@
 2005-11-21 Weston Schmidt <weston_schmidt AT alumni.purdue.edu>
 
+	* docs/dfu-programmer.1: Bring the man page inline with the
+	  built in help, plus a bit more info.
+
+2005-11-21 Weston Schmidt <weston_schmidt AT alumni.purdue.edu>
+
 	* src/main.c: Two minor fixes to allow it to work with newer 2.6.xx
 	  kernels.  The first had to do with using a function call to get
 	  the busses to iterate over, and the second has to do with not
