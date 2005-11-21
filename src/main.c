@@ -47,7 +47,7 @@ static struct usb_device *device_init( unsigned int vendor, unsigned int product
     usb_find_devices();
 
     /* Walk the tree and find our device. */
-    for( usb_bus = usb_busses; NULL != usb_bus; usb_bus = usb_bus->next ) {
+    for( usb_bus = usb_get_busses(); NULL != usb_bus; usb_bus = usb_bus->next ) {
         for( dev = usb_bus->devices; NULL != dev; dev = dev->next) {
             if(    (vendor  == dev->descriptor.idVendor)
                 && (product == dev->descriptor.idProduct) )
@@ -96,12 +96,6 @@ int main( int argc, char **argv )
 
     if( 0 != usb_claim_interface(usb_handle, interface) ) {
         fprintf( stderr, "Failed to claim interface.  Check permissions.\n" );
-        retval = 1;
-        goto exit;
-    }
-
-    if( 0 != usb_set_configuration(usb_handle, 1) ) {
-        fprintf( stderr, "Failed to set configuration.\n" );
         retval = 1;
         goto exit;
     }
