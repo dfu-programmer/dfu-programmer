@@ -1,3 +1,12 @@
+2005-05-07 Weston Schmidt <weston_schmidt AT alumni.purdue.edu>
+
+	* AUTHORS: Updated my email address
+	* configure.ac: Incremented the release number
+	* dfu-programmer.spec.in: Update the release to Fedora Core 5
+	* NEWS: Updated the latest news about the 0.2.2 release
+	* src/main.c: Fix the failure cases so that if the USB interface was
+	  not acquired then it is not errantly released.
+
 2005-11-21 Weston Schmidt <weston_schmidt AT alumni.purdue.edu>
 
 	* configure.ac: Incremented the release number

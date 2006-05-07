@@ -71,7 +71,7 @@ int main( int argc, char **argv )
 
     if( 0 != parse_arguments(&args, argc, argv) ) {
         retval = 1;
-        goto exit;
+        goto exit_0;
     }
 
     if( args.debug >= 20 ) {
@@ -83,7 +83,7 @@ int main( int argc, char **argv )
     if( NULL == device ) {
         fprintf( stderr, "No device present.\n" );
         retval = 1;
-        goto exit;
+        goto exit_1;
     }
 
     usb_handle = usb_open( device );
@@ -91,13 +91,13 @@ int main( int argc, char **argv )
     if( NULL == usb_handle ) {
         fprintf( stderr, "Device failed to open.\n" );
         retval = 1;
-        goto exit;
+        goto exit_1;
     }
 
     if( 0 != usb_claim_interface(usb_handle, interface) ) {
         fprintf( stderr, "Failed to claim interface.  Check permissions.\n" );
         retval = 1;
-        goto exit;
+        goto exit_1;
     }
 
     atmel_init( args.debug );
@@ -113,7 +113,7 @@ int main( int argc, char **argv )
         if( DFU_STATUS_OK != status.bStatus ) {
             fprintf( stderr, "Error: %d\n", status.bStatus );
             retval = 1;
-            goto exit_1;
+            goto exit_2;
         }
     }
 
@@ -121,22 +121,23 @@ int main( int argc, char **argv )
     if( 0 != execute_command(usb_handle, interface, args) ) {
         fprintf( stderr, "Error executing command.\n" );
         retval = 1;
-        goto exit_1;
+        goto exit_2;
     }
 
     retval = 0;
 
-exit_1:
+exit_2:
     if( 0 != usb_release_interface(usb_handle, interface) ) {
         fprintf( stderr, "Failed to release interface %d.\n", interface );
         retval = 1;
     }
 
-exit:
+exit_1:
     if( 0 != usb_close(usb_handle) ) {
         fprintf( stderr, "Failed to close the handle.\n" );
         retval = 1;
     }
 
+exit_0:
     return retval;
 }

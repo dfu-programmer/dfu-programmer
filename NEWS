@@ -1,3 +1,5 @@
+Release 0.2.2
+* Minor bug fix for a segmentation fault if only the usage is displayed.
 Release 0.2.1
 * Minor bug fixes and documentation updates.
 Release 0.2

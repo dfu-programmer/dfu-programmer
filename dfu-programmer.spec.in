@@ -1,11 +1,11 @@
 Name:       @PACKAGE_NAME@
 Summary:    A Device Firmware Update based USB programmer for Atmel chips.
 Version:    @VERSION@
-Release:    fc4
+Release:    fc5
 Group:      Development/Tools
 License:    GPL
 URL:        http://dfu-programmer.sourceforge.net/
-Packager:   Weston Schmidt <weston_schmidt@yahoo.com>
+Packager:   Weston Schmidt <weston_schmidt@alumni.purdue.edu>
 Source:     %{name}-%{version}.tar.gz
 BuildRoot:  %{_tmppath}/%{name}-%{version}-%{release}-root
 Requires:   libusb >= 0.1.10a
@@ -39,5 +39,7 @@ rm -rf ${buildroot}
 
 %changelog
 
+* Wed May 07 2006 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
+- updated the release to Fedora Core 5 & the email address
 * Wed Aug 31 2005 Weston Schmidt <weston_schmidt@yahoo.com>
 - initial creation
