@@ -4,3 +4,5 @@ Original Author:
 Contributors:
     - Reinhard Arlt
         - at89c5131 chip support
+    - David Brownell
+        - compiler flag improvements
