@@ -20,13 +20,23 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stddef.h>
 #include <usb.h>
+
+#include "config.h"
+#include "arguments.h"
 #include "dfu.h"
 #include "atmel.h"
 
-#define ATMEL_MAX_TRANSFER_SIZE     0x0400
-#define ATMEL_MAX_FLASH_BUFFER_SIZE 0x0c30
-#define ATMEL_MAX_FLASH_SIZE        0x0c00
+
+/*
+ * Atmel's firmware doesn't export a DFU descriptor in its config
+ * descriptor, so we have to guess about parameters listed there.
+ * We use 3KB for wTransferSize (MAX_TRANSFER_SIZE).
+ */
+
+#define ATMEL_MAX_TRANSFER_SIZE     0x0c00
+#define ATMEL_MAX_FLASH_BUFFER_SIZE (ATMEL_MAX_TRANSFER_SIZE + 0x30)
 
 /* returns 0 - 255 on success, < 0 otherwise */
 static int atmel_read_command( struct usb_dev_handle *device,
@@ -42,7 +52,6 @@ static int atmel_read_command( struct usb_dev_handle *device,
     command[2] = data1;
 
     if( 3 != dfu_download(device, interface, 3, command) ) {
-        fprintf( stderr, "%s: download failed.\n", __FUNCTION__ );
         return -1;
     }
 
@@ -58,7 +67,6 @@ static int atmel_read_command( struct usb_dev_handle *device,
     }
 
     if( 1 != dfu_upload(device, interface, 1, data) ) {
-        fprintf( stderr, "%s: upload failed.\n", __FUNCTION__ );
         return -4;
     }
 
@@ -66,12 +74,9 @@ static int atmel_read_command( struct usb_dev_handle *device,
 }
 
 
-void atmel_init( int debug_level )
+void atmel_init()
 {
-    if( debug_level >= 10 ) {
-        dfu_debug( 1 );
-    }
-
+    dfu_debug( debug );
     dfu_init( 1000 );
 }
 
@@ -86,31 +91,83 @@ void atmel_init( int debug_level )
  *
  *  returns 0 if successful, < 0 if not
  */
-int atmel_read_config( struct usb_dev_handle *device,
-                       const int interface,
-                       struct atmel_device_info *info )
+int atmel_read_config_8051( struct usb_dev_handle *device,
+                            const int interface,
+                            struct atmel_device_info *info )
 {
     int result;
     int retVal = 0;
     int i = 0;
-    char data[24] = { 0x00, 0x00,   /* See Appendix A of the AT89C51SND1         */
-                      0x00, 0x01,   /* UBS Bootloader document for the meanings. */
-                      0x00, 0x02,
-
-                      0x01, 0x00,
-                      0x01, 0x01,
-                      0x01, 0x05,
-                      0x01, 0x06,
-                      0x01, 0x30,
-                      0x01, 0x31,
-                      0x01, 0x60,
-                      0x01, 0x61,
-
-                      0x02, 0x00 };
     short *ptr = (short *) info;
+
+    /* These commands are documented in Appendix A of the
+     * "AT89C5131A USB Bootloader Datasheet"
+     */
+    static const char data[24] = { 0x00, 0x00,
+                                   0x00, 0x01,
+                                   0x00, 0x02,
+             
+                                   0x01, 0x00,
+                                   0x01, 0x01,
+                                   0x01, 0x05,
+                                   0x01, 0x06,
+                                   0x01, 0x30,
+                                   0x01, 0x31,
+                                   0x01, 0x60,
+                                   0x01, 0x61,
+
+                                   0x02, 0x00 };
 
     for( i = 0; i < 24; i += 2 ) {
         result = atmel_read_command( device, interface, data[i], data[i+1] );
+        if( result < 0 ) {
+            retVal = result;
+        }
+        *ptr = result;
+        ptr++;
+    }
+
+    return retVal;
+}
+
+
+/*
+ *  This reads in all of the configuration and Manufacturer Information
+ *  into the atmel_device_info data structure for easier use later.
+ *
+ *  device    - the usb_dev_handle to communicate with
+ *  interface - the interface to communicate with
+ *  info      - the data structure to populate
+ *
+ *  returns 0 if successful, < 0 if not
+ */
+int atmel_read_config_avr( struct usb_dev_handle *device,
+                           const int interface,
+                           struct atmel_device_info *info )
+{
+    int result;
+    int retVal = 0;
+    int i = 0;
+
+    /* These commands are documented in Appendix A of the
+     * "AT90usb128x/AT90usb64x USB DFU Bootloader Datasheet"
+     */
+    static const struct config_info {
+        unsigned char   data0, data1;
+        unsigned        offset;
+    } data[] = {
+        { 0x0, 0x0,  offsetof(struct atmel_device_info, bootloaderVersion ), },
+        { 0x0, 0x1,  offsetof(struct atmel_device_info, bootID1 ),           },
+        { 0x0, 0x2,  offsetof(struct atmel_device_info, bootID2 ),           },
+        { 0x1, 0x30, offsetof(struct atmel_device_info, manufacturerCode ),  },
+        { 0x1, 0x31, offsetof(struct atmel_device_info, familyCode ),        },
+        { 0x1, 0x60, offsetof(struct atmel_device_info, productName ),       },
+        { 0x1, 0x61, offsetof(struct atmel_device_info, productRevision ),   },
+    };
+
+    for( i = 0; i < 7; i++ ) {
+        short *ptr = data[i].offset + (void *) info;
+        result = atmel_read_command( device, interface, data[i].data0, data[i].data1 );
         if( result < 0 ) {
             retVal = result;
         }
@@ -165,7 +222,6 @@ int atmel_erase_flash( struct usb_dev_handle *device,
     }
 
     if( 3 != dfu_download(device, interface, 3, command) ) {
-        //fprintf( stderr, "%s: download failed.\n", __FUNCTION__ );
         return -2;
     }
 
@@ -212,7 +268,6 @@ int atmel_set_config( struct usb_dev_handle *device,
     command[3] = value;
 
     if( 4 != dfu_download(device, interface, 4, command) ) {
-        //fprintf( stderr, "%s: download failed.\n", __FUNCTION__ );
         return -2;
     }
 
@@ -228,14 +283,14 @@ int atmel_set_config( struct usb_dev_handle *device,
 /* Just to be safe, let's limit the transfer size */
 int atmel_read_flash( struct usb_dev_handle *device,
                       const int interface,
-                      const unsigned short start,
-                      const unsigned short end,
+                      const u_int32_t start,
+                      const u_int32_t end,
                       char* buffer,
                       const int buffer_len )
 {
     char command[6] = { 0x03, 0x00, 0x00, 0x00, 0x00, 0x00 };
     char *ptr = buffer;
-    int length = end - start + 1; // Plus 1 because it is inclusive.
+    int length = end - start;
     int result;
     int rxStart, rxEnd, rxLength;
 
@@ -253,11 +308,15 @@ int atmel_read_flash( struct usb_dev_handle *device,
 
     rxStart = start;
 
+    if( 2 < debug ) {
+        fprintf( stderr, "%s: read %d bytes\n", __FUNCTION__, length );
+    }
+
     while( length > 0 ) {
 
         rxLength = length;
         if( length > ATMEL_MAX_TRANSFER_SIZE ) {
-            rxLength = ATMEL_MAX_TRANSFER_SIZE; 
+            rxLength = ATMEL_MAX_TRANSFER_SIZE;
         }
 
         /* Why do we subtract 1, then add it back?
@@ -278,8 +337,12 @@ int atmel_read_flash( struct usb_dev_handle *device,
 
         rxEnd++;
 
+    if( 3 < debug ) {
+        fprintf( stderr, "%s: %d bytes to %p, from MCU %06x\n",
+                         __FUNCTION__, rxLength, ptr, rxStart );
+    }
+
         if( 6 != dfu_download(device, interface, 6, command) ) {
-            fprintf( stderr, "%s: download failed.\n", __FUNCTION__ );
             return -3;
         }
 
@@ -300,8 +363,8 @@ int atmel_read_flash( struct usb_dev_handle *device,
 
 int atmel_blank_check( struct usb_dev_handle *device,
                       const int interface,
-                      const unsigned short start,
-                      const unsigned short end )
+                      const u_int32_t start,
+                      const u_int32_t end )
 {
     char command[6] = { 0x03, 0x01, 0x00, 0x00, 0x00, 0x00 };
     struct dfu_status status;
@@ -318,7 +381,6 @@ int atmel_blank_check( struct usb_dev_handle *device,
     command[5] = 0xff & end;
 
     if( 6 != dfu_download(device, interface, 6, command) ) {
-        fprintf( stderr, "%s: download failed.\n", __FUNCTION__ );
         return -2;
     }
 
@@ -342,13 +404,11 @@ int atmel_reset( struct usb_dev_handle *device,
     char command[3] = { 0x04, 0x03, 0x00 };
 
     if( 3 != dfu_download(device, interface, 3, command) ) {
-        fprintf( stderr, "%s: download failed.\n", __FUNCTION__ );
         return -1;
     }
 
     /*
     if( 0 != dfu_download(device, interface, 0, NULL) ) {
-        fprintf( stderr, "%s: download failed.\n", __FUNCTION__ );
         return -2;
     }
     */
@@ -363,12 +423,10 @@ int atmel_start_app( struct usb_dev_handle *device,
     char command[5] = { 0x04, 0x03, 0x01, 0x00, 0x00 };
 
     if( 5 != dfu_download(device, interface, 5, command) ) {
-        fprintf( stderr, "%s: download failed.\n", __FUNCTION__ );
         return -1;
     }
 
     if( 0 != dfu_download(device, interface, 0, NULL) ) {
-        fprintf( stderr, "%s: download failed.\n", __FUNCTION__ );
         return -2;
     }
 
@@ -378,8 +436,8 @@ int atmel_start_app( struct usb_dev_handle *device,
 
 int atmel_flash( struct usb_dev_handle *device,
                  const int interface,
-                 const unsigned short start,
-                 const unsigned short end,
+                 const u_int32_t start,
+                 const u_int32_t end,
                  char* buffer )
 {
     char data[ATMEL_MAX_FLASH_BUFFER_SIZE];
@@ -387,7 +445,7 @@ int atmel_flash( struct usb_dev_handle *device,
     int txEnd = 0;
     int data_length = 0;
     int message_length = 0;
-    int length = end - start + 1;
+    int length = end - start;
     struct dfu_status status;
 
     if( (NULL == buffer) || (start >= end) ) {
@@ -401,11 +459,15 @@ int atmel_flash( struct usb_dev_handle *device,
 
     txStart = start;
 
+    if( 2 < debug ) {
+        fprintf( stderr, "%s: write %d bytes\n", __FUNCTION__, length );
+    }
+
     while( length > 0 ) {
 
         data_length = length;
-        if( length > ATMEL_MAX_FLASH_SIZE ) {
-            data_length = ATMEL_MAX_FLASH_SIZE; 
+        if( length > ATMEL_MAX_TRANSFER_SIZE ) {
+            data_length = ATMEL_MAX_TRANSFER_SIZE;
         }
 
         message_length = data_length + 0x30;
@@ -429,16 +491,20 @@ int atmel_flash( struct usb_dev_handle *device,
 
         txEnd++;
 
+        if( 3 < debug ) {
+            fprintf( stderr, "%s: %d bytes to MCU %06x, from %p\n",
+                     __FUNCTION__, data_length, txStart, buffer + txStart );
+        }
+
         /* Copy the data */
         memcpy( &(data[0x20]), &(buffer[txStart]), (size_t) data_length );
 
         /* Set up the footers */
         /* I guess it doesn't care about the footers... */
 
-        if( message_length != 
+        if( message_length !=
             dfu_download(device, interface, message_length, data) )
         {
-            fprintf( stderr, "%s: download failed.\n", __FUNCTION__ );
             return -2;
         }
 
@@ -467,10 +533,14 @@ void atmel_print_device_info( FILE *stream, struct atmel_device_info *info )
     fprintf( stream, "%18s: 0x%04x - %d\n", "Bootloader Version", info->bootloaderVersion, info->bootloaderVersion );
     fprintf( stream, "%18s: 0x%04x - %d\n", "Device boot ID 1", info->bootID1, info->bootID1 );
     fprintf( stream, "%18s: 0x%04x - %d\n", "Device boot ID 2", info->bootID2, info->bootID2 );
-    fprintf( stream, "%18s: 0x%04x - %d\n", "Device BSB", info->bsb, info->bsb );
-    fprintf( stream, "%18s: 0x%04x - %d\n", "Device SBV", info->sbv, info->sbv );
-    fprintf( stream, "%18s: 0x%04x - %d\n", "Device SSB", info->ssb, info->ssb );
-    fprintf( stream, "%18s: 0x%04x - %d\n", "Device EB", info->eb, info->eb );
+
+    if( /* device is 8051 based */ 0 ) {
+        fprintf( stream, "%18s: 0x%04x - %d\n", "Device BSB", info->bsb, info->bsb );
+        fprintf( stream, "%18s: 0x%04x - %d\n", "Device SBV", info->sbv, info->sbv );
+        fprintf( stream, "%18s: 0x%04x - %d\n", "Device SSB", info->ssb, info->ssb );
+        fprintf( stream, "%18s: 0x%04x - %d\n", "Device EB", info->eb, info->eb );
+    }
+
     fprintf( stream, "%18s: 0x%04x - %d\n", "Manufacturer Code", info->manufacturerCode, info->manufacturerCode );
     fprintf( stream, "%18s: 0x%04x - %d\n", "Family Code", info->familyCode, info->familyCode );
     fprintf( stream, "%18s: 0x%04x - %d\n", "Product Name", info->productName, info->productName );

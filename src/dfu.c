@@ -63,9 +63,6 @@ static int dfu_verify_init( const char *function )
 
 void dfu_debug( const int level )
 {
-    fprintf( stderr, "dfu_debug: Setting debugging level to %d (%s)\n",
-             level, (0 != level) ? "on" : "off" );
-
     dfu_debug_level = level;
 }
 
@@ -114,6 +111,8 @@ int dfu_download( struct usb_dev_handle *device,
                   const unsigned short length,
                   char* data )
 {
+    int status;
+
     if( 0 != dfu_verify_init(__FUNCTION__) )
         return -1;
 
@@ -134,14 +133,19 @@ int dfu_download( struct usb_dev_handle *device,
         return -2;
     }
 
-    return usb_control_msg( device,
-        /* bmRequestType */ USB_ENDPOINT_OUT | USB_TYPE_CLASS | USB_RECIP_INTERFACE,
-        /* bRequest      */ DFU_DNLOAD,
-        /* wValue        */ transaction++,
-        /* wIndex        */ interface,
-        /* Data          */ data,
-        /* wLength       */ length,
-                            dfu_timeout );
+    status = usb_control_msg( device,
+          /* bmRequestType */ USB_ENDPOINT_OUT | USB_TYPE_CLASS | USB_RECIP_INTERFACE,
+          /* bRequest      */ DFU_DNLOAD,
+          /* wValue        */ transaction++,
+          /* wIndex        */ interface,
+          /* Data          */ data,
+          /* wLength       */ length,
+                              dfu_timeout );
+    if( status < 0 ) {
+        fprintf( stderr, "%s error %d\n", __FUNCTION__, status );
+    }
+
+    return status;
 }
 
 
@@ -161,6 +165,8 @@ int dfu_upload( struct usb_dev_handle *device,
                 const unsigned short length,
                 char* data )
 {
+    int status;
+
     if( 0 != dfu_verify_init(__FUNCTION__) )
         return -1;
 
@@ -173,14 +179,19 @@ int dfu_upload( struct usb_dev_handle *device,
         return -1;
     }
 
-    return usb_control_msg( device,
-        /* bmRequestType */ USB_ENDPOINT_IN | USB_TYPE_CLASS | USB_RECIP_INTERFACE,
-        /* bRequest      */ DFU_UPLOAD,
-        /* wValue        */ transaction++,
-        /* wIndex        */ interface,
-        /* Data          */ data,
-        /* wLength       */ length,
-                            dfu_timeout );
+    status = usb_control_msg( device,
+          /* bmRequestType */ USB_ENDPOINT_IN | USB_TYPE_CLASS | USB_RECIP_INTERFACE,
+          /* bRequest      */ DFU_UPLOAD,
+          /* wValue        */ transaction++,
+          /* wIndex        */ interface,
+          /* Data          */ data,
+          /* wLength       */ length,
+                              dfu_timeout );
+    if( status < 0 ) {
+        fprintf( stderr, "%s error %d\n", __FUNCTION__, status );
+    }
+
+    return status;
 }
 
 

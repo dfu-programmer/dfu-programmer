@@ -52,8 +52,11 @@ struct atmel_device_info {
     short hsb;                  // Hardware Security Byte
 };
 
-void atmel_init( int debug_level );
-int atmel_read_config( struct usb_dev_handle *device,
+void atmel_init( void );
+int atmel_read_config_8051( struct usb_dev_handle *device,
+                       const int interface,
+                       struct atmel_device_info *info );
+int atmel_read_config_avr( struct usb_dev_handle *device,
                        const int interface,
                        struct atmel_device_info *info );
 int atmel_erase_flash( struct usb_dev_handle *device,
@@ -65,20 +68,20 @@ int atmel_set_config( struct usb_dev_handle *device,
                       const unsigned char value );
 int atmel_read_flash( struct usb_dev_handle *device,
                       const int interface,
-                      const unsigned short start,
-                      const unsigned short end,
+                      const u_int32_t start,
+                      const u_int32_t end,
                       char* buffer,
                       int buffer_len );
 int atmel_blank_check( struct usb_dev_handle *device,
                       const int interface,
-                      const unsigned short start,
-                      const unsigned short end );
+                      const u_int32_t start,
+                      const u_int32_t end );
 int atmel_reset( struct usb_dev_handle *device,
                  const int interface );
 int atmel_flash( struct usb_dev_handle *device,
                  const int interface,
-                 const unsigned short start,
-                 const unsigned short end,
+                 const u_int32_t start,
+                 const u_int32_t end,
                  char* buffer );
 int atmel_start_app( struct usb_dev_handle *device,
                      const int interface );

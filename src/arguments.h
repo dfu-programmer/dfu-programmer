@@ -23,6 +23,7 @@
 
 #include "atmel.h"
 
+#define DEVICE_TYPE_STRING_MAX_LENGTH   5
 /*
  *  atmel_programmer target command
  *
@@ -33,14 +34,21 @@
  *  get {bootloader-version|ID1|ID2|BSB|SBV|SSB|EB|manufacturer|family|product-name|product-revision|HSB} [--quiet, --debug level]
  */
 
+extern int debug;
+
 enum targets_enum { tar_at89c51snd1c = 0,
                     tar_at89c5130    = 1,
                     tar_at89c5131    = 2,
                     tar_at89c5132    = 3,
-                    tar_none         = 4 };
+                    tar_at90usb1287  = 4,
+                    tar_at90usb1286  = 5,
+                    tar_at90usb647   = 6,
+                    tar_at90usb646   = 7,
+                    tar_none         = 8 };
 
 enum commands_enum { com_none, com_erase, com_flash,
-                     com_configure, com_get, com_dump, com_start_app };
+                     com_configure, com_get, com_dump, com_start_app,
+                     com_version };
 
 enum configure_enum { conf_BSB = ATMEL_SET_CONFIG_BSB,
                       conf_SBV = ATMEL_SET_CONFIG_SBV,
@@ -52,14 +60,21 @@ enum get_enum { get_bootloader, get_ID1, get_ID2, get_BSB, get_SBV, get_SSB,
                 get_EB, get_manufacturer, get_family, get_product_name,
                 get_product_rev, get_HSB };
 
+enum device_type_enum { device_8051, device_AVR };
+
 struct programmer_arguments {
+    /* target-specific inputs */
     enum targets_enum target;
+    u_int16_t vendor_id;
+    u_int16_t chip_id;
+    enum device_type_enum device_type;
+    char device_type_string[DEVICE_TYPE_STRING_MAX_LENGTH];
+    u_int32_t memory_size;
+
+    /* command-specific state */
     enum commands_enum command;
-    int  vendor_id;
-    int  chip_id;
-    int  debug;
-    int  quiet;
-    unsigned int memory_size;
+    char quiet;
+
     union {
         struct com_configure_struct {
             enum configure_enum name;

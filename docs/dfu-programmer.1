@@ -1,66 +1,94 @@
-.TH dfu-programmer 1 "Nov 21, 2005" "dfu-programmer"
+.TH DFU\-PROGRAMMER 1 "Jun 19, 2006" "DFU\-PROGRAMMER" ""
 .SH NAME
-dfu-programmer \- Device Firmware Upgrade based USB flash program
-
+dfu\-programmer \- USB firmware upgrading for Atmel microcontrollers
+.nh
 .SH SYNOPSIS
-.B dfu-programmer
-target command [command-options] [global-options] [file | data]
-
+.B dfu\-programmer
+target command [options] [parameters]
 .SH DESCRIPTION
-This manual page documents briefly the
-.B dfu-programmer
-command.
+.B dfu\-programmer
+is a Linux command line Device Firmware Upgrade (DFU) based programmer
+for the flash memory on Atmel AVR and 8051 based microcontrollers which
+ship with a USB boot loader. 
+It supports In System Programming (ISP) for developers and potentially
+product updates in the field.
+Those boot loaders are patterned after the standard USB DFU 1.0 class
+specification, but depend on extensions defined by Atmel to the extent
+that standard DFU drivers will not work.
 .PP
-.B dfu-programmer
-is a Linux command-line Device Firmware Upgrade (DFU) based USB programmer
-for Atmel chips with a USB boot-loader supporting ISP.  The programmer
-is mostly DFU 1.0 compliant.
-
-.SH SUPPORTED CHIPS
-at89c51snd1c
-.br
-at89c5130
-.br
-at89c5131
-.br
-at89c5132
-
-.SH COMMANDS
+To use it, first connect the device to be programmed and ensure that it
+comes up in DFU mode.
+The microcontrollers come up in that mode as shipped by Atmel;
+or they may reenter that mode after a special hardware reset.
+Then invoke this program to issue one or more DFU commands.
+You will normally need to start by issuing the "erase" command;
+the default security policies prevent extracting firmware, to prevent
+reverse engineering of what is usually proprietary code.
+.SH SUPPORTED MICROCONTROLLERS 
+These chip names are used as the command line "target" parameter.
+.IP "8051 based controllers:"
+at89c51snd1c, at89c5130, at89c5131, and at89c5132.
+.IP "AVR based controllers:"
+at90usb1287, at90usb1286, at90usb647, and at90usb646.
+.SH USAGE
+There are no mechanisms for selecting which single device
+should be programmed, or to implement gang programming.
+Accordingly, you will usually avoid connecting more than one
+device of a given family (AVR or 8051) at a time.
+.PP
+All of these commands support the "global options".
+Unless you override it,
+commands which write to the microcontroller will perform 
+a validation step that rereads the data which was written,
+compares it to the expected result, and reports any errors.
+.HP
 .B configure
-configure_register
-[\-\-suppress-validation]
-[global-options]
+register
+[\-\-suppress\-validation]
 data
-
+.br
+Bootloaders for 8051 based controllers support writing certain
+configuration bytes.
+.HP
 .B dump
-[global-options]
 .br
-
+Reads all the available flash memory, and writes it as binary
+data to stdout.
+.HP
 .B erase
-[\-\-suppress-validation]
-[global-options]
+[\-\-suppress\-validation]
 .br
-
+Erases all the flash memory.
+This is required before the bootloader will perform other commands.
+.HP
 .B flash
-[\-\-suppress-validation]
-[global-options]
+[\-\-suppress\-validation]
 file
 .br
-
+Writes flash memory.  The input file must use the "ihex" file
+format convention for a memory image.
+.HP
 .B get
-get_register
-[global-options]
+register
 .br
-
+Displays various product identifier bytes.
+.HP
 .B start
-[global-options]
-
-.SS GLOBAL OPTIONS
+.br
+Starts the application firmware by having the microcontroller
+jump to address zero.
+.HP
+.B version
+.br
+This prints a string identifying the version of this utility.
+.SS Global Options
 \-\-quiet \- minimizes the output
 
-\-\-debug level \- enables verbose output
-
-.SS CONFIGURE REGISTERS
+\-\-debug level \- enables verbose output at the specified level
+.SS Configure Registers
+The standard bootloader for 8051 based chips supports writing
+data bytes which are not relevant for the AVR based chips.
+.LP
 BSB \- boot status byte
 .br
 SBV \- software boot vector
@@ -70,13 +98,22 @@ SSB \- software security byte
 EB  \- extra byte
 .br
 HSB \- hardware security byte
-
-.SS GET REGISTERS
-bootloader-version \- currently flashed boot-loader version
+.SS Get Register
+bootloader\-version \- currently flashed bootloader version
 .br
 ID1 \- device boot identification 1
 .br
 ID2 \- device boot identification 2
+.br
+manufacturer \- the hardware manufacturer code
+.br
+family \- the product family code
+.br
+product\-name \- the product name
+.br
+product\-revision \- the product revision
+.br
+HSB \- same as the configure_register version
 .br
 BSB \- same as the configure_register version
 .br
@@ -85,25 +122,37 @@ SBV \- same as the configure_register version
 SSB \- same as the configure_register version
 .br
 EB  \- same as the configure_register version
-.br
-manufacturer \- the hardware manufacturer code
-.br
-family \- the product family code
-.br
-product-name \- the product name
-.br
-product-revision \- the product revision
-.br
-HSB \- same as the configure_register version
-
+.SH BUGS
+At this writing, only the lower 64KB of flash on the larger at90usb parts
+can be written.  A protocol command allowing the rest of flash to be written 
+is not yet supported.
+.PP
+Currently this programmer rewrites the entire memory image,
+rather than just the portions specified in the hexfile.
 .SH AUTHOR
-dfu-programmer and this manual page was written by Weston Schmidt <weston_schmidt@alumni.purdue.edu>
-
+dfu\-programmer and this manual page was written by Weston Schmidt <weston_schmidt@alumni.purdue.edu>
 .SH SEE ALSO
+.UR http://www.atmel.com
 www.atmel.com
+.UE
+(vendor of the relevant AVR and 8051 microcontrollers)
 .br
+.UR http://www.libusb.sourceforge.net
 www.libusb.sourceforge.net
+.UE
+(userspace USB library)
 .br
+.UR http://www.sdcc.sourceforge.net
 www.sdcc.sourceforge.net
+.UE
+(for 8051 based microcontrollers)
 .br
+.UR http://www.nongnu.org/avr\-libc
+www.nongnu.org/avr\-libc
+.UE
+(for AVR based microcontrollers; use with GCC)
+.br
+.UR http://www.usb.org
 www.usb.org
+.UE
+(for general USB information)

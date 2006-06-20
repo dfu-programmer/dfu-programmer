@@ -75,16 +75,18 @@ static int intel_validate_line( struct intel_record *record )
 
     /* Validate the type */
     switch( record->type ) {
-        case 0:
+        /* Intel 1 format, for up to 64K length (types 0, 1) */
+        case 0:                             /* data record */
             /* Nothing to do. */
             break;
 
-        case 1:
+        case 1:                             /* EOF record */
             if( 0 != record->count )
                 return -2;
             break;
 
-        case 2:
+        /* Intel 2 format, when 20 bit addresses are needed (types 2, 3, 4) */
+        case 2:                             /* extended address record */
             if(    (0 != record->address)
                 || (2 != record->count)
                 || (record->data[1] != (0xf8 & record->data[1])) )
@@ -93,14 +95,18 @@ static int intel_validate_line( struct intel_record *record )
             }
             break;
 
-        case 4:
+        case 3:                             /* start address record */
+            /* just ignore these records (could verify addr == 0) */
+            return -8;
+
+        case 4:                             /* extended linear address record */
             if( (0 != record->address) || (2 != record->count) )
                 return -4;
             break;
 
         default:
             fprintf( stderr, "Unsupported type. %d\n", record->type );
-            /* Types 3 & 5 as well as any other types are unsupported. */
+            /* Type 5 and other types are unsupported. */
             return -5;
     }
 
@@ -186,10 +192,17 @@ static int intel_parse_line( FILE *fp, struct intel_record *record )
     if( 0 != intel_read_data(fp, record) )
         return -1;
 
-    if( 0 != intel_validate_line(record) )
-        return -1;
+    switch( intel_validate_line(record) ) {
+        case 0:     /* data, extended address, etc */
+            intel_process_address( record );
+            break;
 
-    intel_process_address( record );
+        case -8:    /* start address (ignore) */
+            break;
+
+        default:
+            return -1;
+    }
 
     return 0;
 }

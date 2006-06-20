@@ -21,16 +21,23 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "config.h"
 #include "commands.h"
 #include "arguments.h"
 #include "intel_hex.h"
 #include "atmel.h"
+
 
 static int execute_erase( struct usb_dev_handle *device,
                           int interface,
                           struct programmer_arguments args )
 {
     int result = 0;
+
+    if( 2 < debug ) {
+        fprintf( stderr, "%s: erase %d bytes\n", __FUNCTION__,
+                         args.memory_size );
+    }
 
     result = atmel_erase_flash( device, interface, ATMEL_ERASE_ALL );
     if( 0 != result )
@@ -63,7 +70,12 @@ static int execute_flash( struct usb_dev_handle *device,
         fprintf( stderr, "Something went wrong with creating the memory image.\n" );
         goto error;
     }
-    
+
+    if( 2 < debug ) {
+        fprintf( stderr, "%s: write %d/%d bytes\n", __FUNCTION__,
+                         usage, args.memory_size );
+    }
+
     result = atmel_flash( device, interface, 0, args.memory_size, hex_data );
     if((args.memory_size+1) != result ) {
         fprintf( stderr, "Error while flashing. (%d)\n", result );
@@ -80,7 +92,8 @@ static int execute_flash( struct usb_dev_handle *device,
             goto error;
         }
 
-        if( 0 != memcmp(hex_data, buffer, (args.memory_size+1)) ) {
+        /* WTS: Why args.memory_size vs args.memory_size+1 ? */
+        if( 0 != memcmp(hex_data, buffer, (args.memory_size)) ) {
             fprintf( stderr, "Image did not validate.\n" );
             goto error;
         }
@@ -123,16 +136,25 @@ static int execute_get( struct usb_dev_handle *device,
     struct atmel_device_info info;
     char *message = NULL;
     short value = 0;
+    int status;
+    int controller_error = 0;
 
-    if( 0 != atmel_read_config(device, interface, &info) ) {
-        fprintf( stderr, "Error reading config information.\n" );
-        return -1;
+    if( device_8051 == args.device_type ) {
+        status = atmel_read_config_8051( device, interface, &info );
+    } else {
+        status = atmel_read_config_avr( device, interface, &info );
+    }
+
+    if( 0 != status ) {
+        fprintf( stderr, "Error reading %s config information.\n",
+                         args.device_type_string );
+        return status;
     }
 
     switch( args.com_get_data.name ) {
         case get_bootloader:
             value = info.bootloaderVersion;
-            message = "Booloader Version";
+            message = "Bootloader Version";
             break;
         case get_ID1:
             value = info.bootID1;
@@ -145,18 +167,30 @@ static int execute_get( struct usb_dev_handle *device,
         case get_BSB:
             value = info.bsb;
             message = "Boot Status Byte";
+            if( device_8051 != args.device_type ) {
+                controller_error = 1;
+            }
             break;
         case get_SBV:
             value = info.sbv;
             message = "Software Boot Vector";
+            if( device_8051 != args.device_type ) {
+                controller_error = 1;
+            }
             break;
         case get_SSB:
             value = info.ssb;
             message = "Software Security Byte";
+            if( device_8051 != args.device_type ) {
+                controller_error = 1;
+            }
             break;
         case get_EB:
             value = info.eb;
             message = "Extra Byte";
+            if( device_8051 != args.device_type ) {
+                controller_error = 1;
+            }
             break;
         case get_manufacturer:
             value = info.manufacturerCode;
@@ -178,6 +212,12 @@ static int execute_get( struct usb_dev_handle *device,
             value = info.hsb;
             message = "Hardware Security Byte";
             break;
+    }
+
+    if( 0 != controller_error ) {
+        fprintf( stderr, "%s requires 8051 based controller\n",
+                         message );
+        return -1;
     }
 
     if( value < 0 ) {
@@ -205,6 +245,11 @@ static int execute_dump( struct usb_dev_handle *device,
         fprintf( stderr, "Request for %d bytes of memory failed.\n",
                  (args.memory_size+1) );
         goto error;
+    }
+
+    if( 2 < debug ) {
+        fprintf( stderr, "%s: dump %d bytes\n", __FUNCTION__,
+                         args.memory_size );
     }
 
     if( (args.memory_size+1) != atmel_read_flash(device, interface, 0,
@@ -237,6 +282,11 @@ static int execute_configure( struct usb_dev_handle *device,
 {
     int value = args.com_configure_data.value;
     int name = args.com_configure_data.name;
+
+    if( device_8051 != args.device_type ) {
+        fprintf( stderr, "target doesn't support configure operation.\n" );
+        return -1;
+    }
 
     if( (0xff & value) != value ) {
         fprintf( stderr, "Value to configure must be in range 0-255.\n" );

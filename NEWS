@@ -1,3 +1,7 @@
+Release 0.3.0
+* Added support for (AVR) at90usb1287, at90usb1286, at90usb647, at90usb646
+  chips.  There may be an issue if you try to use every last byte of flash,
+  as there is a "+1" offset that needs to be resolved.
 Release 0.2.2
 * Minor bug fix for a segmentation fault if only the usage is displayed.
 Release 0.2.1

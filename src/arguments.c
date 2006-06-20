@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "config.h"
 #include "arguments.h"
 
 struct option_mapping_structure {
@@ -31,7 +32,8 @@ struct option_mapping_structure {
 
 struct target_mapping_structure {
     const char *name;
-    int value;
+    enum targets_enum value;
+    enum device_type_enum device_type;
     unsigned short chip_id;
     unsigned short vendor_id;
     unsigned int memory_size;
@@ -39,10 +41,29 @@ struct target_mapping_structure {
 
 /* ----- target specific structures ----------------------------------------- */
 static struct target_mapping_structure target_map[] = {
-    { "at89c51snd1c", tar_at89c51snd1c, 0x2FFF, 0x03eb, 0xffff },
-    { "at89c5130",    tar_at89c5130,    0x2FFD, 0x03eb, 0x3fff },
-    { "at89c5131",    tar_at89c5131,    0x2FFD, 0x03eb, 0x7fff },
-    { "at89c5132",    tar_at89c5132,    0x2FFF, 0x03eb, 0xffff },
+    { "at89c51snd1c", tar_at89c51snd1c, device_8051, 0x2FFF, 0x03eb, 0xffff },
+    { "at89c5130",    tar_at89c5130,    device_8051, 0x2FFD, 0x03eb, 0x3fff },
+    { "at89c5131",    tar_at89c5131,    device_8051, 0x2FFD, 0x03eb, 0x7fff },
+    { "at89c5132",    tar_at89c5132,    device_8051, 0x2FFF, 0x03eb, 0xffff },
+
+    /* NOTE:  actual size of the user-programmable section is controlled
+     * by BOOTSZ0/BOOTSZ1 fuse bits; here we assume the max of 4K words.
+     *
+     * REVISIT the AVR DFU writeup suggests there is a special operation
+     * to change which 64KB segment is written.  Pending clarification of
+     * the documentation, we'll stick to the clearly documented behavior
+     * of being able to write the low 64 KB.
+     */
+    { "at90usb1287",  tar_at90usb1287,  device_AVR, 0x2FFB, 0x03eb,
+                64 * 1024 },
+                // 128 * 1024 - 8 * 1024},
+    { "at90usb1286",  tar_at90usb1286,  device_AVR, 0x2FFB, 0x03eb,
+                64 * 1024 },
+                // 128 * 1024 - 8 * 1024 },
+    { "at90usb647",   tar_at90usb647,   device_AVR, 0x2FFB, 0x03eb,
+                64 * 1024 - 8 * 1024 },
+    { "at90usb646",   tar_at90usb646,   device_AVR, 0x2FFB, 0x03eb,
+                64 * 1024 - 8 * 1024 },
     { NULL }
 };
 
@@ -54,6 +75,7 @@ static struct option_mapping_structure command_map[] = {
     { "flash",     com_flash     },
     { "get",       com_get       },
     { "start",     com_start_app },
+    { "version",   com_version   },
     { NULL }
 };
 
@@ -91,6 +113,7 @@ static void usage()
 
     map = target_map;
 
+    fprintf( stderr, PACKAGE_STRING "\n");
     fprintf( stderr, "Usage: dfu-programmer target command [command-options] "
                      "[global-options] [file|data]\n" );
     fprintf( stderr, "targets:\n" );
@@ -113,6 +136,7 @@ static void usage()
                      "            product-revision|HSB} "
                      "[global-options]\n" );
     fprintf( stderr, "        start [global-options]\n" );
+    fprintf( stderr, "        version [global-options]\n" );
 }
 
 static int assign_option( int *arg,
@@ -120,7 +144,7 @@ static int assign_option( int *arg,
                           struct option_mapping_structure *map )
 {
     while( 0 != *((int *) map) ) {
-        if( 0 == strcmp(value, map->name) ) {
+        if( 0 == strcasecmp(value, map->name) ) {
             *arg = map->value;
             return 0;
         }
@@ -137,11 +161,22 @@ static int assign_target( struct programmer_arguments *args,
                           struct target_mapping_structure *map )
 {
     while( 0 != *((int *) map) ) {
-        if( 0 == strcmp(value, map->name) ) {
+        if( 0 == strcasecmp(value, map->name) ) {
             args->target  = map->value;
             args->chip_id = map->chip_id;
             args->vendor_id = map->vendor_id;
+            args->device_type = map->device_type;
             args->memory_size = map->memory_size;
+            switch( args->device_type ) {
+                case device_8051:
+                    strncpy( args->device_type_string, "8051",
+                             DEVICE_TYPE_STRING_MAX_LENGTH );
+                    break;
+                case device_AVR:
+                    strncpy( args->device_type_string, "AVR",
+                             DEVICE_TYPE_STRING_MAX_LENGTH );
+                    break;
+            }
             return 0;
         }
 
@@ -197,13 +232,13 @@ static int assign_global_options( struct programmer_arguments *args,
         if( 0 == strncmp("--debug", argv[i], 7) ) {
 
             if( 0 == strncmp("--debug=", argv[i], 8) ) {
-                if( 1 != sscanf(argv[i], "--debug=%i", &(args->debug)) )
+                if( 1 != sscanf(argv[i], "--debug=%i", &debug) )
                     return -2;
             } else {
                 if( (i+1) >= argc )
                     return -3;
 
-                if( 1 != sscanf(argv[i+1], "%i", &(args->debug)) )
+                if( 1 != sscanf(argv[i+1], "%i", &debug) )
                     return -4;
 
                 *argv[i+1] = '\0';
@@ -322,75 +357,60 @@ static int assign_command_options( struct programmer_arguments *args,
 
 static void print_args( struct programmer_arguments *args )
 {
-    char *command = NULL;
-    char *target = NULL;
+    const char *command = "(unknown)";
+    const char *target = "(unknown)";
+    int i;
 
-    if( tar_none != args->target ) {
-        printf( "   target: %s\n", target_map[args->target] );
-    } else {
-        printf( "   target: none\n" );
-    }
-    printf( "  chip_id: 0x%04x\n", args->chip_id );
-    printf( "vendor_id: 0x%04x\n", args->vendor_id );
-
-    switch( args->command ) {
-        case com_none:
-            command = "none";
+    for( i = 0; i < sizeof(target_map) / sizeof(target_map[0]); i++ ) {
+        if( args->target == target_map[i].value ) {
+            target = target_map[i].name;
             break;
-        case com_erase:
-            command = "erase";
-            break;
-        case com_flash:
-            command = "flash";
-            break;
-        case com_configure:
-            command = "configure";
-            break;
-        case com_get:
-            command = "get";
-            break;
-        case com_dump:
-            command = "dump";
-            break;
-        case com_start_app:
-            command = "start";
-            break;
+        }
     }
 
-    printf( "command: %s\n", command );
-    printf( "  quiet: %s\n", (0 == args->quiet) ? "false" : "true" );
-    printf( "  debug: %d\n", args->debug );
+    for( i = 0; i < sizeof(command_map) / sizeof(command_map[0]); i++ ) {
+        if( args->command == command_map[i].value ) {
+            command = command_map[i].name;
+            break;
+        }
+    }
+
+    printf( "     target: %s\n", target );
+    printf( "    chip_id: 0x%04x\n", args->chip_id );
+    printf( "  vendor_id: 0x%04x\n", args->vendor_id );
+    printf( "    command: %s\n", command );
+    printf( "      quiet: %s\n", (0 == args->quiet) ? "false" : "true" );
+    printf( "      debug: %d\n", debug );
+    printf( "device_type: %s\n", args->device_type_string );
+    printf( "------ command specific below ------\n" );
 
     switch( args->command ) {
-        case com_none:
-            break;
         case com_configure:
-            printf( "name: %d\n", args->com_configure_data.name );
-            printf( "suppress validation: %s\n",
-                    (0 == args->com_configure_data.suppress_validation) ?
+            printf( "       name: %d\n", args->com_configure_data.name );
+            printf( "   validate: %s\n",
+                    (args->com_configure_data.suppress_validation) ?
                         "false" : "true" );
-            printf( "value: %d\n", args->com_configure_data.value );
-            break;
-        case com_dump:
-            break;
-        case com_start_app:
+            printf( "      value: %d\n", args->com_configure_data.value );
             break;
         case com_erase:
-            printf( "suppress validation: %s\n",
-                    (0 == args->com_erase_data.suppress_validation) ?
+            printf( "   validate: %s\n",
+                    (args->com_erase_data.suppress_validation) ?
                         "false" : "true" );
             break;
         case com_flash:
-            printf( "suppress validation: %s\n",
-                    (0 == args->com_flash_data.suppress_validation) ?
+            printf( "   validate: %s\n",
+                    (args->com_flash_data.suppress_validation) ?
                         "false" : "true" );
-            printf( "file: %s\n", args->com_flash_data.file );
+            printf( "   hex file: %s\n", args->com_flash_data.file );
             break;
         case com_get:
-            printf( "name: %d\n", args->com_get_data.name );
+            printf( "       name: %d\n", args->com_get_data.name );
+            break;
+        default:
             break;
     }
-
+    printf( "\n" );
+    fflush( stdout );
 }
 
 
@@ -399,6 +419,7 @@ int parse_arguments( struct programmer_arguments *args,
                      char **argv )
 {
     int i;
+    int status = 0;
 
     if( NULL == args )
         return -1;
@@ -406,23 +427,22 @@ int parse_arguments( struct programmer_arguments *args,
     /* initialize the argument block to empty, known values */
     args->target  = tar_none;
     args->command = com_none;
-    args->debug   = 0;
     args->quiet   = 0;
 
     /* Make sure there are the minimum arguments */
     if( argc < 3 ) {
-        usage();
-        return -2;
+        status = -2;
+        goto done;
     }
 
     if( 0 != assign_target(args, argv[1], target_map) ) {
-        usage();
-        return -3;
+        status = -3;
+        goto done;
     }
 
     if( 0 != assign_option((int *) &(args->command), argv[2], command_map) ) {
-        usage();
-        return -4;
+        status = -4;
+        goto done;
     }
 
     /* These were taken care of above. */
@@ -431,25 +451,42 @@ int parse_arguments( struct programmer_arguments *args,
     *argv[2] = '\0';
 
     if( 0 != assign_global_options(args, argc, argv) ) {
-        usage();
-        return -5;
+        status = -5;
+        goto done;
     }
 
     if( 0 != assign_command_options(args, argc, argv) ) {
-        usage();
-        return -6;
+        status = -6;
+        goto done;
     }
 
     /* Make sure there weren't any *extra* options. */
     for( i = 0; i < argc; i++ ) {
-        if( '\0' != *argv[i] )
-            return -7;
+        if( '\0' != *argv[i] ) {
+            fprintf( stderr, "unrecognized parameter\n" );
+            status = -7;
+            goto done;
+        }
     }
 
     /* if this is a flash command, restore the filename */
     if( com_flash == args->command ) {
+        if( 0 == args->com_flash_data.file ) {
+            fprintf( stderr, "flash filename is missing\n" );
+            status = -8;
+            goto done;
+        }
         args->com_flash_data.file[0] = args->com_flash_data.original_first_char;
     }
 
-    return 0;
+done:
+    if( 1 < debug ) {
+        print_args( args );
+    }
+
+    if( 0 != status ) {
+        usage();
+    }
+
+    return status;
 }

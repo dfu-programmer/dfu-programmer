@@ -22,6 +22,7 @@
 #include <string.h>
 #include <usb.h>
 
+#include "config.h"
 #include "dfu.h"
 #include "atmel.h"
 #include "arguments.h"
@@ -29,7 +30,7 @@
 
 
 /*
- *  device_init is designed to find the device on the usb bus that matches
+ *  device_init is designed to find one of the usb devices which match
  *  the vendor and product parameters passed in.
  *
  *  vendor  - the vender number of the device to look for
@@ -60,8 +61,11 @@ static struct usb_device *device_init( unsigned int vendor, unsigned int product
     return NULL;
 }
 
+int debug;
+
 int main( int argc, char **argv )
 {
+    static const char *progname = PACKAGE;
     int retval = 0;
     struct usb_device *device = NULL;
     struct usb_dev_handle *usb_handle = NULL;
@@ -69,38 +73,45 @@ int main( int argc, char **argv )
     struct programmer_arguments args;
     int interface = 0;
 
+    memset( &args, 0, sizeof(args) );
     if( 0 != parse_arguments(&args, argc, argv) ) {
         retval = 1;
         goto exit_0;
     }
 
-    if( args.debug >= 20 ) {
-        usb_set_debug( args.debug );
+    if( args.command == com_version ) {
+        printf( PACKAGE_STRING "\n" );
+        return 0;
+    }
+
+    if( debug >= 20 ) {
+        usb_set_debug( debug );
     }
 
     device = device_init( args.vendor_id, args.chip_id );
 
     if( NULL == device ) {
-        fprintf( stderr, "No device present.\n" );
+        fprintf( stderr, "%s: no device present.\n", progname );
         retval = 1;
-        goto exit_1;
+        goto exit_0;
     }
 
     usb_handle = usb_open( device );
 
     if( NULL == usb_handle ) {
-        fprintf( stderr, "Device failed to open.\n" );
+        fprintf( stderr, "%s: device failed to open.\n", progname );
         retval = 1;
         goto exit_1;
     }
 
     if( 0 != usb_claim_interface(usb_handle, interface) ) {
-        fprintf( stderr, "Failed to claim interface.  Check permissions.\n" );
+        fprintf( stderr, "%s: failed to claim interface.  "
+                         "Check permissions.\n", progname );
         retval = 1;
         goto exit_1;
     }
 
-    atmel_init( args.debug );
+    atmel_init();
 
     dfu_get_status( usb_handle, interface, &status );
 
@@ -111,7 +122,7 @@ int main( int argc, char **argv )
         dfu_get_status( usb_handle, interface, &status );
 
         if( DFU_STATUS_OK != status.bStatus ) {
-            fprintf( stderr, "Error: %d\n", status.bStatus );
+            fprintf( stderr, "%s: error: %d\n", progname, status.bStatus );
             retval = 1;
             goto exit_2;
         }
@@ -119,7 +130,7 @@ int main( int argc, char **argv )
 
 
     if( 0 != execute_command(usb_handle, interface, args) ) {
-        fprintf( stderr, "Error executing command.\n" );
+        /* command issued a specific diagnostic already */
         retval = 1;
         goto exit_2;
     }
@@ -128,13 +139,14 @@ int main( int argc, char **argv )
 
 exit_2:
     if( 0 != usb_release_interface(usb_handle, interface) ) {
-        fprintf( stderr, "Failed to release interface %d.\n", interface );
+        fprintf( stderr, "%s: failed to release interface %d.\n",
+                         progname, interface );
         retval = 1;
     }
 
 exit_1:
     if( 0 != usb_close(usb_handle) ) {
-        fprintf( stderr, "Failed to close the handle.\n" );
+        fprintf( stderr, "%s: failed to close the handle.\n", progname );
         retval = 1;
     }
 
