@@ -35,7 +35,7 @@ Simple install procedure
                                                 # run it
 
   % make                                        # build dfu-programmer
-  [ Become root necessary ]
+  [ Become root if necessary ]
   % make install                                # install dfu-programmer
 
 Building RPM Binary Packages
