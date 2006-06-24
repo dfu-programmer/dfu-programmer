@@ -1,7 +1,7 @@
 2006-06-19 Weston Schmidt <weston_schmidt AT alumni.purdue.edu>
 
 	* AUTHORS: Updated David Brownell's contributions - which makes
-      up almost this entire checkin!
+      up almost this entire check-in!
     * configure.ac: Incremented the release number
 	* NEWS: Updated the latest news about the 0.3.0 release
     * src/arguments.c: Added the new targets, made the target names
@@ -11,14 +11,14 @@
       structure up a bit.
     * src/atmel.c: Applied general cleanup, matched the atmel.h
       interfaces and added an AVR a configuration reading function.
-    * src/atmel.h: Updated the intefaces to allow for 8051 vs AVR
+    * src/atmel.h: Updated the interface to allow for 8051 vs AVR
       differences.  This also starts the use of stdint.h values.
     * src/commands.c: Updated to a more standard debugging system and
       added command checking for 8051 vs AVR differences.  There is
       an open question about why we switch between args.memory_size
       and args.memory_size+1 in comparisons.  I need to re-read up
       on why in the world I did args.memory_size+1 in the first
-      place, then follow up with David about implecations around
+      place, then follow up with David about implications around
       the AVR chips.
     * src/dfu.c: Updated to a more standard debugging system and
       removed an overly verbose debug message.
