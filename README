@@ -28,11 +28,19 @@ Simple install procedure
 ========================
 
   % tar -xzf dfu-programmer-<version>.tar.gz    # unpack the sources
-  % cd dfu-programmer                           # change to the toplevel
+  % cd dfu-programmer                           # change to the top-level
                                                 # directory
 
+  [ If the source was checked-out from  CVS, run the following command ]
+  % ./bootstrap.sh                              # regenerate base config
+                                                # files
+  
   % ./configure                                 # regenerate configure and
                                                 # run it
+
+  [ Optionally you can specify where dfu-programmer gets installed
+    using the --prefix= option to the ./configure command.  See
+    % ./configure --help for more details. ]
 
   % make                                        # build dfu-programmer
   [ Become root if necessary ]
