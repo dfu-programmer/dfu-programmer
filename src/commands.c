@@ -43,7 +43,7 @@ static int execute_erase( struct usb_dev_handle *device,
     if( 0 != result )
         return result;
 
-    return atmel_blank_check( device, interface, 0, args.memory_size );
+    return atmel_blank_check( device, interface, 0, args.top_memory_address );
 }
 
 
@@ -56,18 +56,22 @@ static int execute_flash( struct usb_dev_handle *device,
     int   retval = -1;
     int   result = 0;
     char  *buffer = NULL;
+    int i;
 
-    buffer = (char *) malloc( (args.memory_size+1) );
+    buffer = (char *) malloc( args.memory_size );
     if( NULL == buffer ) {
         fprintf( stderr, "Request for %d bytes of memory failed.\n",
-                 (args.memory_size+1) );
+                 args.memory_size );
         goto error;
     }
 
+    memset( buffer, 0, args.memory_size );
+
     hex_data = intel_hex_to_buffer( args.com_flash_data.file,
-                                    (args.memory_size+1), 0xff, &usage );
+                                    args.memory_size, 0xff, &usage );
     if( NULL == hex_data ) {
-        fprintf( stderr, "Something went wrong with creating the memory image.\n" );
+        fprintf( stderr,
+                 "Something went wrong with creating the memory image.\n" );
         goto error;
     }
 
@@ -76,24 +80,27 @@ static int execute_flash( struct usb_dev_handle *device,
                          usage, args.memory_size );
     }
 
-    result = atmel_flash( device, interface, 0, args.memory_size, hex_data );
-    if((args.memory_size+1) != result ) {
+    result = atmel_flash( device, interface, 0, args.top_memory_address,
+                          hex_data );
+
+    if( args.memory_size != result ) {
         fprintf( stderr, "Error while flashing. (%d)\n", result );
         goto error;
     }
 
     if( 0 == args.com_flash_data.suppress_validation ) {
         fprintf( stderr, "Validating...\n" );
-        if((args.memory_size+1) != atmel_read_flash(device, interface, 0,
-                                  args.memory_size, buffer,
-                                  (args.memory_size+1)) )
-        {
+
+        result = atmel_read_flash( device, interface, 0,
+                                   args.top_memory_address, buffer,
+                                   args.memory_size );
+
+        if( args.memory_size != result ) {
             fprintf( stderr, "Error while validating.\n" );
             goto error;
         }
 
-        /* WTS: Why args.memory_size vs args.memory_size+1 ? */
-        if( 0 != memcmp(hex_data, buffer, (args.memory_size)) ) {
+        if( 0 != memcmp(hex_data, buffer, args.memory_size) ) {
             fprintf( stderr, "Image did not validate.\n" );
             goto error;
         }
@@ -101,7 +108,7 @@ static int execute_flash( struct usb_dev_handle *device,
 
     if( 0 == args.quiet ) {
         fprintf( stderr, "%d bytes used (%.02f%%)\n", usage,
-                         ((float)(usage*100)/(float)(args.memory_size+1)) );
+                         ((float)(usage*100)/(float)(args.top_memory_address)) );
     }
 
     retval = 0;
@@ -240,10 +247,10 @@ static int execute_dump( struct usb_dev_handle *device,
     int i = 0;
     char  *buffer = NULL;
 
-    buffer = (char *) malloc( (args.memory_size+1) );
+    buffer = (char *) malloc( (args.memory_size) );
     if( NULL == buffer ) {
         fprintf( stderr, "Request for %d bytes of memory failed.\n",
-                 (args.memory_size+1) );
+                 args.memory_size );
         goto error;
     }
 
@@ -252,15 +259,15 @@ static int execute_dump( struct usb_dev_handle *device,
                          args.memory_size );
     }
 
-    if( (args.memory_size+1) != atmel_read_flash(device, interface, 0,
-                                  args.memory_size, buffer,
-                                  (args.memory_size+1)) )
+    if( args.memory_size != atmel_read_flash(device, interface, 0,
+                                  args.top_memory_address, buffer,
+                                  args.memory_size) )
     {
         fprintf( stderr, "Error while validating.\n" );
         return -1;
     }
 
-    for( i = 0; i < (args.memory_size+1); i++ ) {
+    for( i = 0; i < args.memory_size; i++ ) {
         fprintf( stdout, "%c", buffer[i] );
     }
 

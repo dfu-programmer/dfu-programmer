@@ -1,6 +1,22 @@
 2006-06-24 Weston Schmidt <weston_schmidt AT alumni.purdue.edu>
 
 	* dfu-programmer.spec.in: Update the supported chips
+	* NEWS: Updated the latest news about the 0.3.0 release
+	* src/arguments.c: Adjusted the 8051 based chip memory sizes to
+	  be accurate, and the top memory address is calculated based off
+	  of the memory size.
+	* src/arguments.h: Added top_memory_address to differentiate the
+	  memory size and top memory address.  This resolves my question
+	  about the +1 offset.
+	* src/atmel.c: Fix a bug where the last byte of memory was not being
+	  transferred from the device for validation purposes.
+	* src/commands.c: Updated to use memory_size and top_memory_address
+	  depending on which value is needed, instead of using one value
+	  to serve both purposes.
+
+2006-06-24 Weston Schmidt <weston_schmidt AT alumni.purdue.edu>
+
+	* dfu-programmer.spec.in: Update the supported chips
 	* README: Added an instruction about building the source from CVS.
 
 2006-06-19 Weston Schmidt <weston_schmidt AT alumni.purdue.edu>
@@ -60,21 +76,21 @@
 
 2005-11-21 Weston Schmidt <weston_schmidt AT alumni.purdue.edu>
 
-	* docs/dfu-programmer.1: Bring the man page inline with the
+	* docs/dfu-programmer.1: Bring the man page in-line with the
 	  built in help, plus a bit more info.
 
 2005-11-21 Weston Schmidt <weston_schmidt AT alumni.purdue.edu>
 
 	* src/main.c: Two minor fixes to allow it to work with newer 2.6.xx
 	  kernels.  The first had to do with using a function call to get
-	  the busses to iterate over, and the second has to do with not
-	  setting a configuration.  Apartently this doesn't need to be done.
+	  the buses to iterate over, and the second has to do with not
+	  setting a configuration.  Apparently this doesn't need to be done.
 
 2005-09-24 Weston Schmidt <weston_schmidt AT yahoo.com>
 
 	* configure.ac: Incremented the release number
 	* NEWS: Updated the latest news about the 0.2.0 release
-	* src/commands.c: Removed the hardcoded restrictions on sizes and
+	* src/commands.c: Removed the hard-coded restrictions on sizes and
 	  instead malloc the space needed.  Additionally the size is gotten
 	  from the arguments data structure, so that adding future devices
 	  should be easier.

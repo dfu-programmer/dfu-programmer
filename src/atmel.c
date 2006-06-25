@@ -290,7 +290,7 @@ int atmel_read_flash( struct usb_dev_handle *device,
 {
     char command[6] = { 0x03, 0x00, 0x00, 0x00, 0x00, 0x00 };
     char *ptr = buffer;
-    int length = end - start;
+    int length = end - start + 1; /* + 1 because memory is 0 based */
     int result;
     int rxStart, rxEnd, rxLength;
 

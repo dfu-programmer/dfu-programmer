@@ -41,10 +41,10 @@ struct target_mapping_structure {
 
 /* ----- target specific structures ----------------------------------------- */
 static struct target_mapping_structure target_map[] = {
-    { "at89c51snd1c", tar_at89c51snd1c, device_8051, 0x2FFF, 0x03eb, 0xffff },
-    { "at89c5130",    tar_at89c5130,    device_8051, 0x2FFD, 0x03eb, 0x3fff },
-    { "at89c5131",    tar_at89c5131,    device_8051, 0x2FFD, 0x03eb, 0x7fff },
-    { "at89c5132",    tar_at89c5132,    device_8051, 0x2FFF, 0x03eb, 0xffff },
+    { "at89c51snd1c", tar_at89c51snd1c, device_8051, 0x2FFF, 0x03eb, 0x10000 },
+    { "at89c5130",    tar_at89c5130,    device_8051, 0x2FFD, 0x03eb, 0x4000  },
+    { "at89c5131",    tar_at89c5131,    device_8051, 0x2FFD, 0x03eb, 0x8000  },
+    { "at89c5132",    tar_at89c5132,    device_8051, 0x2FFF, 0x03eb, 0x10000 },
 
     /* NOTE:  actual size of the user-programmable section is controlled
      * by BOOTSZ0/BOOTSZ1 fuse bits; here we assume the max of 4K words.
@@ -167,6 +167,7 @@ static int assign_target( struct programmer_arguments *args,
             args->vendor_id = map->vendor_id;
             args->device_type = map->device_type;
             args->memory_size = map->memory_size;
+            args->top_memory_address = map->memory_size - 1;
             switch( args->device_type ) {
                 case device_8051:
                     strncpy( args->device_type_string, "8051",
