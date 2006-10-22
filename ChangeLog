@@ -1,3 +1,9 @@
+2006-10-21 Weston Schmidt <weston_schmidt AT alumni.purdue.edu>
+
+    * dfu-programmer.spec.in: This resolves several of the problems
+      present in the spec file.  The goal is to be able to make this
+      package part of the fedora extras.
+
 2006-06-24 Weston Schmidt <weston_schmidt AT alumni.purdue.edu>
 
 	* dfu-programmer.spec.in: Update the supported chips
