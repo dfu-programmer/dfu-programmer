@@ -46,6 +46,8 @@ rm -rf $RPM_BUILD_ROOT
 
 %changelog
 
+* Wed Oct 21 2006 Weston Schmidt <weston_schmidt at alumni.purdue.edu> - 0.3.1-1
+- updated the release to get ready to be part of the fedora extras
 * Wed May 07 2006 Weston Schmidt <weston_schmidt at alumni.purdue.edu> - 0.3.0-1
 - updated the release to Fedora Core 5 & the email address
 * Wed Aug 31 2005 Weston Schmidt <weston_schmidt at yahoo.com>
