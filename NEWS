@@ -1,3 +1,6 @@
+Release 0.3.1
+* Minor documentation changes and polishing of the spec file to get the
+  project inline with what is needed to be part of the fedora extras.
 Release 0.3.0
 * Added support for (AVR) at90usb1287, at90usb1286, at90usb647, at90usb646
   chips.

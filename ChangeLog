@@ -3,6 +3,10 @@
     * dfu-programmer.spec.in: This resolves several of the problems
       present in the spec file.  The goal is to be able to make this
       package part of the fedora extras.
+	* configure.ac: Incremented the release number
+	* NEWS: Updated the latest news about the 0.3.1 release
+	* docs/dfu-programmer.1: Update the SEE ALSO section, AUTHOR
+      section and added the copyright information.
 
 2006-06-24 Weston Schmidt <weston_schmidt AT alumni.purdue.edu>
 
