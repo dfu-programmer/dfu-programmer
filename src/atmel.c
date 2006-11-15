@@ -204,19 +204,19 @@ int atmel_erase_flash( struct usb_dev_handle *device,
 
     switch( mode ) {
         case ATMEL_ERASE_BLOCK_0:
-            command[3] = 0x00;
+            command[2] = 0x00;
             break;
         case ATMEL_ERASE_BLOCK_1:
-            command[3] = 0x20;
+            command[2] = 0x20;
             break;
         case ATMEL_ERASE_BLOCK_2:
-            command[3] = 0x40;
+            command[2] = 0x40;
             break;
         case ATMEL_ERASE_BLOCK_3:
-            command[3] = 0x80;
+            command[2] = 0x80;
             break;
         case ATMEL_ERASE_ALL:
-            command[3] = 0xff;
+            command[2] = 0xff;
             break;
 
         default:
@@ -224,6 +224,7 @@ int atmel_erase_flash( struct usb_dev_handle *device,
     }
 
     if( 3 != dfu_download(device, interface, 3, command) ) {
+        DEBUG( "dfu_download failed\n" );
         return -2;
     }
 
