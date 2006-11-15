@@ -19,6 +19,7 @@
  */
 
 #include <stdio.h>
+#include <stdarg.h>
 #include <string.h>
 #include <stddef.h>
 #include <usb.h>
@@ -27,6 +28,7 @@
 #include "arguments.h"
 #include "dfu.h"
 #include "atmel.h"
+#include "util.h"
 
 
 /*
@@ -37,6 +39,11 @@
 
 #define ATMEL_MAX_TRANSFER_SIZE     0x0c00
 #define ATMEL_MAX_FLASH_BUFFER_SIZE (ATMEL_MAX_TRANSFER_SIZE + 0x30)
+
+#define ATMEL_DEBUG_THRESHOLD   50
+
+#define DEBUG(...)  dfu_debug( __FILE__, __FUNCTION__, __LINE__, \
+                               ATMEL_DEBUG_THRESHOLD, __VA_ARGS__ )
 
 /* returns 0 - 255 on success, < 0 otherwise */
 static int atmel_read_command( struct usb_dev_handle *device,
@@ -52,32 +59,27 @@ static int atmel_read_command( struct usb_dev_handle *device,
     command[2] = data1;
 
     if( 3 != dfu_download(device, interface, 3, command) ) {
+        DEBUG( "dfu_download failed\n" );
         return -1;
     }
 
     if( 6 != dfu_get_status(device, interface, &status) ) {
-        fprintf( stderr, "%s: status failed.\n", __FUNCTION__ );
+        DEBUG( "dfu_get_status failed\n" );
         return -2;
     }
 
     if( DFU_STATUS_OK != status.bStatus ) {
-        fprintf( stderr, "%s: status(%s) was not OK.\n",
-                 __FUNCTION__, dfu_state_to_string(status.bStatus) );
+        DEBUG( "status(%s) was not OK.\n",
+               dfu_state_to_string(status.bStatus) );
         return -3;
     }
 
     if( 1 != dfu_upload(device, interface, 1, data) ) {
+        DEBUG( "dfu_upload failed\n" );
         return -4;
     }
 
     return (0xff & data[0]);
-}
-
-
-void atmel_init()
-{
-    dfu_debug( debug );
-    dfu_init( 1000 );
 }
 
 
@@ -268,11 +270,12 @@ int atmel_set_config( struct usb_dev_handle *device,
     command[3] = value;
 
     if( 4 != dfu_download(device, interface, 4, command) ) {
+        DEBUG( "dfu_download failed\n" );
         return -2;
     }
 
     if( 6 != dfu_get_status(device, interface, &status) ) {
-        //fprintf( stderr, "%s: status failed.\n", __FUNCTION__ );
+        DEBUG( "dfu_get_status failed\n" );
         return -3;
     }
 
@@ -295,22 +298,18 @@ int atmel_read_flash( struct usb_dev_handle *device,
     int rxStart, rxEnd, rxLength;
 
     if( (NULL == buffer) || (start >= end) ) {
-        fprintf( stderr, "%s: invalid arguments.\n", __FUNCTION__ );
+        DEBUG( "invalid arguments.\n" );
         return -1;
     }
 
     if( length > buffer_len ) {
-        fprintf( stderr, "%s: the buffer isn't large enough.\n"
-                         "It needs to be %d bytes or larger.\n",
-                         __FUNCTION__, length );
+        DEBUG( "buffer isn't large enough - bytes needed: %d.\n", length );
         return -2;
     }
 
     rxStart = start;
 
-    if( 2 < debug ) {
-        fprintf( stderr, "%s: read %d bytes\n", __FUNCTION__, length );
-    }
+    DEBUG( "read %d bytes\n", length );
 
     while( length > 0 ) {
 
@@ -337,12 +336,10 @@ int atmel_read_flash( struct usb_dev_handle *device,
 
         rxEnd++;
 
-    if( 3 < debug ) {
-        fprintf( stderr, "%s: %d bytes to %p, from MCU %06x\n",
-                         __FUNCTION__, rxLength, ptr, rxStart );
-    }
+        DEBUG( "%d bytes to %p, from MCU %06x\n", rxLength, ptr, rxStart );
 
         if( 6 != dfu_download(device, interface, 6, command) ) {
+            DEBUG( "dfu_download failed\n" );
             return -3;
         }
 
@@ -371,7 +368,7 @@ int atmel_blank_check( struct usb_dev_handle *device,
     int i;
 
     if( start >= end ) {
-        fprintf( stderr, "%s: invalid arguments.\n", __FUNCTION__ );
+        DEBUG( "invalid arguments.\n" );
         return -1;
     }
 
@@ -381,6 +378,7 @@ int atmel_blank_check( struct usb_dev_handle *device,
     command[5] = 0xff & end;
 
     if( 6 != dfu_download(device, interface, 6, command) ) {
+        DEBUG( "dfu_download failed.\n" );
         return -2;
     }
 
@@ -393,6 +391,7 @@ int atmel_blank_check( struct usb_dev_handle *device,
         }
     }
 
+    DEBUG( "erase chip failed.\n" );
     return -3;
 }
 
@@ -404,6 +403,7 @@ int atmel_reset( struct usb_dev_handle *device,
     char command[3] = { 0x04, 0x03, 0x00 };
 
     if( 3 != dfu_download(device, interface, 3, command) ) {
+        DEBUG( "dfu_download failed.\n" );
         return -1;
     }
 
@@ -423,10 +423,12 @@ int atmel_start_app( struct usb_dev_handle *device,
     char command[5] = { 0x04, 0x03, 0x01, 0x00, 0x00 };
 
     if( 5 != dfu_download(device, interface, 5, command) ) {
+        DEBUG( "dfu_download failed.\n" );
         return -1;
     }
 
     if( 0 != dfu_download(device, interface, 0, NULL) ) {
+        DEBUG( "dfu_download failed.\n" );
         return -2;
     }
 
@@ -449,7 +451,7 @@ int atmel_flash( struct usb_dev_handle *device,
     struct dfu_status status;
 
     if( (NULL == buffer) || (start >= end) ) {
-        fprintf( stderr, "%s: invalid arguments.\n", __FUNCTION__ );
+        DEBUG( "invalid arguments.\n" );
         return -1;
     }
 
@@ -459,9 +461,7 @@ int atmel_flash( struct usb_dev_handle *device,
 
     txStart = start;
 
-    if( 2 < debug ) {
-        fprintf( stderr, "%s: write %d bytes\n", __FUNCTION__, length );
-    }
+    DEBUG( "write %d bytes\n", length );
 
     while( length > 0 ) {
 
@@ -491,10 +491,8 @@ int atmel_flash( struct usb_dev_handle *device,
 
         txEnd++;
 
-        if( 3 < debug ) {
-            fprintf( stderr, "%s: %d bytes to MCU %06x, from %p\n",
-                     __FUNCTION__, data_length, txStart, buffer + txStart );
-        }
+        DEBUG( "%d bytes to MCU %06x, from %p\n",
+               data_length, txStart, buffer + txStart );
 
         /* Copy the data */
         memcpy( &(data[0x20]), &(buffer[txStart]), (size_t) data_length );
@@ -505,18 +503,19 @@ int atmel_flash( struct usb_dev_handle *device,
         if( message_length !=
             dfu_download(device, interface, message_length, data) )
         {
+            DEBUG( "dfu_download failed.\n" );
             return -2;
         }
 
         /* check status */
         if( 6 != dfu_get_status(device, interface, &status) ) {
-            fprintf( stderr, "%s: status failed.\n", __FUNCTION__ );
+            DEBUG( "dfu_get_status failed.\n" );
             return -3;
         }
 
         if( DFU_STATUS_OK != status.bStatus ) {
-            fprintf( stderr, "%s: status(%s) was not OK.\n",
-                     __FUNCTION__, dfu_state_to_string(status.bStatus) );
+            DEBUG( "status(%s) was not OK.\n",
+                   dfu_state_to_string(status.bStatus) );
             return -4;
         }
 

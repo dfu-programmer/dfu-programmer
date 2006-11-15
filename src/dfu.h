@@ -71,8 +71,6 @@ struct dfu_status {
     unsigned char iString;
 };
 
-void dfu_init( const int timeout );
-void dfu_debug( const int level );
 int dfu_detach( struct usb_dev_handle *device,
                 const unsigned short interface,
                 const unsigned short timeout );

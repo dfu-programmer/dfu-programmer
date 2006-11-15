@@ -84,7 +84,7 @@ int main( int argc, char **argv )
         return 0;
     }
 
-    if( debug >= 20 ) {
+    if( debug >= 200 ) {
         usb_set_debug( debug );
     }
 
@@ -110,8 +110,6 @@ int main( int argc, char **argv )
         retval = 1;
         goto exit_1;
     }
-
-    atmel_init();
 
     dfu_get_status( usb_handle, interface, &status );
 

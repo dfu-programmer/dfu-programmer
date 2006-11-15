@@ -52,7 +52,6 @@ struct atmel_device_info {
     short hsb;                  // Hardware Security Byte
 };
 
-void atmel_init( void );
 int atmel_read_config_8051( struct usb_dev_handle *device,
                        const int interface,
                        struct atmel_device_info *info );

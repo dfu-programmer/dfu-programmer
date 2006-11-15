@@ -19,8 +19,11 @@
  */
 
 #include <stdio.h>
+#include <stdarg.h>
 #include <usb.h>
+#include <errno.h>
 #include "dfu.h"
+#include "util.h"
 
 /* DFU commands */
 #define DFU_DETACH      0
@@ -31,40 +34,17 @@
 #define DFU_GETSTATE    5
 #define DFU_ABORT       6
 
-#define INVALID_DFU_TIMEOUT -1
+/* Use the USB suggested 5 second timeout value. */
+#define DFU_TIMEOUT 5000
 
-static int dfu_timeout = INVALID_DFU_TIMEOUT;
+#define DFU_DEBUG_THRESHOLD 100
+
+#define DEBUG(...)  dfu_debug( __FILE__, __FUNCTION__, __LINE__, \
+                               DFU_DEBUG_THRESHOLD, __VA_ARGS__ )
+
 static unsigned short transaction = 0;
 
-static int dfu_debug_level = 0;
-
-void dfu_init( const int timeout )
-{
-    if( timeout > 0 ) {
-        dfu_timeout = timeout;
-    } else {
-        if( 0 != dfu_debug_level )
-            fprintf( stderr, "dfu_init: Invalid timeout value.\n" );
-    }
-}
-
-static int dfu_verify_init( const char *function )
-{
-    if( INVALID_DFU_TIMEOUT == dfu_timeout ) {
-        if( 0 != dfu_debug_level )
-            fprintf( stderr,
-                     "%s: dfu system not property initialized.\n",
-                     function );
-        return -1;
-    }
-
-    return 0;
-}
-
-void dfu_debug( const int level )
-{
-    dfu_debug_level = level;
-}
+static void dfu_msg_response_output( const char *function, const int result );
 
 
 /*
@@ -81,17 +61,20 @@ int dfu_detach( struct usb_dev_handle *device,
                 const unsigned short interface,
                 const unsigned short timeout )
 {
-    if( 0 != dfu_verify_init(__FUNCTION__) )
-        return -1;
+    int result;
 
-    return usb_control_msg( device,
-        /* bmRequestType */ USB_ENDPOINT_OUT | USB_TYPE_CLASS | USB_RECIP_INTERFACE,
-        /* bRequest      */ DFU_DETACH,
-        /* wValue        */ timeout,
-        /* wIndex        */ interface,
-        /* Data          */ NULL,
-        /* wLength       */ 0,
-                            dfu_timeout );
+    result = usb_control_msg( device,
+          /* bmRequestType */ USB_ENDPOINT_OUT | USB_TYPE_CLASS | USB_RECIP_INTERFACE,
+          /* bRequest      */ DFU_DETACH,
+          /* wValue        */ timeout,
+          /* wIndex        */ interface,
+          /* Data          */ NULL,
+          /* wLength       */ 0,
+                              DFU_TIMEOUT );
+
+    dfu_msg_response_output( __FUNCTION__, result );
+
+    return result;
 }
 
 
@@ -111,41 +94,31 @@ int dfu_download( struct usb_dev_handle *device,
                   const unsigned short length,
                   char* data )
 {
-    int status;
-
-    if( 0 != dfu_verify_init(__FUNCTION__) )
-        return -1;
+    int result;
 
     /* Sanity checks */
     if( (0 != length) && (NULL == data) ) {
-        if( 0 != dfu_debug_level )
-            fprintf( stderr,
-                     "%s: data was NULL, but length != 0\n",
-                     __FUNCTION__ );
+        DEBUG( "data was NULL, but length != 0\n" );
         return -1;
     }
 
     if( (0 == length) && (NULL != data) ) {
-        if( 0 != dfu_debug_level )
-            fprintf( stderr,
-                     "%s: data was not NULL, but length == 0\n",
-                     __FUNCTION__ );
+        DEBUG( "data was not NULL, but length == 0\n" );
         return -2;
     }
 
-    status = usb_control_msg( device,
+    result = usb_control_msg( device,
           /* bmRequestType */ USB_ENDPOINT_OUT | USB_TYPE_CLASS | USB_RECIP_INTERFACE,
           /* bRequest      */ DFU_DNLOAD,
           /* wValue        */ transaction++,
           /* wIndex        */ interface,
           /* Data          */ data,
           /* wLength       */ length,
-                              dfu_timeout );
-    if( status < 0 ) {
-        fprintf( stderr, "%s error %d\n", __FUNCTION__, status );
-    }
+                              DFU_TIMEOUT );
 
-    return status;
+    dfu_msg_response_output( __FUNCTION__, result );
+
+    return result;
 }
 
 
@@ -165,33 +138,26 @@ int dfu_upload( struct usb_dev_handle *device,
                 const unsigned short length,
                 char* data )
 {
-    int status;
-
-    if( 0 != dfu_verify_init(__FUNCTION__) )
-        return -1;
+    int result;
 
     /* Sanity checks */
     if( (0 == length) || (NULL == data) ) {
-        if( 0 != dfu_debug_level )
-            fprintf( stderr,
-                     "%s: data was NULL, or length is 0\n",
-                     __FUNCTION__ );
+        DEBUG( "data was NULL, or length is 0\n" );
         return -1;
     }
 
-    status = usb_control_msg( device,
+    result = usb_control_msg( device,
           /* bmRequestType */ USB_ENDPOINT_IN | USB_TYPE_CLASS | USB_RECIP_INTERFACE,
           /* bRequest      */ DFU_UPLOAD,
           /* wValue        */ transaction++,
           /* wIndex        */ interface,
           /* Data          */ data,
           /* wLength       */ length,
-                              dfu_timeout );
-    if( status < 0 ) {
-        fprintf( stderr, "%s error %d\n", __FUNCTION__, status );
-    }
+                              DFU_TIMEOUT );
 
-    return status;
+    dfu_msg_response_output( __FUNCTION__, result );
+
+    return result;
 }
 
 
@@ -211,9 +177,6 @@ int dfu_get_status( struct usb_dev_handle *device,
     char buffer[6];
     int result;
 
-    if( 0 != dfu_verify_init(__FUNCTION__) )
-        return -1;
-
     /* Initialize the status data structure */
     status->bStatus       = DFU_STATUS_ERROR_UNKNOWN;
     status->bwPollTimeout = 0;
@@ -227,7 +190,9 @@ int dfu_get_status( struct usb_dev_handle *device,
           /* wIndex        */ interface,
           /* Data          */ buffer,
           /* wLength       */ 6,
-                              dfu_timeout );
+                              DFU_TIMEOUT );
+
+    dfu_msg_response_output( __FUNCTION__, result );
 
     if( 6 == result ) {
         status->bStatus = buffer[0];
@@ -254,17 +219,20 @@ int dfu_get_status( struct usb_dev_handle *device,
 int dfu_clear_status( struct usb_dev_handle *device,
                       const unsigned short interface )
 {
-    if( 0 != dfu_verify_init(__FUNCTION__) )
-        return -1;
+    int result;
 
-    return usb_control_msg( device,
-        /* bmRequestType */ USB_ENDPOINT_OUT| USB_TYPE_CLASS | USB_RECIP_INTERFACE,
-        /* bRequest      */ DFU_CLRSTATUS,
-        /* wValue        */ 0,
-        /* wIndex        */ interface,
-        /* Data          */ NULL,
-        /* wLength       */ 0,
-                            dfu_timeout );
+    result = usb_control_msg( device,
+          /* bmRequestType */ USB_ENDPOINT_OUT| USB_TYPE_CLASS | USB_RECIP_INTERFACE,
+          /* bRequest      */ DFU_CLRSTATUS,
+          /* wValue        */ 0,
+          /* wIndex        */ interface,
+          /* Data          */ NULL,
+          /* wLength       */ 0,
+                              DFU_TIMEOUT );
+
+    dfu_msg_response_output( __FUNCTION__, result );
+
+    return result;
 }
 
 
@@ -285,9 +253,6 @@ int dfu_get_state( struct usb_dev_handle *device,
     int result;
     char buffer[1];
 
-    if( 0 != dfu_verify_init(__FUNCTION__) )
-        return -1;
-
     result = usb_control_msg( device,
           /* bmRequestType */ USB_ENDPOINT_IN | USB_TYPE_CLASS | USB_RECIP_INTERFACE,
           /* bRequest      */ DFU_GETSTATE,
@@ -295,7 +260,9 @@ int dfu_get_state( struct usb_dev_handle *device,
           /* wIndex        */ interface,
           /* Data          */ buffer,
           /* wLength       */ 1,
-                              dfu_timeout );
+                              DFU_TIMEOUT );
+
+    dfu_msg_response_output( __FUNCTION__, result );
 
     /* Return the error if there is one. */
     if( result < 1 ) {
@@ -318,17 +285,20 @@ int dfu_get_state( struct usb_dev_handle *device,
 int dfu_abort( struct usb_dev_handle *device,
                const unsigned short interface )
 {
-    if( 0 != dfu_verify_init(__FUNCTION__) )
-        return -1;
+    int result;
 
-    return usb_control_msg( device,
-        /* bmRequestType */ USB_ENDPOINT_OUT | USB_TYPE_CLASS | USB_RECIP_INTERFACE,
-        /* bRequest      */ DFU_ABORT,
-        /* wValue        */ 0,
-        /* wIndex        */ interface,
-        /* Data          */ NULL,
-        /* wLength       */ 0,
-                            dfu_timeout );
+    result = usb_control_msg( device,
+          /* bmRequestType */ USB_ENDPOINT_OUT | USB_TYPE_CLASS | USB_RECIP_INTERFACE,
+          /* bRequest      */ DFU_ABORT,
+          /* wValue        */ 0,
+          /* wIndex        */ interface,
+          /* Data          */ NULL,
+          /* wLength       */ 0,
+                              DFU_TIMEOUT );
+
+    dfu_msg_response_output( __FUNCTION__, result );
+
+    return result;
 }
 
 
@@ -373,4 +343,61 @@ char* dfu_state_to_string( int state )
     }
 
     return message;
+}
+
+
+/*
+ *  Used to output the response from our USB request in a human reable
+ *  form.
+ *
+ *  function - the calling function to output on behalf of
+ *  result   - the result to interpret
+ */
+static void dfu_msg_response_output( const char *function, const int result )
+{
+    char *msg = NULL;
+
+    if( 0 <= result ) {
+        msg = "No error.";
+    } else {
+        switch( result ) {
+            case -ENOENT:
+                msg = "-ENOENT: URB was canceled by unlink_urb";
+                break;
+            case -EINPROGRESS:
+                msg = "-EINPROGRESS: URB still pending, no results yet "
+                      "(actually no error until now)";
+                break;
+            case -EPROTO:
+                msg = "-EPROTO: a) Bitstuff error or b) Unknown USB error";
+                break;
+            case -EILSEQ:
+                msg = "-EILSEQ: CRC mismatch";
+                break;
+            case -EPIPE:
+                msg = "-EPIPE: a) Babble detect or b) Endpoint stalled";
+                break;
+            case -ETIMEDOUT:
+                msg = "-ETIMEDOUT: Transfer timed out, NAK";
+                break;
+            case -ENODEV:
+                msg = "-ENODEV: Device was removed";
+                break;
+            case -EREMOTEIO:
+                msg = "-EREMOTEIO: Short packet detected";
+                break;
+            case -EXDEV:
+                msg = "-EXDEV: ISO transfer only partially completed look at "
+                      "individual frame status for details";
+                break;
+            case -EINVAL:
+                msg = "-EINVAL: ISO madness, if this happens: Log off and go home";
+                break;
+            default:
+                msg = "Unknown error";
+                break;
+        }
+
+        DEBUG( "%s 0x%08x (%d)\n", msg, result, result );
+    }
 }

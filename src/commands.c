@@ -26,6 +26,12 @@
 #include "arguments.h"
 #include "intel_hex.h"
 #include "atmel.h"
+#include "util.h"
+
+#define COMMAND_DEBUG_THRESHOLD 40
+
+#define DEBUG(...)  dfu_debug( __FILE__, __FUNCTION__, __LINE__, \
+                               COMMAND_DEBUG_THRESHOLD, __VA_ARGS__ )
 
 
 static int execute_erase( struct usb_dev_handle *device,
@@ -34,10 +40,7 @@ static int execute_erase( struct usb_dev_handle *device,
 {
     int result = 0;
 
-    if( 2 < debug ) {
-        fprintf( stderr, "%s: erase %d bytes\n", __FUNCTION__,
-                         args.memory_size );
-    }
+    DEBUG( "erase %d bytes\n", args.memory_size );
 
     result = atmel_erase_flash( device, interface, ATMEL_ERASE_ALL );
     if( 0 != result )
@@ -56,7 +59,6 @@ static int execute_flash( struct usb_dev_handle *device,
     int   retval = -1;
     int   result = 0;
     char  *buffer = NULL;
-    int i;
 
     buffer = (char *) malloc( args.memory_size );
     if( NULL == buffer ) {
@@ -70,21 +72,20 @@ static int execute_flash( struct usb_dev_handle *device,
     hex_data = intel_hex_to_buffer( args.com_flash_data.file,
                                     args.memory_size, 0xff, &usage );
     if( NULL == hex_data ) {
+        DEBUG( "Something went wrong with creating the memory image.\n" );
         fprintf( stderr,
                  "Something went wrong with creating the memory image.\n" );
         goto error;
     }
 
-    if( 2 < debug ) {
-        fprintf( stderr, "%s: write %d/%d bytes\n", __FUNCTION__,
-                         usage, args.memory_size );
-    }
+    DEBUG( "write %d/%d bytes\n", usage, args.memory_size );
 
     result = atmel_flash( device, interface, 0, args.top_memory_address,
                           hex_data );
 
     if( args.memory_size != result ) {
-        fprintf( stderr, "Error while flashing. (%d)\n", result );
+        DEBUG( "Error while flashing. (%d)\n", result );
+        fprintf( stderr, "Error while flashing.\n" );
         goto error;
     }
 
@@ -96,11 +97,13 @@ static int execute_flash( struct usb_dev_handle *device,
                                    args.memory_size );
 
         if( args.memory_size != result ) {
+            DEBUG( "Error while validating.\n" );
             fprintf( stderr, "Error while validating.\n" );
             goto error;
         }
 
         if( 0 != memcmp(hex_data, buffer, args.memory_size) ) {
+            DEBUG( "Image did not validate.\n" );
             fprintf( stderr, "Image did not validate.\n" );
             goto error;
         }
@@ -153,6 +156,8 @@ static int execute_get( struct usb_dev_handle *device,
     }
 
     if( 0 != status ) {
+        DEBUG( "Error reading %s config information.\n",
+               args.device_type_string );
         fprintf( stderr, "Error reading %s config information.\n",
                          args.device_type_string );
         return status;
@@ -222,6 +227,7 @@ static int execute_get( struct usb_dev_handle *device,
     }
 
     if( 0 != controller_error ) {
+        DEBUG( "%s requires 8051 based controller\n", message );
         fprintf( stderr, "%s requires 8051 based controller\n",
                          message );
         return -1;
@@ -254,15 +260,13 @@ static int execute_dump( struct usb_dev_handle *device,
         goto error;
     }
 
-    if( 2 < debug ) {
-        fprintf( stderr, "%s: dump %d bytes\n", __FUNCTION__,
-                         args.memory_size );
-    }
+    DEBUG( "dump %d bytes\n", args.memory_size );
 
     if( args.memory_size != atmel_read_flash(device, interface, 0,
                                   args.top_memory_address, buffer,
                                   args.memory_size) )
     {
+        DEBUG( "Error while validating.\n" );
         fprintf( stderr, "Error while validating.\n" );
         return -1;
     }
@@ -291,17 +295,20 @@ static int execute_configure( struct usb_dev_handle *device,
     int name = args.com_configure_data.name;
 
     if( device_8051 != args.device_type ) {
+        DEBUG( "target doesn't support configure operation.\n" );
         fprintf( stderr, "target doesn't support configure operation.\n" );
         return -1;
     }
 
     if( (0xff & value) != value ) {
+        DEBUG( "Value to configure must be in range 0-255.\n" );
         fprintf( stderr, "Value to configure must be in range 0-255.\n" );
         return -1;
     }
 
     if( 0 != atmel_set_config(device, interface, name, value) )
     {
+        DEBUG( "Configuration set failed.\n" );
         fprintf( stderr, "Configuration set failed.\n" );
         return -1;
     }
