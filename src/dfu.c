@@ -34,8 +34,8 @@
 #define DFU_GETSTATE    5
 #define DFU_ABORT       6
 
-/* Use the USB suggested 5 second timeout value. */
-#define DFU_TIMEOUT 5000
+/* Wait for 10 seconds before a timeout since erasing/flashing can take some time. */
+#define DFU_TIMEOUT 10000
 
 #define DFU_DEBUG_THRESHOLD 100
 
@@ -202,6 +202,13 @@ int dfu_get_status( struct usb_dev_handle *device,
 
         status->bState  = buffer[4];
         status->iString = buffer[5];
+
+        DEBUG( "==============================\n" );
+        DEBUG( "status->bStatus: 0x%02x\n", status->bStatus );
+        DEBUG( "status->bwPollTimeout: 0x%04x\n", status->bwPollTimeout );
+        DEBUG( "status->bState: 0x%02x\n", status->bState );
+        DEBUG( "status->iString: 0x%02x\n", status->iString );
+        DEBUG( "------------------------------\n" );
     }
 
     return result;
