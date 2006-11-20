@@ -91,6 +91,8 @@ int dfu_get_state( struct usb_dev_handle *device,
                    const unsigned short interface );
 int dfu_abort( struct usb_dev_handle *device,
                const unsigned short interface );
+int dfu_make_idle( struct usb_dev_handle *device,
+                   const unsigned short interface );
 
 char* dfu_status_to_string( const int status );
 char* dfu_state_to_string( const int state );

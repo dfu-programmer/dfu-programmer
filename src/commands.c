@@ -266,8 +266,8 @@ static int execute_dump( struct usb_dev_handle *device,
                                   args.top_memory_address, buffer,
                                   args.memory_size) )
     {
-        DEBUG( "Error while validating.\n" );
-        fprintf( stderr, "Error while validating.\n" );
+        fprintf( stderr, "Request for %d bytes of memory failed.\n",
+                 args.memory_size );
         return -1;
     }
 

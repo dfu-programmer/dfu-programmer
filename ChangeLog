@@ -1,5 +1,23 @@
 2006-11-19 Weston Schmidt <weston_schmidt AT alumni.purdue.edu>
 
+    * src/atmel.c: Added the dfu_make_idle() call before
+      operations that communicate with the device being flashed.
+      This should make the communications more reliable as it
+      puts the device in a known state.  Additionally, I added
+      some better error messages in the hopes that it will be
+      easier to diagnose the problem when commands to the
+      device fail.  Finally, I adjusted the return code checking
+      for dfu_get_statue() to reflect the new interface of 0 for
+      success or < 0 for errors.
+    * src/commands.c: I fixed a poor error message.
+    * src/dfu.c: I updated the dfu_get_status() function to simply
+      return 0 on a success, or < 0 on an error.  I added
+      dfu_make_idle() to allow the device to be put in a known
+      state or to force an early bailout.
+    * src/dfu.h: dfu_make_idle() is publically available.
+
+2006-11-19 Weston Schmidt <weston_schmidt AT alumni.purdue.edu>
+
     * src/dfu.c: Added a DFU status to string conversion method
       and when debug is enabled, dfu_get_status() shows both the
       string and the number for the status.

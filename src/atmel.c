@@ -22,6 +22,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <stddef.h>
+#include <errno.h>
 #include <usb.h>
 
 #include "config.h"
@@ -58,25 +59,30 @@ static int atmel_read_command( struct usb_dev_handle *device,
     command[1] = data0;
     command[2] = data1;
 
-    if( 3 != dfu_download(device, interface, 3, command) ) {
-        DEBUG( "dfu_download failed\n" );
+    if( 0 != dfu_make_idle(device, interface) ) {
+        DEBUG( "dfu_make_idle failed\n" );
         return -1;
     }
 
-    if( 6 != dfu_get_status(device, interface, &status) ) {
-        DEBUG( "dfu_get_status failed\n" );
+    if( 3 != dfu_download(device, interface, 3, command) ) {
+        DEBUG( "dfu_download failed\n" );
         return -2;
+    }
+
+    if( 0 != dfu_get_status(device, interface, &status) ) {
+        DEBUG( "dfu_get_status failed\n" );
+        return -3;
     }
 
     if( DFU_STATUS_OK != status.bStatus ) {
         DEBUG( "status(%s) was not OK.\n",
                dfu_state_to_string(status.bStatus) );
-        return -3;
+        return -4;
     }
 
     if( 1 != dfu_upload(device, interface, 1, data) ) {
         DEBUG( "dfu_upload failed\n" );
-        return -4;
+        return -5;
     }
 
     return (0xff & data[0]);
@@ -232,7 +238,7 @@ int atmel_erase_flash( struct usb_dev_handle *device,
      * We will try for 10 seconds before giving up.
      */
     for( i = 0; i < 10; i++ ) {
-        if( 6 == dfu_get_status(device, interface, &status) ) {
+        if( 0 == dfu_get_status(device, interface, &status) ) {
             return status.bStatus;
         }
     }
@@ -270,14 +276,24 @@ int atmel_set_config( struct usb_dev_handle *device,
 
     command[3] = value;
 
-    if( 4 != dfu_download(device, interface, 4, command) ) {
-        DEBUG( "dfu_download failed\n" );
+    if( 0 != dfu_make_idle(device, interface) ) {
+        DEBUG( "dfu_make_idle failed\n" );
         return -2;
     }
 
-    if( 6 != dfu_get_status(device, interface, &status) ) {
-        DEBUG( "dfu_get_status failed\n" );
+
+    if( 4 != dfu_download(device, interface, 4, command) ) {
+        DEBUG( "dfu_download failed\n" );
         return -3;
+    }
+
+    if( 0 != dfu_get_status(device, interface, &status) ) {
+        DEBUG( "dfu_get_status failed\n" );
+        return -4;
+    }
+
+    if( DFU_STATUS_ERROR_WRITE == status.bStatus ) {
+        fprintf( stderr, "Device is write protected.\n" );
     }
 
     return status.bStatus;
@@ -312,6 +328,11 @@ int atmel_read_flash( struct usb_dev_handle *device,
 
     DEBUG( "read %d bytes\n", length );
 
+    if( 0 != dfu_make_idle(device, interface) ) {
+        DEBUG( "dfu_make_idle failed\n" );
+        return -3;
+    }
+
     while( length > 0 ) {
 
         rxLength = length;
@@ -341,7 +362,7 @@ int atmel_read_flash( struct usb_dev_handle *device,
 
         if( 6 != dfu_download(device, interface, 6, command) ) {
             DEBUG( "dfu_download failed\n" );
-            return -3;
+            return -4;
         }
 
         result = dfu_upload( device, interface, rxLength, ptr );
@@ -351,6 +372,20 @@ int atmel_read_flash( struct usb_dev_handle *device,
             length -= result;
             ptr += result;
         } else {
+            struct dfu_status status;
+
+            DEBUG( "result: %d\n", result );
+            if( 0 == dfu_get_status(device, interface, &status) ) {
+                if( DFU_STATUS_ERROR_FILE == status.bStatus ) {
+                    fprintf( stderr,
+                             "The device is read protected.\n" );
+                } else {
+                    fprintf( stderr, "Unknown error.  Try enabling debug.\n" );
+                }
+            } else {
+                fprintf( stderr, "Device is unresponsive.\n" );
+            }
+
             return result;
         }
     }
@@ -378,22 +413,27 @@ int atmel_blank_check( struct usb_dev_handle *device,
     command[4] = 0xff & (end >> 8);
     command[5] = 0xff & end;
 
+    if( 0 != dfu_make_idle(device, interface) ) {
+        DEBUG( "dfu_make_idle failed\n" );
+        return -2;
+    }
+
     if( 6 != dfu_download(device, interface, 6, command) ) {
         DEBUG( "dfu_download failed.\n" );
-        return -2;
+        return -3;
     }
 
     /* It looks like it can take a while to erase the chip.
      * We will try for 10 seconds before giving up.
      */
     for( i = 0; i < 10; i++ ) {
-        if( 6 == dfu_get_status(device, interface, &status) ) {
+        if( 0 == dfu_get_status(device, interface, &status) ) {
             return status.bStatus;
         }
     }
 
     DEBUG( "erase chip failed.\n" );
-    return -3;
+    return -4;
 }
 
 
@@ -450,6 +490,7 @@ int atmel_flash( struct usb_dev_handle *device,
     int message_length = 0;
     int length = end - start;
     struct dfu_status status;
+    int result;
 
     if( (NULL == buffer) || (start >= end) ) {
         DEBUG( "invalid arguments.\n" );
@@ -463,6 +504,11 @@ int atmel_flash( struct usb_dev_handle *device,
     txStart = start;
 
     DEBUG( "write %d bytes\n", length );
+
+    if( 0 != dfu_make_idle(device, interface) ) {
+        DEBUG( "dfu_make_idle failed\n" );
+        return -2;
+    }
 
     while( length > 0 ) {
 
@@ -501,23 +547,33 @@ int atmel_flash( struct usb_dev_handle *device,
         /* Set up the footers */
         /* I guess it doesn't care about the footers... */
 
-        if( message_length !=
-            dfu_download(device, interface, message_length, data) )
-        {
-            DEBUG( "dfu_download failed.\n" );
-            return -2;
+        result = dfu_download( device, interface, message_length, data );
+
+        if( message_length != result ) {
+            if( -EPIPE == result ) {
+                /* The control pipe stalled - this is an error
+                 * caused by the device saying "you can't do that"
+                 * which means the device is write protected.
+                 */
+                fprintf( stderr, "Device is write protected.\n" );
+
+                dfu_clear_status( device, interface );
+            } else {
+                DEBUG( "dfu_download failed. %d\n", result );
+            }
+            return -3;
         }
 
         /* check status */
-        if( 6 != dfu_get_status(device, interface, &status) ) {
+        if( 0 != dfu_get_status(device, interface, &status) ) {
             DEBUG( "dfu_get_status failed.\n" );
-            return -3;
+            return -4;
         }
 
         if( DFU_STATUS_OK != status.bStatus ) {
             DEBUG( "status(%s) was not OK.\n",
                    dfu_state_to_string(status.bStatus) );
-            return -4;
+            return -5;
         }
 
         length -= data_length;

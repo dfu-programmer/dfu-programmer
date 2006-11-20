@@ -168,7 +168,7 @@ int dfu_upload( struct usb_dev_handle *device,
  *  interface - the interface to communicate with
  *  status    - the data structure to be populated with the results
  *
- *  return the number of bytes read in or < 0 on an error
+ *  return the 0 if successful or < 0 on an error
  */
 int dfu_get_status( struct usb_dev_handle *device,
                     const unsigned short interface,
@@ -211,9 +211,15 @@ int dfu_get_status( struct usb_dev_handle *device,
                dfu_state_to_string(status->bState), status->bState );
         DEBUG( "status->iString: 0x%02x\n", status->iString );
         DEBUG( "------------------------------\n" );
+    } else {
+        if( 0 < result ) {
+            /* There was an error, we didn't get the entire message. */
+            DEBUG( "result: %d\n", result );
+            return -1;
+        }
     }
 
-    return result;
+    return 0;
 }
 
 
@@ -308,6 +314,75 @@ int dfu_abort( struct usb_dev_handle *device,
     dfu_msg_response_output( __FUNCTION__, result );
 
     return result;
+}
+
+
+/*
+ *  Gets the device into the dfuIDLE state if possible.
+ *
+ *  device - the usb_dev_handle to communicate with
+ *  interface - the interface to communicate with
+ *
+ *  returns 0 on success or < 0 on an error
+ */
+int dfu_make_idle( struct usb_dev_handle *device,
+                   const unsigned short interface )
+{
+    struct dfu_status status;
+    int result;
+    int retries = 4;
+
+    while( 0 < retries ) {
+        result = dfu_get_status( device, interface, &status );
+        if( 0 != result ) {
+            dfu_clear_status( device, interface );
+            continue;
+        }
+
+        switch( status.bState ) {
+            case STATE_DFU_IDLE:
+                DEBUG( "status.bState: STATE_DFU_IDLE\n" );
+                if( DFU_STATUS_OK == status.bStatus ) {
+                    return 0;
+                }
+
+                /* We need the device to have the DFU_STATUS_OK status. */
+                dfu_clear_status( device, interface );
+                break;
+
+            case STATE_DFU_DOWNLOAD_SYNC:   /* abort -> idle */
+            case STATE_DFU_DOWNLOAD_IDLE:   /* abort -> idle */
+            case STATE_DFU_MANIFEST_SYNC:   /* abort -> idle */
+            case STATE_DFU_UPLOAD_IDLE:     /* abort -> idle */
+            case STATE_DFU_DOWNLOAD_BUSY:   /* abort -> error */
+            case STATE_DFU_MANIFEST:        /* abort -> error */
+                DEBUG( "status.bState: mess\n" );
+                dfu_abort( device, interface );
+                break;
+
+            case STATE_DFU_ERROR:
+                DEBUG( "status.bState: STATE_DFU_ERROR\n" );
+                dfu_clear_status( device, interface );
+                break;
+
+            case STATE_APP_IDLE:
+                DEBUG( "appIDLE to dfuIDLE transition not supported.\n" );
+                return -1;
+
+            case STATE_APP_DETACH:
+                DEBUG( "appDETACH to dfuIDLE transition not supported.\n" );
+                return -1;
+
+            case STATE_DFU_MANIFEST_WAIT_RESET:
+                DEBUG( "dfuMANIFEST-WAIT-RESET to dfuIDLE transition not supported.\n" );
+                return -1;
+        }
+
+        retries--;
+    }
+
+    DEBUG( "Not able to transition the device into the dfuIDLE state.\n" );
+    return -2;
 }
 
 
