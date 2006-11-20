@@ -1,3 +1,11 @@
+2006-11-19 Weston Schmidt <weston_schmidt AT alumni.purdue.edu>
+
+    * src/dfu.c: Added a DFU status to string conversion method
+      and when debug is enabled, dfu_get_status() shows both the
+      string and the number for the status.
+    * src/dfu.h: the dfu_status_to_string() is made publically
+      available.
+
 2006-11-15 Weston Schmidt <weston_schmidt AT alumni.purdue.edu>
 
     * src/atmel.c: Remove the init function since it is no longer

@@ -204,9 +204,11 @@ int dfu_get_status( struct usb_dev_handle *device,
         status->iString = buffer[5];
 
         DEBUG( "==============================\n" );
-        DEBUG( "status->bStatus: 0x%02x\n", status->bStatus );
+        DEBUG( "status->bStatus: %s (0x%02x)\n",
+               dfu_status_to_string(status->bStatus), status->bStatus );
         DEBUG( "status->bwPollTimeout: 0x%04x\n", status->bwPollTimeout );
-        DEBUG( "status->bState: 0x%02x\n", status->bState );
+        DEBUG( "status->bState: %s (0x%02x)\n",
+               dfu_state_to_string(status->bState), status->bState );
         DEBUG( "status->iString: 0x%02x\n", status->iString );
         DEBUG( "------------------------------\n" );
     }
@@ -309,9 +311,16 @@ int dfu_abort( struct usb_dev_handle *device,
 }
 
 
-char* dfu_state_to_string( int state )
+/*
+ *  Used to convert the DFU state to a string.
+ *
+ *  state - the state to convert
+ *
+ *  returns the state name or "unknown state"
+ */
+char* dfu_state_to_string( const int state )
 {
-    char *message = NULL;
+    char *message = "unknown state";
 
     switch( state ) {
         case STATE_APP_IDLE:
@@ -347,6 +356,73 @@ char* dfu_state_to_string( int state )
         case STATE_DFU_ERROR:
             message = "dfuERROR";
             break;
+    }
+
+    return message;
+}
+
+
+/*
+ *  Used to convert the DFU status to a string.
+ *
+ *  status - the status to convert
+ *
+ *  returns the status name or "unknown status"
+ */
+char* dfu_status_to_string( const int status )
+{
+    char *message = "unknown status";
+
+    switch( status ) {
+        case DFU_STATUS_OK:
+            message = "OK";
+            break;
+        case DFU_STATUS_ERROR_TARGET:
+            message = "errTARGET";
+            break;
+        case DFU_STATUS_ERROR_FILE:
+            message = "errFILE";
+            break;
+        case DFU_STATUS_ERROR_WRITE:
+            message = "errWRITE";
+            break;
+        case DFU_STATUS_ERROR_ERASE:
+            message = "errERASE";
+            break;
+        case DFU_STATUS_ERROR_CHECK_ERASED:
+            message = "errCHECK_ERASED";
+            break;
+        case DFU_STATUS_ERROR_PROG:
+            message = "errPROG";
+            break;
+        case DFU_STATUS_ERROR_VERIFY:
+            message = "errVERIFY";
+            break;
+        case DFU_STATUS_ERROR_ADDRESS:
+            message = "errADDRESS";
+            break;
+        case DFU_STATUS_ERROR_NOTDONE:
+            message = "errNOTDONE";
+            break;
+        case DFU_STATUS_ERROR_FIRMWARE:
+            message = "errFIRMWARE";
+            break;
+        case DFU_STATUS_ERROR_VENDOR:
+            message = "errVENDOR";
+            break;
+        case DFU_STATUS_ERROR_USBR:
+            message = "errUSBR";
+            break;
+        case DFU_STATUS_ERROR_POR:
+            message = "errPOR";
+            break;
+        case DFU_STATUS_ERROR_UNKNOWN:
+            message = "errUNKNOWN";
+            break;
+        case DFU_STATUS_ERROR_STALLEDPKT:
+            message = "errSTALLEDPKT";
+            break;
+
     }
 
     return message;
