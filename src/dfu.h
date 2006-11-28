@@ -71,28 +71,30 @@ struct dfu_status {
     unsigned char iString;
 };
 
-int dfu_detach( struct usb_dev_handle *device,
+int dfu_detach( struct usb_dev_handle *handle,
                 const unsigned short interface,
                 const unsigned short timeout );
-int dfu_download( struct usb_dev_handle *device,
+int dfu_download( struct usb_dev_handle *handle,
                   const unsigned short interface,
                   const unsigned short length,
                   char* data );
-int dfu_upload( struct usb_dev_handle *device,
+int dfu_upload( struct usb_dev_handle *handle,
                 const unsigned short interface,
                 const unsigned short length,
                 char* data );
-int dfu_get_status( struct usb_dev_handle *device,
+int dfu_get_status( struct usb_dev_handle *handle,
                     const unsigned short interface,
                     struct dfu_status *status );
-int dfu_clear_status( struct usb_dev_handle *device,
+int dfu_clear_status( struct usb_dev_handle *handle,
                       const unsigned short interface );
-int dfu_get_state( struct usb_dev_handle *device,
+int dfu_get_state( struct usb_dev_handle *handle,
                    const unsigned short interface );
-int dfu_abort( struct usb_dev_handle *device,
+int dfu_abort( struct usb_dev_handle *handle,
                const unsigned short interface );
-int dfu_make_idle( struct usb_dev_handle *device,
-                   const unsigned short interface );
+struct usb_device *dfu_device_init( const unsigned int vendor,
+                                    const unsigned int product,
+                                    struct usb_dev_handle **handle,
+                                    unsigned short *interface );
 
 char* dfu_status_to_string( const int status );
 char* dfu_state_to_string( const int state );

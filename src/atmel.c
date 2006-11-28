@@ -59,30 +59,25 @@ static int atmel_read_command( struct usb_dev_handle *device,
     command[1] = data0;
     command[2] = data1;
 
-    if( 0 != dfu_make_idle(device, interface) ) {
-        DEBUG( "dfu_make_idle failed\n" );
-        return -1;
-    }
-
     if( 3 != dfu_download(device, interface, 3, command) ) {
         DEBUG( "dfu_download failed\n" );
-        return -2;
+        return -1;
     }
 
     if( 0 != dfu_get_status(device, interface, &status) ) {
         DEBUG( "dfu_get_status failed\n" );
-        return -3;
+        return -2;
     }
 
     if( DFU_STATUS_OK != status.bStatus ) {
         DEBUG( "status(%s) was not OK.\n",
                dfu_state_to_string(status.bStatus) );
-        return -4;
+        return -3;
     }
 
     if( 1 != dfu_upload(device, interface, 1, data) ) {
         DEBUG( "dfu_upload failed\n" );
-        return -5;
+        return -4;
     }
 
     return (0xff & data[0]);
@@ -276,20 +271,14 @@ int atmel_set_config( struct usb_dev_handle *device,
 
     command[3] = value;
 
-    if( 0 != dfu_make_idle(device, interface) ) {
-        DEBUG( "dfu_make_idle failed\n" );
-        return -2;
-    }
-
-
     if( 4 != dfu_download(device, interface, 4, command) ) {
         DEBUG( "dfu_download failed\n" );
-        return -3;
+        return -2;
     }
 
     if( 0 != dfu_get_status(device, interface, &status) ) {
         DEBUG( "dfu_get_status failed\n" );
-        return -4;
+        return -3;
     }
 
     if( DFU_STATUS_ERROR_WRITE == status.bStatus ) {
@@ -328,11 +317,6 @@ int atmel_read_flash( struct usb_dev_handle *device,
 
     DEBUG( "read %d bytes\n", length );
 
-    if( 0 != dfu_make_idle(device, interface) ) {
-        DEBUG( "dfu_make_idle failed\n" );
-        return -3;
-    }
-
     while( length > 0 ) {
 
         rxLength = length;
@@ -362,7 +346,7 @@ int atmel_read_flash( struct usb_dev_handle *device,
 
         if( 6 != dfu_download(device, interface, 6, command) ) {
             DEBUG( "dfu_download failed\n" );
-            return -4;
+            return -3;
         }
 
         result = dfu_upload( device, interface, rxLength, ptr );
@@ -413,14 +397,9 @@ int atmel_blank_check( struct usb_dev_handle *device,
     command[4] = 0xff & (end >> 8);
     command[5] = 0xff & end;
 
-    if( 0 != dfu_make_idle(device, interface) ) {
-        DEBUG( "dfu_make_idle failed\n" );
-        return -2;
-    }
-
     if( 6 != dfu_download(device, interface, 6, command) ) {
         DEBUG( "dfu_download failed.\n" );
-        return -3;
+        return -2;
     }
 
     /* It looks like it can take a while to erase the chip.
@@ -433,7 +412,7 @@ int atmel_blank_check( struct usb_dev_handle *device,
     }
 
     DEBUG( "erase chip failed.\n" );
-    return -4;
+    return -3;
 }
 
 
@@ -505,11 +484,6 @@ int atmel_flash( struct usb_dev_handle *device,
 
     DEBUG( "write %d bytes\n", length );
 
-    if( 0 != dfu_make_idle(device, interface) ) {
-        DEBUG( "dfu_make_idle failed\n" );
-        return -2;
-    }
-
     while( length > 0 ) {
 
         data_length = length;
@@ -561,19 +535,19 @@ int atmel_flash( struct usb_dev_handle *device,
             } else {
                 DEBUG( "dfu_download failed. %d\n", result );
             }
-            return -3;
+            return -2;
         }
 
         /* check status */
         if( 0 != dfu_get_status(device, interface, &status) ) {
             DEBUG( "dfu_get_status failed.\n" );
-            return -4;
+            return -3;
         }
 
         if( DFU_STATUS_OK != status.bStatus ) {
             DEBUG( "status(%s) was not OK.\n",
                    dfu_state_to_string(status.bStatus) );
-            return -5;
+            return -4;
         }
 
         length -= data_length;

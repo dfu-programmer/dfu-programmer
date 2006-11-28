@@ -1,3 +1,26 @@
+2006-11-28 Weston Schmidt <weston_schmidt AT alumni.purdue.edu>
+
+    * src/atmel.c: remove the dfu_make_idle() calls
+    * src/dfu.c: large changes to allow the dfu module to
+      discover and acquire the usb device.  This change was
+      required to allow the dfu module to try to transition
+      a USB device from its runtime mode into its DFU mode.
+      Part of this transition requires resetting, re-enumerating,
+      and re-acquiring the device.  All of this was not possible
+      before because the main function held onto the device
+      and it's handle.  Additionally, when acquiring the device
+      for the first time, the dfu module tries to put the device
+      into the correct state, instead of punting this process
+      to the later steps, when it is impossible to recover from.
+      Finally, the variables named "device" were changed to be
+      "handle" since that's what they really are and there are
+      references to the actual "device" structure in dfu.c now.
+    * src/dfu.h: updated the prototypes to reflect the changes in
+      dfu.c.
+    * src/main.c: remove the dfu_make_idle() calls and simplify
+      the main function since most of the work is now being done
+      in dfu.c.  Additionally, move the device discovery to dfu.c
+
 2006-11-19 Weston Schmidt <weston_schmidt AT alumni.purdue.edu>
 
     * src/atmel.c: Added the dfu_make_idle() call before
