@@ -665,9 +665,11 @@ static void dfu_msg_response_output( const char *function, const int result )
             case -ENODEV:
                 msg = "-ENODEV: Device was removed";
                 break;
+#ifdef EREMOTEIO
             case -EREMOTEIO:
                 msg = "-EREMOTEIO: Short packet detected";
                 break;
+#endif
             case -EXDEV:
                 msg = "-EXDEV: ISO transfer only partially completed look at "
                       "individual frame status for details";

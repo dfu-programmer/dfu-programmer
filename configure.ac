@@ -20,7 +20,7 @@ AC_CHECK_LIB([usb], [usb_control_msg],,
 
 # Checks for header files.
 AC_HEADER_STDC
-AC_CHECK_HEADERS([usb.h stdlib.h string.h stdio.h])
+AC_CHECK_HEADERS([usb.h stdlib.h string.h stdio.h errno.h stdarg.h stddef.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST

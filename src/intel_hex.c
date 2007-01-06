@@ -134,56 +134,49 @@ static void intel_process_address( struct intel_record *record )
 
 static int intel_read_data( FILE *fp, struct intel_record *record )
 {
-    char *buffer = NULL;
-    size_t buffer_length = 0;
-    int length = 0;
-    int i = 0, j = 0;
+    int i;
+    int c;
+    int status;
+    char buffer[10];
     int addr_upper = 0;
     int addr_lower = 0;
 
-    length = getline( &buffer, &buffer_length, fp );
-    if( (length < 11) || (NULL == buffer) )
-        goto error;
-
-    if( 4 != sscanf(buffer, ":%02x%02x%02x%02x", &(record->count),
-                                                 &addr_upper,
-                                                 &addr_lower,
-                                                 &(record->type))
-      )
-        goto error;
+    /* read in the ':bbaaaarr'
+     *   bb - byte count
+     * aaaa - the address in memory
+     *   rr - record type
+     */
+    if( NULL == fgets(buffer, 10, fp) ) return -1;
+    status = sscanf( buffer, ":%02x%02x%02x%02x", &(record->count),
+                     &addr_upper, &addr_lower, &(record->type) );
+    if( 4 != status ) return -2;
 
     record->address = addr_upper << 8 | addr_lower;
 
-    /* Trim the \r\n values if they are there. */
-    if( '\n' == buffer[length-1] )
-        length--;
-
-    if( '\r' == buffer[length-1] )
-        length--;
-
-    if( ((record->count * 2) + 11) != length )
-        goto error;
-
-    for( i = 9, j = 0; i < length - 2; i += 2, j++ ) {
+    /* Read the data */
+    for( i = 0; i < record->count; i++ ) {
         int data = 0;
-        if( 1 != sscanf(&buffer[i], "%02x", &data) )
-            goto error;
-        record->data[j] = 0xff & data;
+
+        if( NULL == fgets(buffer, 3, fp) ) return -3;
+        if( 1 != sscanf(buffer, "%02x", &data) ) return -4;
+
+        record->data[i] = 0xff & data;
     }
 
-    if( 1 != sscanf(&buffer[length-2], "%02x", &(record->checksum)) )
-        goto error;
+    /* Read the checksum */
+    if( NULL == fgets(buffer, 3, fp) ) return -5;
+    if( 1 != sscanf(buffer, "%02x", &(record->checksum)) ) return -6;
 
-    free( buffer );
+    /* Chomp the [\r]\n */
+    c = fgetc( fp );
+    if( '\r' == c ) {
+        c = fgetc( fp );
+    }
+    if( '\n' != c ) {
+        return -7;
+    }
 
     return 0;
-
-error:
-    if( NULL != buffer )
-        free( buffer );
-
-    return -1;
-
 }
 
 
