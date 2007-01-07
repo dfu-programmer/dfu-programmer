@@ -34,8 +34,15 @@
 #define DFU_GETSTATE    5
 #define DFU_ABORT       6
 
-#define USB_CLASS_APP_SPECIFIC  0xfe
-#define DFU_SUBCLASS            0x01
+#ifdef __APPLE__
+/* Work around an OSX error where the Interface Class & Subclass
+ * aren't properly defined. */
+# define USB_CLASS_APP_SPECIFIC 0x00
+# define DFU_SUBCLASS           0x00
+#else
+# define USB_CLASS_APP_SPECIFIC 0xfe
+# define DFU_SUBCLASS           0x01
+#endif
 
 /* Wait for 10 seconds before a timeout since erasing/flashing can take some time. */
 #define DFU_TIMEOUT 10000

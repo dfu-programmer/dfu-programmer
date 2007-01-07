@@ -11,3 +11,5 @@ Contributors:
         - significant man page improvements
         - support for the at90usb series AVR chips
         - the beginnings of the move over to using stdint.h
+    - Markus Schneider
+        - OS X porting issues
