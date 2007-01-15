@@ -1,3 +1,26 @@
+2007-01-14 Weston Schmidt <weston_schmidt AT alumni.purdue.edu>
+
+	* src/arguments.c: added the flash_page_size data and values
+	  to the data structure.  I checked to make sure that the
+	  flash page size is correct for all of the processors.
+	* src/arguments.h: added the flash_page_size data member to
+	  the programmer_arguments data structure.
+	* src/atmel.c: updated the atmel_flash() functionality so that
+	  only the memory pages that need to be flashed are flashed.
+	* src/atmel.h: updated the external interface for atmel_flash()
+	  to refelect the changes in src/atmel.c
+	* src/commands.c: changed the passing of the argument structure
+	  to be a pointer instead of the actual full structure.
+	  Updated the execute_flash() functionality to support the
+	  changes made in src/atmel.x.
+	* src/commands.h: updated the function prototype.
+	* src/intel_hex.c: changed the processing of the hex strutures
+	  to allow the support of only flashing the memory locations
+	  that are actually programmed.
+	* src/intel_hex.h: updated the function prototypes.
+	* src/main.c: pass the pointer to the argument structure instead
+	  of passing the entire structure.
+
 2007-01-07 Weston Schmidt <weston_schmidt AT alumni.purdue.edu>
 
 	* AUTHORS: added Markus Schneider for his OS X contributions
