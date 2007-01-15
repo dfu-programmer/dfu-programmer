@@ -26,5 +26,5 @@
 
 int execute_command( struct usb_dev_handle *device,
                      int interface,
-                     struct programmer_arguments args );
+                     struct programmer_arguments *args );
 #endif

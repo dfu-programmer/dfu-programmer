@@ -71,6 +71,7 @@ struct programmer_arguments {
     char device_type_string[DEVICE_TYPE_STRING_MAX_LENGTH];
     u_int32_t top_memory_address;
     u_int32_t memory_size;
+    u_int16_t flash_page_size;
 
     /* command-specific state */
     enum commands_enum command;

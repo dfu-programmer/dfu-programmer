@@ -20,6 +20,7 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include <stdint.h>
 #include <string.h>
 #include <stddef.h>
 #include <errno.h>
@@ -45,6 +46,12 @@
 
 #define DEBUG(...)  dfu_debug( __FILE__, __FUNCTION__, __LINE__, \
                                ATMEL_DEBUG_THRESHOLD, __VA_ARGS__ )
+
+static int atmel_flash_block( struct usb_dev_handle *device,
+                              const int interface,
+                              int16_t *buffer,
+                              uint16_t base_address,
+                              uint16_t length );
 
 /* returns 0 - 255 on success, < 0 otherwise */
 static int atmel_read_command( struct usb_dev_handle *device,
@@ -309,7 +316,7 @@ int atmel_read_flash( struct usb_dev_handle *device,
     }
 
     if( length > buffer_len ) {
-        DEBUG( "buffer isn't large enough - bytes needed: %d.\n", length );
+        DEBUG( "buffer isn't large enough - bytes needed: %d : %d.\n", length, buffer_len );
         return -2;
     }
 
@@ -455,106 +462,251 @@ int atmel_start_app( struct usb_dev_handle *device,
     return 0;
 }
 
+static void atmel_flash_prepair_buffer( int16_t *buffer, const uint16_t size,
+                                        const uint16_t flash_page_size )
+{
+    int16_t *page;
+
+    for( page = buffer;
+         &page[flash_page_size] < &buffer[size];
+         page = &page[flash_page_size] )
+    {
+        int i;
+
+        for( i = 0; i < flash_page_size; i++ ) {
+            if( (0 <= page[i]) && (page[i] < UINT8_MAX) ) {
+                /* We found a valid value. */
+                break;
+            }
+        }
+
+        if( flash_page_size != i ) {
+            /* There was valid data in the block & we need to make
+             * sure there is no unassigned data.  */
+            for( i = 0; i < flash_page_size; i++ ) {
+                if( (page[i] < 0) || (UINT8_MAX < page[i]) ) {
+                    /* Invalid memory value. */
+                    page[i] = 0;
+                }
+            }
+        }
+    }
+}
 
 int atmel_flash( struct usb_dev_handle *device,
                  const int interface,
-                 const u_int32_t start,
-                 const u_int32_t end,
-                 char* buffer )
+                 int16_t *buffer,
+                 const uint16_t size,
+                 const uint16_t flash_page_size )
 {
-    char data[ATMEL_MAX_FLASH_BUFFER_SIZE];
-    int txStart = 0;
-    int txEnd = 0;
-    int data_length = 0;
-    int message_length = 0;
-    int length = end - start;
-    struct dfu_status status;
-    int result;
+    uint16_t start = 0;
+    int sent = 0;
 
-    if( (NULL == buffer) || (start >= end) ) {
+    if( (NULL == buffer) || (size == 0) ) {
         DEBUG( "invalid arguments.\n" );
         return -1;
     }
 
-    /* Initialize the buffer */
-    memset( data, 0, ATMEL_MAX_FLASH_BUFFER_SIZE );
-    data[0] = 0x01;
+    atmel_flash_prepair_buffer( buffer, size, flash_page_size );
 
-    txStart = start;
+    while( 1 ) {
+        uint16_t end;
+        int length;
 
-    DEBUG( "write %d bytes\n", length );
-
-    while( length > 0 ) {
-
-        data_length = length;
-        if( length > ATMEL_MAX_TRANSFER_SIZE ) {
-            data_length = ATMEL_MAX_TRANSFER_SIZE;
-        }
-
-        message_length = data_length + 0x30;
-
-        /* Why do we subtract 1, then add it back?
-         * Because the transfer is inclusive of the end address,
-         * we want to be 1 less, but when the time comes to
-         * say where to start reading next time we need to start
-         * with the next byte... since this is inclusive.
-         *
-         * Example: 0x0000 -> 0x0001 actually transmits 2 bytes:
-         * 0x0000 and 0x0001.
-         */
-        txEnd = txStart + data_length - 1;
-
-        /* Set up the headers */
-        data[2] = 0xff & (txStart >> 8);
-        data[3] = 0xff & txStart;
-        data[4] = 0xff & (txEnd >> 8);
-        data[5] = 0xff & txEnd;
-
-        txEnd++;
-
-        DEBUG( "%d bytes to MCU %06x, from %p\n",
-               data_length, txStart, buffer + txStart );
-
-        /* Copy the data */
-        memcpy( &(data[0x20]), &(buffer[txStart]), (size_t) data_length );
-
-        /* Set up the footers */
-        /* I guess it doesn't care about the footers... */
-
-        result = dfu_download( device, interface, message_length, data );
-
-        if( message_length != result ) {
-            if( -EPIPE == result ) {
-                /* The control pipe stalled - this is an error
-                 * caused by the device saying "you can't do that"
-                 * which means the device is write protected.
-                 */
-                fprintf( stderr, "Device is write protected.\n" );
-
-                dfu_clear_status( device, interface );
-            } else {
-                DEBUG( "dfu_download failed. %d\n", result );
+        /* Find the next valid character to start sending from */
+        for( ; start < size; start++ ) {
+            if( (0 <= buffer[start]) && (buffer[start] < UINT8_MAX) ) {
+                /* We found a valid value. */
+                break;
             }
-            return -2;
         }
 
-        /* check status */
-        if( 0 != dfu_get_status(device, interface, &status) ) {
-            DEBUG( "dfu_get_status failed.\n" );
-            return -3;
+        if( start == size ) {
+            return sent;
         }
 
-        if( DFU_STATUS_OK != status.bStatus ) {
-            DEBUG( "status(%s) was not OK.\n",
-                   dfu_state_to_string(status.bStatus) );
-            return -4;
+        /* Find the last character in this valid block to send. */
+        for( end = start; end < size; end++ ) {
+            if( (buffer[end] < 0) || (UINT8_MAX < buffer[end]) ) {
+                break;
+            }
         }
 
-        length -= data_length;
-        txStart = txEnd;
+        length = end - start;
+        DEBUG( "valid block length: %d, (%d - %d)\n", length, start, end );
+
+        do {
+            int result;
+
+            if( ATMEL_MAX_TRANSFER_SIZE < length ) {
+                length = ATMEL_MAX_TRANSFER_SIZE;
+            }
+
+            result = atmel_flash_block( device, interface, &(buffer[start]),
+                                        start, length );
+
+            if( result < 0 ) {
+                DEBUG( "error flashing the block: %d\n", result );
+                return -3;
+            }
+
+            start += result;
+            sent += result;
+
+            DEBUG( "Next start: %d\n", start );
+
+            length = end - start;
+            DEBUG( "valid block length: %d\n", length );
+        } while( 0 < length );
+        DEBUG( "sent %d\n", sent );
+    }
+}
+
+
+static void atmel_flash_populate_footer( char *message, char *footer,
+                                         uint16_t vendorId, uint16_t productId,
+                                         uint16_t bcdFirmware )
+{
+    int crc;
+
+    if( (NULL == message) || (NULL == footer) ) {
+        return;
     }
 
-    return (end - start + 1);
+    /* TODO: Calculate the message CRC */
+    crc = 0;
+
+    /* CRC 4 bytes */
+    footer[0] = 0xff & (crc >> 24);
+    footer[1] = 0xff & (crc >> 16);
+    footer[2] = 0xff & (crc >> 8);
+    footer[3] = 0xff & crc;
+
+    /* Length of DFU suffix - always 16. */
+    footer[4] = 16;
+
+    /* ucdfuSignature - fixed 'DFU'. */
+    footer[5] = 'D';
+    footer[6] = 'F';
+    footer[7] = 'U';
+
+    /* BCD DFU specification number (1.1)*/
+    footer[8] = 0x01;
+    footer[9] = 0x10;
+
+    /* Vendor ID or 0xFFFF */
+    footer[10] = 0xff & (vendorId >> 8);
+    footer[11] = 0xff & vendorId;
+
+    /* Product ID or 0xFFFF */
+    footer[12] = 0xff & (productId >> 8);
+    footer[13] = 0xff & productId;
+
+    /* BCD Firmware release number or 0xFFFF */
+    footer[14] = 0xff & (bcdFirmware >> 8);
+    footer[15] = 0xff & bcdFirmware;
+}
+
+static void atmel_flash_populate_header( char *header, uint16_t start_address,
+                                         uint16_t length )
+{
+    uint16_t end;
+
+    if( NULL == header ) {
+        return;
+    }
+
+    /* If we send 1 byte @ 0x0000, the end address will also be 0x0000 */
+    end = start_address + (length - 1);
+
+    /* Command Identifier */
+    header[0] = 0x01;   /* ld_prog_start */
+
+    /* data[0] */
+    header[1] = 0x00;
+
+    /* start_address */
+    header[2] = 0xff & (start_address >> 8);
+    header[3] = 0xff & start_address;
+
+    /* end_address */
+    header[4] = 0xff & (end >> 8);
+    header[5] = 0xff & end;
+}
+
+static int atmel_flash_block( struct usb_dev_handle *device,
+                              const int interface,
+                              int16_t *buffer,
+                              uint16_t base_address,
+                              uint16_t length )
+                              
+{
+    char message[ATMEL_MAX_FLASH_BUFFER_SIZE];
+    char *header;
+    char *data;
+    char *footer;
+    int message_length;
+    int result;
+    struct dfu_status status;
+    int i;
+
+    if( (NULL == buffer) || (ATMEL_MAX_TRANSFER_SIZE < length) ) {
+        DEBUG( "invalid arguments.\n" );
+        return -1;
+    }
+
+    /* 0 out the message. */
+    memset( message, 0, ATMEL_MAX_FLASH_BUFFER_SIZE );
+
+    message_length = length + 0x30;
+
+    DEBUG( "message length: %d\n", message_length );
+
+    header = &message[0];
+    data   = &message[0x20];
+    footer = &message[0x20 + length];
+
+    atmel_flash_populate_header( header, base_address, length );
+
+    DEBUG( "%d bytes to MCU %06x\n", length, base_address );
+
+    /* Copy the data */
+    for( i = 0; i < length; i++ ) {
+        data[i] = (char) buffer[i];
+    }
+
+    atmel_flash_populate_footer( message, footer, 0xffff, 0xffff, 0xffff );
+
+    result = dfu_download( device, interface, message_length, message );
+
+    if( message_length != result ) {
+        if( -EPIPE == result ) {
+            /* The control pipe stalled - this is an error
+             * caused by the device saying "you can't do that"
+             * which means the device is write protected.
+             */
+            fprintf( stderr, "Device is write protected.\n" );
+
+            dfu_clear_status( device, interface );
+        } else {
+            DEBUG( "dfu_download failed. %d\n", result );
+        }
+        return -2;
+    }
+
+    /* check status */
+    if( 0 != dfu_get_status(device, interface, &status) ) {
+        DEBUG( "dfu_get_status failed.\n" );
+        return -3;
+    }
+
+    if( DFU_STATUS_OK != status.bStatus ) {
+        DEBUG( "status(%s) was not OK.\n",
+               dfu_state_to_string(status.bStatus) );
+        return -4;
+    }
+
+    return length;
 }
 
 

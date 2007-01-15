@@ -19,6 +19,7 @@
  */
 
 #include <stdio.h>
+#include <stdint.h>
 #include <string.h>
 
 #include "config.h"
@@ -36,41 +37,42 @@
 
 static int execute_erase( struct usb_dev_handle *device,
                           int interface,
-                          struct programmer_arguments args )
+                          struct programmer_arguments *args )
 {
     int result = 0;
 
-    DEBUG( "erase %d bytes\n", args.memory_size );
+    DEBUG( "erase %d bytes\n", args->memory_size );
 
     result = atmel_erase_flash( device, interface, ATMEL_ERASE_ALL );
     if( 0 != result )
         return result;
 
-    return atmel_blank_check( device, interface, 0, args.top_memory_address );
+    return atmel_blank_check( device, interface, 0, args->top_memory_address );
 }
 
 
 static int execute_flash( struct usb_dev_handle *device,
                           int interface,
-                          struct programmer_arguments args )
+                          struct programmer_arguments *args )
 {
-    char *hex_data = NULL;
+    int16_t *hex_data = NULL;
     int   usage = 0;
     int   retval = -1;
     int   result = 0;
-    char  *buffer = NULL;
+    char *buffer = NULL;
+    int   i;
 
-    buffer = (char *) malloc( args.memory_size );
+    buffer = (char *) malloc( args->memory_size );
     if( NULL == buffer ) {
         fprintf( stderr, "Request for %d bytes of memory failed.\n",
-                 args.memory_size );
+                 args->memory_size );
         goto error;
     }
 
-    memset( buffer, 0, args.memory_size );
+    memset( buffer, 0, args->memory_size );
 
-    hex_data = intel_hex_to_buffer( args.com_flash_data.file,
-                                    args.memory_size, 0xff, &usage );
+    hex_data = intel_hex_to_buffer( args->com_flash_data.file,
+                                    args->memory_size, &usage );
     if( NULL == hex_data ) {
         DEBUG( "Something went wrong with creating the memory image.\n" );
         fprintf( stderr,
@@ -78,40 +80,46 @@ static int execute_flash( struct usb_dev_handle *device,
         goto error;
     }
 
-    DEBUG( "write %d/%d bytes\n", usage, args.memory_size );
+    DEBUG( "write %d/%d bytes\n", usage, args->memory_size );
 
-    result = atmel_flash( device, interface, 0, args.top_memory_address,
-                          hex_data );
+    result = atmel_flash( device, interface, hex_data, args->top_memory_address,
+                          args->flash_page_size );
 
-    if( args.memory_size != result ) {
+    if( result < 0 ) {
         DEBUG( "Error while flashing. (%d)\n", result );
         fprintf( stderr, "Error while flashing.\n" );
         goto error;
     }
 
-    if( 0 == args.com_flash_data.suppress_validation ) {
+    if( 0 == args->com_flash_data.suppress_validation ) {
         fprintf( stderr, "Validating...\n" );
 
         result = atmel_read_flash( device, interface, 0,
-                                   args.top_memory_address, buffer,
-                                   args.memory_size );
+                                   args->top_memory_address, buffer,
+                                   args->memory_size );
 
-        if( args.memory_size != result ) {
+        if( args->memory_size != result ) {
             DEBUG( "Error while validating.\n" );
             fprintf( stderr, "Error while validating.\n" );
             goto error;
         }
 
-        if( 0 != memcmp(hex_data, buffer, args.memory_size) ) {
-            DEBUG( "Image did not validate.\n" );
-            fprintf( stderr, "Image did not validate.\n" );
-            goto error;
+        for( i = 0; i < result; i++ ) {
+            if( (0 <= hex_data[i]) && (hex_data[i] < UINT8_MAX) ) {
+                /* Memory should have been programmed in this location. */
+                if( ((char) hex_data[i]) != buffer[i] ) {
+                    DEBUG( "Image did not validate at location: %d (%02x != %02x)\n", i,
+                           (0xff & hex_data[i]), (0xff & buffer[i]) );
+                    fprintf( stderr, "Image did not validate.\n" );
+                    goto error;
+                }
+            }
         }
     }
 
-    if( 0 == args.quiet ) {
+    if( 0 == args->quiet ) {
         fprintf( stderr, "%d bytes used (%.02f%%)\n", usage,
-                         ((float)(usage*100)/(float)(args.top_memory_address)) );
+                         ((float)(usage*100)/(float)(args->top_memory_address)) );
     }
 
     retval = 0;
@@ -133,7 +141,7 @@ error:
 
 static int execute_start_app( struct usb_dev_handle *device,
                               int interface,
-                              struct programmer_arguments args )
+                              struct programmer_arguments *args )
 {
     return atmel_start_app( device, interface );
 }
@@ -141,7 +149,7 @@ static int execute_start_app( struct usb_dev_handle *device,
 
 static int execute_get( struct usb_dev_handle *device,
                         int interface,
-                        struct programmer_arguments args )
+                        struct programmer_arguments *args )
 {
     struct atmel_device_info info;
     char *message = NULL;
@@ -149,7 +157,7 @@ static int execute_get( struct usb_dev_handle *device,
     int status;
     int controller_error = 0;
 
-    if( device_8051 == args.device_type ) {
+    if( device_8051 == args->device_type ) {
         status = atmel_read_config_8051( device, interface, &info );
     } else {
         status = atmel_read_config_avr( device, interface, &info );
@@ -157,13 +165,13 @@ static int execute_get( struct usb_dev_handle *device,
 
     if( 0 != status ) {
         DEBUG( "Error reading %s config information.\n",
-               args.device_type_string );
+               args->device_type_string );
         fprintf( stderr, "Error reading %s config information.\n",
-                         args.device_type_string );
+                         args->device_type_string );
         return status;
     }
 
-    switch( args.com_get_data.name ) {
+    switch( args->com_get_data.name ) {
         case get_bootloader:
             value = info.bootloaderVersion;
             message = "Bootloader Version";
@@ -179,28 +187,28 @@ static int execute_get( struct usb_dev_handle *device,
         case get_BSB:
             value = info.bsb;
             message = "Boot Status Byte";
-            if( device_8051 != args.device_type ) {
+            if( device_8051 != args->device_type ) {
                 controller_error = 1;
             }
             break;
         case get_SBV:
             value = info.sbv;
             message = "Software Boot Vector";
-            if( device_8051 != args.device_type ) {
+            if( device_8051 != args->device_type ) {
                 controller_error = 1;
             }
             break;
         case get_SSB:
             value = info.ssb;
             message = "Software Security Byte";
-            if( device_8051 != args.device_type ) {
+            if( device_8051 != args->device_type ) {
                 controller_error = 1;
             }
             break;
         case get_EB:
             value = info.eb;
             message = "Extra Byte";
-            if( device_8051 != args.device_type ) {
+            if( device_8051 != args->device_type ) {
                 controller_error = 1;
             }
             break;
@@ -239,8 +247,8 @@ static int execute_get( struct usb_dev_handle *device,
     }
 
     fprintf( stdout, "%s%s0x%02x (%d)\n", 
-             ((0 == args.quiet) ? message : ""),
-             ((0 == args.quiet) ? ": " : ""),
+             ((0 == args->quiet) ? message : ""),
+             ((0 == args->quiet) ? ": " : ""),
              value, value );
     return 0;
 }
@@ -248,30 +256,30 @@ static int execute_get( struct usb_dev_handle *device,
 
 static int execute_dump( struct usb_dev_handle *device,
                          int interface,
-                         struct programmer_arguments args )
+                         struct programmer_arguments *args )
 {
     int i = 0;
     char  *buffer = NULL;
 
-    buffer = (char *) malloc( (args.memory_size) );
+    buffer = (char *) malloc( (args->memory_size) );
     if( NULL == buffer ) {
         fprintf( stderr, "Request for %d bytes of memory failed.\n",
-                 args.memory_size );
+                 args->memory_size );
         goto error;
     }
 
-    DEBUG( "dump %d bytes\n", args.memory_size );
+    DEBUG( "dump %d bytes\n", args->memory_size );
 
-    if( args.memory_size != atmel_read_flash(device, interface, 0,
-                                  args.top_memory_address, buffer,
-                                  args.memory_size) )
+    if( args->memory_size != atmel_read_flash(device, interface, 0,
+                                  args->top_memory_address, buffer,
+                                  args->memory_size) )
     {
         fprintf( stderr, "Request for %d bytes of memory failed.\n",
-                 args.memory_size );
+                 args->memory_size );
         return -1;
     }
 
-    for( i = 0; i < args.memory_size; i++ ) {
+    for( i = 0; i < args->memory_size; i++ ) {
         fprintf( stdout, "%c", buffer[i] );
     }
 
@@ -289,12 +297,12 @@ error:
 
 static int execute_configure( struct usb_dev_handle *device,
                               int interface,
-                              struct programmer_arguments args )
+                              struct programmer_arguments *args )
 {
-    int value = args.com_configure_data.value;
-    int name = args.com_configure_data.name;
+    int value = args->com_configure_data.value;
+    int name = args->com_configure_data.name;
 
-    if( device_8051 != args.device_type ) {
+    if( device_8051 != args->device_type ) {
         DEBUG( "target doesn't support configure operation.\n" );
         fprintf( stderr, "target doesn't support configure operation.\n" );
         return -1;
@@ -319,9 +327,9 @@ static int execute_configure( struct usb_dev_handle *device,
 
 int execute_command( struct usb_dev_handle *device,
                      int interface,
-                     struct programmer_arguments args )
+                     struct programmer_arguments *args )
 {
-    switch( args.command ) {
+    switch( args->command ) {
         case com_erase:
             return execute_erase( device, interface, args );
         case com_flash:

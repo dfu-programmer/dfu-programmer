@@ -32,6 +32,7 @@
 
 #define _GNU_SOURCE
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 
 #include "intel_hex.h"
@@ -155,7 +156,7 @@ static int intel_read_data( FILE *fp, struct intel_record *record )
 
     /* Read the data */
     for( i = 0; i < record->count; i++ ) {
-        int data = 0;
+        char data = 0;
 
         if( NULL == fgets(buffer, 3, fp) ) return -3;
         if( 1 != sscanf(buffer, "%02x", &data) ) return -4;
@@ -200,10 +201,9 @@ static int intel_parse_line( FILE *fp, struct intel_record *record )
     return 0;
 }
 
-char *intel_hex_to_buffer( char *filename, int max_size,
-                           char invalid,   int *usage )
+int16_t *intel_hex_to_buffer( char *filename, int max_size, int *usage )
 {
-    char *memory = NULL;
+    int16_t *memory = NULL;
     FILE *fp = NULL;
     int failure = 1;
     struct intel_record record;
@@ -222,12 +222,15 @@ char *intel_hex_to_buffer( char *filename, int max_size,
         goto error;
     }
 
-    memory = (char *) malloc( max_size );
-    if( NULL == memory )
+    memory = (int16_t *) malloc( max_size * sizeof(int16_t) );
+    if( NULL == memory ) {
+        fprintf( stderr, "Error getting the needed memory.\n" );
         goto error;
+    }
 
-    for( i = 0; i < max_size; i++ )
-        memory[i] = invalid;
+    for( i = 0; i < max_size; i++ ) {
+        memory[i] = -1;
+    }
 
     *usage = 0;
     do {
@@ -242,7 +245,7 @@ char *intel_hex_to_buffer( char *filename, int max_size,
                     if( address >= max_size )
                         goto error;
 
-                    memory[address++] = record.data[i];
+                    memory[address++] = 0xff & record.data[i];
                     (*usage)++;
                 }
                 break;

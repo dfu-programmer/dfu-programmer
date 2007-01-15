@@ -66,7 +66,7 @@ int main( int argc, char **argv )
         goto error;
     }
 
-    if( 0 != execute_command(usb_handle, interface, args) ) {
+    if( 0 != execute_command(usb_handle, interface, &args) ) {
         /* command issued a specific diagnostic already */
         retval = 1;
         goto error;

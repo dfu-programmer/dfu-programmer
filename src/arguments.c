@@ -37,14 +37,15 @@ struct target_mapping_structure {
     unsigned short chip_id;
     unsigned short vendor_id;
     unsigned int memory_size;
+    unsigned short flash_page_size;
 };
 
 /* ----- target specific structures ----------------------------------------- */
 static struct target_mapping_structure target_map[] = {
-    { "at89c51snd1c", tar_at89c51snd1c, device_8051, 0x2FFF, 0x03eb, 0x10000 },
-    { "at89c5130",    tar_at89c5130,    device_8051, 0x2FFD, 0x03eb, 0x4000  },
-    { "at89c5131",    tar_at89c5131,    device_8051, 0x2FFD, 0x03eb, 0x8000  },
-    { "at89c5132",    tar_at89c5132,    device_8051, 0x2FFF, 0x03eb, 0x10000 },
+    { "at89c51snd1c", tar_at89c51snd1c, device_8051, 0x2FFF, 0x03eb, 0x10000, 128 },
+    { "at89c5130",    tar_at89c5130,    device_8051, 0x2FFD, 0x03eb, 0x4000,  128 },
+    { "at89c5131",    tar_at89c5131,    device_8051, 0x2FFD, 0x03eb, 0x8000,  128 },
+    { "at89c5132",    tar_at89c5132,    device_8051, 0x2FFF, 0x03eb, 0x10000, 128 },
 
     /* NOTE:  actual size of the user-programmable section is controlled
      * by BOOTSZ0/BOOTSZ1 fuse bits; here we assume the max of 4K words.
@@ -55,15 +56,15 @@ static struct target_mapping_structure target_map[] = {
      * of being able to write the low 64 KB.
      */
     { "at90usb1287",  tar_at90usb1287,  device_AVR, 0x2FFB, 0x03eb,
-                64 * 1024 },
+                64 * 1024, 128 },
                 // 128 * 1024 - 8 * 1024},
     { "at90usb1286",  tar_at90usb1286,  device_AVR, 0x2FFB, 0x03eb,
-                64 * 1024 },
+                64 * 1024, 128 },
                 // 128 * 1024 - 8 * 1024 },
     { "at90usb647",   tar_at90usb647,   device_AVR, 0x2FFB, 0x03eb,
-                64 * 1024 - 8 * 1024 },
+                64 * 1024 - 8 * 1024, 128 },
     { "at90usb646",   tar_at90usb646,   device_AVR, 0x2FFB, 0x03eb,
-                64 * 1024 - 8 * 1024 },
+                64 * 1024 - 8 * 1024, 128 },
     { NULL }
 };
 
@@ -167,6 +168,7 @@ static int assign_target( struct programmer_arguments *args,
             args->vendor_id = map->vendor_id;
             args->device_type = map->device_type;
             args->memory_size = map->memory_size;
+            args->flash_page_size = map->flash_page_size;
             args->top_memory_address = map->memory_size - 1;
             switch( args->device_type ) {
                 case device_8051:

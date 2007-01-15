@@ -22,6 +22,7 @@
 #define __ATMEL_H__
 
 #include <stdio.h>
+#include <stdint.h>
 #include <usb.h>
 
 #define ATMEL_ERASE_BLOCK_0     0
@@ -79,9 +80,9 @@ int atmel_reset( struct usb_dev_handle *device,
                  const int interface );
 int atmel_flash( struct usb_dev_handle *device,
                  const int interface,
-                 const u_int32_t start,
-                 const u_int32_t end,
-                 char* buffer );
+                 int16_t *buffer,
+                 const uint16_t size,
+                 const uint16_t flash_page_size );
 int atmel_start_app( struct usb_dev_handle *device,
                      const int interface );
 

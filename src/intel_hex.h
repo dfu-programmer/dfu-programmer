@@ -21,7 +21,20 @@
 #ifndef __INTEL_HEX_H__
 #define __INTEL_HEX_H__
 
-char *intel_hex_to_buffer( char *filename, int max_size,
-                           char invalid,   int *usage );
+#include <stdint.h>
+
+/**
+ *  Used to read in a file in intel hex format and return a chunck of
+ *  memory containing the memory image described in the file.
+ *
+ *  \param filename the name of the intel hex file to process
+ *  \param max_size the maximum size of the memory image in bytes
+ *  \param usage[out] the amount of the available memory image used
+ *
+ *  \return an array of int16_t's where the values 0-255 are valid memory
+ *          values, and anything else indicates an unused memory location,
+ *          NULL on anything other than a success
+ */
+int16_t *intel_hex_to_buffer( char *filename, int max_size, int *usage );
 
 #endif
