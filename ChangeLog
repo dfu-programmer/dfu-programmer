@@ -1,3 +1,9 @@
+2007-01-16 Weston Schmidt <weston_schmidt AT alumni.purdue.edu>
+
+	* src/intel_hex.c: change the sscanf() parameter to an int
+	  from a char to be compliant with the sscanf() %x documentation
+	  stating that the output of %x is an int.
+
 2007-01-14 Weston Schmidt <weston_schmidt AT alumni.purdue.edu>
 
 	* src/arguments.c: added the flash_page_size data and values

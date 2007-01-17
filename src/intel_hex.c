@@ -156,7 +156,7 @@ static int intel_read_data( FILE *fp, struct intel_record *record )
 
     /* Read the data */
     for( i = 0; i < record->count; i++ ) {
-        char data = 0;
+        int data = 0;
 
         if( NULL == fgets(buffer, 3, fp) ) return -3;
         if( 1 != sscanf(buffer, "%02x", &data) ) return -4;
