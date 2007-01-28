@@ -22,6 +22,7 @@
 #define __DFU_H__
 
 #include <usb.h>
+#include <stdbool.h>
 
 /* DFU states */
 #define STATE_APP_IDLE                  0x00
@@ -94,7 +95,9 @@ int dfu_abort( struct usb_dev_handle *handle,
 struct usb_device *dfu_device_init( const unsigned int vendor,
                                     const unsigned int product,
                                     struct usb_dev_handle **handle,
-                                    unsigned short *interface );
+                                    unsigned short *interface,
+                                    const bool initial_abort,
+                                    const bool honor_interfaceclass );
 
 char* dfu_status_to_string( const int status );
 char* dfu_state_to_string( const int state );

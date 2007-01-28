@@ -1,3 +1,17 @@
+2007-01-27 Weston Schmidt <weston_schmidt AT alumni.purdue.edu>
+
+	* configure.ac: Incremented the release number
+	* NEWS: Updated the latest news about the 0.4.0 release
+	* src/arguments.c, src/arguments.h: add two fields to the
+	  chip configuration structures to handle the two
+	  inconsistencies in the dfu firmware - the at90 chips
+	  need to be aborted initially, and the at90 chips don't
+	  return valid interface class and subclass information.
+	  Originally, the interface problem was thought to be
+	  related to OS X, but it now looks like it is the chipset.
+	* src/dfu.c, src/dfu.h, src/main.c: add the handing of
+	  the new initial abort and interface class/subclass workarounds.
+
 2007-01-16 Weston Schmidt <weston_schmidt AT alumni.purdue.edu>
 
 	* src/intel_hex.c: change the sscanf() parameter to an int

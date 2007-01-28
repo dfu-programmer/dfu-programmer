@@ -57,8 +57,9 @@ int main( int argc, char **argv )
 
     usb_init();
 
-    device = dfu_device_init( args.vendor_id, args.chip_id,
-                              &usb_handle, &interface );
+    device = dfu_device_init( args.vendor_id, args.chip_id, &usb_handle,
+                              &interface, args.initial_abort,
+                              args.honor_interfaceclass );
 
     if( NULL == device ) {
         fprintf( stderr, "%s: no device present.\n", progname );

@@ -1,3 +1,11 @@
+Release 0.4.0
+* Major set of fixes added for the at90xxx chips.
+* Optimized the flashing algorithm that only flashes the blocks needed
+  based on the data being flashed, instead of flashing the entire chip
+  each time (potentially saves s good deal of time during development)
+* The chip should be initialized better than before, increasing the
+  likelihood of a successful operation.
+* Refined the code to allow OS X to compile and run dfu-programmer.
 Release 0.3.1
 * Minor documentation changes and polishing of the spec file to get the
   project inline with what is needed to be part of the fedora extras.

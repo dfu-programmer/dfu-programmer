@@ -20,6 +20,7 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include <stdbool.h>
 #include <usb.h>
 #include <errno.h>
 #include "dfu.h"
@@ -34,15 +35,8 @@
 #define DFU_GETSTATE    5
 #define DFU_ABORT       6
 
-#ifdef __APPLE__
-/* Work around an OSX error where the Interface Class & Subclass
- * aren't properly defined. */
-# define USB_CLASS_APP_SPECIFIC 0x00
-# define DFU_SUBCLASS           0x00
-#else
-# define USB_CLASS_APP_SPECIFIC 0xfe
-# define DFU_SUBCLASS           0x01
-#endif
+#define USB_CLASS_APP_SPECIFIC  0xfe
+#define DFU_SUBCLASS            0x01
 
 /* Wait for 10 seconds before a timeout since erasing/flashing can take some time. */
 #define DFU_TIMEOUT 10000
@@ -58,9 +52,11 @@
 
 static unsigned short transaction = 0;
 
-static int dfu_find_interface( const struct usb_device *device );
+static int dfu_find_interface( const struct usb_device *device,
+                               const bool honor_interfaceclass );
 static int dfu_make_idle( struct usb_dev_handle *handle,
-                          unsigned short interface );
+                          unsigned short interface,
+                          bool initial_abort );
 static void dfu_msg_response_output( const char *function, const int result );
 
 /*
@@ -347,7 +343,9 @@ int dfu_abort( struct usb_dev_handle *handle,
 struct usb_device *dfu_device_init( const unsigned int vendor,
                                     const unsigned int product,
                                     struct usb_dev_handle **handle,
-                                    unsigned short *interface )
+                                    unsigned short *interface,
+                                    const bool initial_abort,
+                                    const bool honor_interfaceclass )
 {
     struct usb_bus *usb_bus;
     struct usb_device *device;
@@ -369,14 +367,16 @@ retry:
                     /* We found a device that looks like it matches...
                      * let's try to find the DFU interface, open the device
                      * and claim it. */
-                    tmp = dfu_find_interface( device );
+                    tmp = dfu_find_interface( device, honor_interfaceclass );
                     if( 0 <= tmp ) {
                         /* The interface is valid. */
                         *interface = (unsigned short) tmp;
                         *handle = usb_open( device );
                         if( NULL != *handle ) {
                             if( 0 == usb_claim_interface(*handle, *interface) ) {
-                                switch( dfu_make_idle(*handle, *interface) ) {
+                                switch( dfu_make_idle(*handle, *interface,
+                                                      initial_abort) )
+                                {
                                     case 0:
                                         return device;
                                     case 1:
@@ -532,10 +532,13 @@ char* dfu_status_to_string( const int status )
  *  Used to find the dfu interface for a device if there is one.
  *
  *  device - the device to search
+ *  honor_interfaceclass - if the actual interface class information
+ *                         should be checked, or ignored (bug in device DFU code)
  *
  *  returns the interface number if found, < 0 otherwise
  */
-static int dfu_find_interface( const struct usb_device *device )
+static int dfu_find_interface( const struct usb_device *device,
+                               const bool honor_interfaceclass )
 {
     int c, i;
     struct usb_config_descriptor *config;
@@ -549,10 +552,17 @@ static int dfu_find_interface( const struct usb_device *device )
         for( i = 0; i < config->interface->num_altsetting; i++) {
             interface = &(config->interface->altsetting[i]);
 
-            /* Check if the interface is a DFU interface */
-            if(    (USB_CLASS_APP_SPECIFIC == interface->bInterfaceClass)
-                && (DFU_SUBCLASS == interface->bInterfaceSubClass) )
-            {
+            if( true == honor_interfaceclass ) {
+                /* Check if the interface is a DFU interface */
+                if(    (USB_CLASS_APP_SPECIFIC == interface->bInterfaceClass)
+                    && (DFU_SUBCLASS == interface->bInterfaceSubClass) )
+                {
+                    DEBUG( "Found DFU Inteface: %d\n", interface->bInterfaceNumber );
+                    return interface->bInterfaceNumber;
+                }
+            } else {
+                /* If there is a bug in the DFU firmware, return the first
+                 * found interface. */
                 DEBUG( "Found DFU Inteface: %d\n", interface->bInterfaceNumber );
                 return interface->bInterfaceNumber;
             }
@@ -572,22 +582,26 @@ static int dfu_find_interface( const struct usb_device *device )
  *  returns 0 on success, 1 if device was reset, error otherwise
  */
 static int dfu_make_idle( struct usb_dev_handle *handle,
-                          unsigned short interface )
+                          unsigned short interface,
+                          bool initial_abort )
 {
     struct dfu_status status;
-    int result;
     int retries = 4;
 
+    if( true == initial_abort ) {
+        dfu_abort( handle, interface );
+    }
+
     while( 0 < retries ) {
-        result = dfu_get_status( handle, interface, &status );
-        if( 0 != result ) {
+        if( 0 != dfu_get_status(handle, interface, &status) ) {
             dfu_clear_status( handle, interface );
             continue;
         }
 
+        DEBUG( "State: %s (%d)\n", dfu_state_to_string(status.bState), status.bState );
+
         switch( status.bState ) {
             case STATE_DFU_IDLE:
-                DEBUG( "status.bState: STATE_DFU_IDLE\n" );
                 if( DFU_STATUS_OK == status.bStatus ) {
                     return 0;
                 }
@@ -602,27 +616,20 @@ static int dfu_make_idle( struct usb_dev_handle *handle,
             case STATE_DFU_UPLOAD_IDLE:     /* abort -> idle */
             case STATE_DFU_DOWNLOAD_BUSY:   /* abort -> error */
             case STATE_DFU_MANIFEST:        /* abort -> error */
-                DEBUG( "status.bState: mess\n" );
                 dfu_abort( handle, interface );
                 break;
 
             case STATE_DFU_ERROR:
-                DEBUG( "status.bState: STATE_DFU_ERROR\n" );
                 dfu_clear_status( handle, interface );
                 break;
 
             case STATE_APP_IDLE:
-                DEBUG( "status.bState: STATE_APP_IDLE\n" );
                 dfu_detach( handle, interface, DFU_DETACH_TIMEOUT );
                 break;
 
             case STATE_APP_DETACH:
-                DEBUG( "bstatus.bState: STATE_APP_DETACH - resetting the device\n" );
-                usb_reset( handle );
-                return 1;
-
             case STATE_DFU_MANIFEST_WAIT_RESET:
-                DEBUG( "dfuMANIFEST-WAIT-RESET - resetting the device\n" );
+                DEBUG( "Resetting the device\n" );
                 usb_reset( handle );
                 return 1;
         }

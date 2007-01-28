@@ -21,6 +21,7 @@
 #ifndef __ARGUMENTS_H__
 #define __ARGUMENTS_H__
 
+#include <stdbool.h>
 #include "atmel.h"
 
 #define DEVICE_TYPE_STRING_MAX_LENGTH   5
@@ -72,6 +73,8 @@ struct programmer_arguments {
     u_int32_t top_memory_address;
     u_int32_t memory_size;
     u_int16_t flash_page_size;
+    bool initial_abort;
+    bool honor_interfaceclass;
 
     /* command-specific state */
     enum commands_enum command;
