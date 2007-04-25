@@ -52,6 +52,9 @@ static int atmel_flash_block( struct usb_dev_handle *device,
                               int16_t *buffer,
                               uint16_t base_address,
                               uint16_t length );
+static int atmel_select_page( struct usb_dev_handle *device,
+                              const int interface,
+                              const uint8_t mem_page );
 
 /* returns 0 - 255 on success, < 0 otherwise */
 static int atmel_read_command( struct usb_dev_handle *device,
@@ -309,6 +312,7 @@ int atmel_read_flash( struct usb_dev_handle *device,
     int length = end - start + 1; /* + 1 because memory is 0 based */
     int result;
     int rxStart, rxEnd, rxLength;
+    uint8_t mem_page = 0;
 
     if( (NULL == buffer) || (start >= end) ) {
         DEBUG( "invalid arguments.\n" );
@@ -342,6 +346,22 @@ int atmel_read_flash( struct usb_dev_handle *device,
          */
         rxEnd = rxStart + rxLength - 1;
 
+        /* Make sure any reads align with the memory page boudary. */
+        if( rxEnd > (UINT16_MAX * (1 + mem_page)) ) {
+            if( rxStart <= (UINT16_MAX * (1 + mem_page)) ) {
+                rxEnd = UINT16_MAX * (1 + mem_page);
+                rxLength = rxEnd - rxStart + 1;
+            } else {
+                mem_page++;
+
+                result = atmel_select_page( device, interface, mem_page );
+                if( result < 0) {
+                    DEBUG( "error selecting the page: %d\n", result );
+                    return -3;
+                }
+            }
+        }
+
         command[2] = 0xff & (rxStart >> 8);
         command[3] = 0xff & rxStart;
         command[4] = 0xff & (rxEnd >> 8);
@@ -353,7 +373,7 @@ int atmel_read_flash( struct usb_dev_handle *device,
 
         if( 6 != dfu_download(device, interface, 6, command) ) {
             DEBUG( "dfu_download failed\n" );
-            return -3;
+            return -4;
         }
 
         result = dfu_upload( device, interface, rxLength, ptr );
@@ -378,6 +398,14 @@ int atmel_read_flash( struct usb_dev_handle *device,
             }
 
             return result;
+        }
+    }
+
+    if( mem_page > 0 ) {
+        result = atmel_select_page( device, interface, 0 );
+        if( result < 0) {
+            DEBUG( "error selecting the page: %d\n", result );
+            return -5;
         }
     }
 
@@ -462,6 +490,24 @@ int atmel_start_app( struct usb_dev_handle *device,
     return 0;
 }
 
+
+static int atmel_select_page( struct usb_dev_handle *device,
+                              const int interface,
+                              const uint8_t mem_page )
+{
+    char command[4] = { 0x06, 0x03, 0x00, 0x00 };
+
+    command[3] = (char) mem_page;
+
+    if( 4 != dfu_download(device, interface, 4, command) ) {
+        DEBUG( "dfu_download failed.\n" );
+        return -1;
+    }
+
+    return 0;
+}
+
+
 static void atmel_flash_prepair_buffer( int16_t *buffer, const uint16_t size,
                                         const uint16_t flash_page_size )
 {
@@ -496,11 +542,12 @@ static void atmel_flash_prepair_buffer( int16_t *buffer, const uint16_t size,
 int atmel_flash( struct usb_dev_handle *device,
                  const int interface,
                  int16_t *buffer,
-                 const uint16_t size,
+                 const uint32_t size,
                  const uint16_t flash_page_size )
 {
-    uint16_t start = 0;
+    uint32_t start = 0;
     int sent = 0;
+    uint8_t mem_page = 0;
 
     if( (NULL == buffer) || (size == 0) ) {
         DEBUG( "invalid arguments.\n" );
@@ -510,7 +557,7 @@ int atmel_flash( struct usb_dev_handle *device,
     atmel_flash_prepair_buffer( buffer, size, flash_page_size );
 
     while( 1 ) {
-        uint16_t end;
+        uint32_t end;
         int length;
 
         /* Find the next valid character to start sending from */
@@ -522,13 +569,29 @@ int atmel_flash( struct usb_dev_handle *device,
         }
 
         if( start == size ) {
-            return sent;
+            goto done;
         }
 
         /* Find the last character in this valid block to send. */
         for( end = start; end < size; end++ ) {
             if( (buffer[end] < 0) || (UINT8_MAX < buffer[end]) ) {
                 break;
+            }
+        }
+
+        /* Make sure any writes align with the memory page boudary. */
+        if( end > (UINT16_MAX * (1 + mem_page)) ) {
+            if( start <= (UINT16_MAX * (1 + mem_page)) ) {
+                end = UINT16_MAX + 1;
+            } else {
+                int result;
+
+                mem_page++;
+                result = atmel_select_page( device, interface, mem_page );
+                if( result < 0 ) {
+                    DEBUG( "error selecting the page: %d\n", result );
+                    return -3;
+                }
             }
         }
 
@@ -543,23 +606,33 @@ int atmel_flash( struct usb_dev_handle *device,
             }
 
             result = atmel_flash_block( device, interface, &(buffer[start]),
-                                        start, length );
+                                        (UINT16_MAX & start), length );
 
             if( result < 0 ) {
                 DEBUG( "error flashing the block: %d\n", result );
-                return -3;
+                return -4;
             }
 
             start += result;
             sent += result;
 
             DEBUG( "Next start: %d\n", start );
-
             length = end - start;
             DEBUG( "valid block length: %d\n", length );
         } while( 0 < length );
         DEBUG( "sent %d\n", sent );
     }
+
+done:
+    if( mem_page > 0 ) {
+        int result = atmel_select_page( device, interface, 0 );
+        if( result < 0) {
+            DEBUG( "error selecting the page: %d\n", result );
+            return -5;
+        }
+    }
+
+    return sent;
 }
 
 

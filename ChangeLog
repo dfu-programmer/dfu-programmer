@@ -1,3 +1,19 @@
+2007-04-25 Weston Schmidt <weston_schmidt AT alumni.purdue.edu>
+
+	* docs/dfu-programmer.1: Added a KNOWN ISSUES section,
+	  updated the BUGS section, and corrected the Free
+	  Software Foundation address.
+	* src/arguments.c: Adjusted the memory sizes for the at90
+	  series of chips so they can take advantage of the entire
+	  amount of flash memory.
+	* src/atmel.c, src/atmel.h: Add the concept and support for
+	  paged flash memory.  I added this so that only devices
+	  that actually go into paged memory will try to make calls
+	  to the memory paging routine.  I also did a bit of cleanup
+	  to allow a clean transition between the pages (so there
+	  are not regions of memory being flashed that overlap a
+	  flash memory page boundary).
+
 2007-03-28 Weston Schmidt <weston_schmidt AT alumni.purdue.edu>
 
 	* m4/depcomp, m4/missing, src/dfu.c, src/intel_hex.c,

@@ -1,4 +1,4 @@
-.TH DFU\-PROGRAMMER 1 "Oct 21, 2006" "DFU\-PROGRAMMER" ""
+.TH DFU\-PROGRAMMER 1 "April 25, 2007" "DFU\-PROGRAMMER" ""
 .SH NAME
 dfu\-programmer \- USB firmware upgrading for Atmel microcontrollers
 .nh
@@ -123,12 +123,18 @@ SSB \- same as the configure_register version
 .br
 EB  \- same as the configure_register version
 .SH BUGS
-At this writing, only the lower 64KB of flash on the larger at90usb parts
-can be written.  A protocol command allowing the rest of flash to be written 
-is not yet supported.
+None known.
+.SH KNOWN ISSUES
+The at90usb series chips do not make available any read/write protect
+flags so the
+.B dump
+or
+.B flash
+command may fail with a less than helpful error message.
 .PP
-Currently this programmer rewrites the entire memory image,
-rather than just the portions specified in the hexfile.
+To remove
+.B any
+write or read protection from any chips, a full chip erasure is required.
 .SH AUTHOR
 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
 .SH SEE ALSO
@@ -149,4 +155,4 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
-Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA

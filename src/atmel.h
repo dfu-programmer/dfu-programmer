@@ -81,7 +81,7 @@ int atmel_reset( struct usb_dev_handle *device,
 int atmel_flash( struct usb_dev_handle *device,
                  const int interface,
                  int16_t *buffer,
-                 const uint16_t size,
+                 const uint32_t size,
                  const uint16_t flash_page_size );
 int atmel_start_app( struct usb_dev_handle *device,
                      const int interface );

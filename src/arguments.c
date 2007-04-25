@@ -43,31 +43,25 @@ struct target_mapping_structure {
     bool honor_interfaceclass;
 };
 
+/* NOTE FOR: at90usb1287, at90usb1286, at90usb647, at90usb646
+ *
+ * The actual size of the user-programmable section is limited by the
+ * space needed by the bootloader.  The size of the bootloader is set
+ * by BOOTSZ0/BOOTSZ1 fuse bits; here we assume the factory default and
+ * maximum of 4K words.  The window used for the bootloader is at the top
+ * of the of memory.
+ */
+
 /* ----- target specific structures ----------------------------------------- */
 static struct target_mapping_structure target_map[] = {
     { "at89c51snd1c", tar_at89c51snd1c, device_8051, 0x2FFF, 0x03eb, 0x10000, 128, false, true },
-    { "at89c5130",    tar_at89c5130,    device_8051, 0x2FFD, 0x03eb, 0x4000,  128, false, true },
-    { "at89c5131",    tar_at89c5131,    device_8051, 0x2FFD, 0x03eb, 0x8000,  128, false, true },
+    { "at89c5130",    tar_at89c5130,    device_8051, 0x2FFD, 0x03eb, 0x04000, 128, false, true },
+    { "at89c5131",    tar_at89c5131,    device_8051, 0x2FFD, 0x03eb, 0x08000, 128, false, true },
     { "at89c5132",    tar_at89c5132,    device_8051, 0x2FFF, 0x03eb, 0x10000, 128, false, true },
-
-    /* NOTE:  actual size of the user-programmable section is controlled
-     * by BOOTSZ0/BOOTSZ1 fuse bits; here we assume the max of 4K words.
-     *
-     * REVISIT the AVR DFU writeup suggests there is a special operation
-     * to change which 64KB segment is written.  Pending clarification of
-     * the documentation, we'll stick to the clearly documented behavior
-     * of being able to write the low 64 KB.
-     */
-    { "at90usb1287",  tar_at90usb1287,  device_AVR, 0x2FFB, 0x03eb,
-                64 * 1024, 128, true, false },
-                // 128 * 1024 - 8 * 1024},
-    { "at90usb1286",  tar_at90usb1286,  device_AVR, 0x2FFB, 0x03eb,
-                64 * 1024, 128, true, false },
-                // 128 * 1024 - 8 * 1024 },
-    { "at90usb647",   tar_at90usb647,   device_AVR, 0x2FFB, 0x03eb,
-                64 * 1024 - 8 * 1024, 128, true, false },
-    { "at90usb646",   tar_at90usb646,   device_AVR, 0x2FFB, 0x03eb,
-                64 * 1024 - 8 * 1024, 128, true, false },
+    { "at90usb1287",  tar_at90usb1287,  device_AVR,  0x2FFB, 0x03eb, 0x1E000, 128, true, false },
+    { "at90usb1286",  tar_at90usb1286,  device_AVR,  0x2FFB, 0x03eb, 0x1E000, 128, true, false },
+    { "at90usb647",   tar_at90usb647,   device_AVR,  0x2FFB, 0x03eb, 0x0E000, 128, true, false },
+    { "at90usb646",   tar_at90usb646,   device_AVR,  0x2FFB, 0x03eb, 0x0E000, 128, true, false },
     { NULL }
 };
 
