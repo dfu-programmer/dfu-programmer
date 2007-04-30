@@ -1,3 +1,8 @@
+2007-04-49 Weston Schmidt <weston_schmidt AT alumni.purdue.edu>
+
+	* configure.ac: Incremented the release number
+	* NEWS: Updated the latest news about the 0.4.1 release
+
 2007-04-25 Weston Schmidt <weston_schmidt AT alumni.purdue.edu>
 
 	* docs/dfu-programmer.1: Added a KNOWN ISSUES section,
