@@ -1,4 +1,4 @@
-Release 0.3.1
+Release 0.4.1
 * Added support for flashing both memory pages for the at90usb128x
   chips.
 * Updated the man page.
