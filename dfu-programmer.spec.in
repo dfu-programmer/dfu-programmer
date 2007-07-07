@@ -1,12 +1,12 @@
 Name:           dfu-programmer
 Version:        @VERSION@
-Release:        1%{?dist}
+Release:        1
 Summary:        A Device Firmware Update based USB programmer for Atmel chips
 
 Group:          Development/Tools
 License:        GPL
 URL:            http://dfu-programmer.sourceforge.net/
-Source0:        %{name}-%{version}.tar.gz
+Source0:        http://dl.sf.net/sourceforge/%{name}/%{name}-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 BuildRequires:  libusb-devel >= 0.1.10a
@@ -46,6 +46,10 @@ rm -rf $RPM_BUILD_ROOT
 
 %changelog
 
+* Fri Jul 06 2007 Weston Schmidt <weston_schmidt at alumni.purdue.edu> - 0.4.2-1
+- updating the release and other information to be ready to be part of fedora
+* Tue May 08 2007 Weston Schmidt <weston_schmidt at alumni.purdue.edu> - 0.4.1-1
+- fixint the changelog and Source0 URL
 * Wed Oct 21 2006 Weston Schmidt <weston_schmidt at alumni.purdue.edu> - 0.3.1-1
 - updated the release to get ready to be part of the fedora extras
 * Wed May 07 2006 Weston Schmidt <weston_schmidt at alumni.purdue.edu> - 0.3.0-1

@@ -1,4 +1,11 @@
-2007-04-49 Weston Schmidt <weston_schmidt AT alumni.purdue.edu>
+2007-07-07 Weston Schmidt <weston_schmidt AT alumni.purdue.edu>
+
+	* configure.ac: Incremented the release number
+	* NEWS: Updated the latest news about the 0.4.2 release
+	* dfu-programmer.spec.in: Updating the file to be compliant
+	  with the Fedora requirements for packaging
+
+2007-04-29 Weston Schmidt <weston_schmidt AT alumni.purdue.edu>
 
 	* configure.ac: Incremented the release number
 	* NEWS: Updated the latest news about the 0.4.1 release

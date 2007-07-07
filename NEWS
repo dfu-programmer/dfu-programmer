@@ -1,3 +1,5 @@
+Release 0.4.2
+* Minor spec file changes to be Fedora compliant
 Release 0.4.1
 * Added support for flashing both memory pages for the at90usb128x
   chips.
