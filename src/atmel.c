@@ -81,7 +81,7 @@ static int atmel_read_command( struct usb_dev_handle *device,
 
     if( DFU_STATUS_OK != status.bStatus ) {
         DEBUG( "status(%s) was not OK.\n",
-               dfu_state_to_string(status.bStatus) );
+               dfu_status_to_string(status.bStatus) );
         return -3;
     }
 
@@ -775,7 +775,7 @@ static int atmel_flash_block( struct usb_dev_handle *device,
 
     if( DFU_STATUS_OK != status.bStatus ) {
         DEBUG( "status(%s) was not OK.\n",
-               dfu_state_to_string(status.bStatus) );
+               dfu_status_to_string(status.bStatus) );
         return -4;
     }
 

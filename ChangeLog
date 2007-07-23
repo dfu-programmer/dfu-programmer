@@ -1,3 +1,10 @@
+2007-07-22 Weston Schmidt <weston_schmidt AT alumni.purdue.edu>
+
+	* src/atmel.c: Fix the incorrect status to string conversion
+	  that Nick Hibma found and pointed out.
+	* dfu-programmer.spec.in: Updating the file to be compliant
+	  with the Fedora requirements for packaging (again)
+
 2007-07-07 Weston Schmidt <weston_schmidt AT alumni.purdue.edu>
 
 	* configure.ac: Incremented the release number
