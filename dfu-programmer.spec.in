@@ -1,6 +1,6 @@
 Name:           dfu-programmer
 Version:        @VERSION@
-Release:        1
+Release:        2%{?dist}
 Summary:        A Device Firmware Update based USB programmer for Atmel chips
 
 Group:          Development/Tools
@@ -10,7 +10,6 @@ Source0:        http://dl.sf.net/sourceforge/%{name}/%{name}-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 BuildRequires:  libusb-devel >= 0.1.10a
-Requires:       libusb >= 0.1.10a
 
 %description 
 A linux based command-line programmer for Atmel chips with a USB
@@ -46,6 +45,8 @@ rm -rf $RPM_BUILD_ROOT
 
 %changelog
 
+* Fri Jul 20 2007 Weston Schmidt <weston_schmidt at alumni.purdue.edu> - 0.4.2-2
+- updated the release to include the dist, and remove the runtime lib req.
 * Fri Jul 06 2007 Weston Schmidt <weston_schmidt at alumni.purdue.edu> - 0.4.2-1
 - updating the release and other information to be ready to be part of fedora
 * Tue May 08 2007 Weston Schmidt <weston_schmidt at alumni.purdue.edu> - 0.4.1-1
