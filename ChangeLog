@@ -1,3 +1,16 @@
+2007-08-12 Weston Schmidt <weston_schmidt AT alumni.purdue.edu>
+
+	* AUTHORS: added Anton Blad (for new devices) and Nick Hibma
+	  (for bug fixes) to the list of contributors.
+	* configure.ac: Incremented the release number
+	* docs/dfu-programmer.1: Added at90usb162 and at90usb82
+	  devices
+	* dfu-programmer.spec.in: Added the newly supported chips
+	* NEWS: Updated the latest news about the 0.4.3 release
+	* src/arguments.c, src/arguments.h: Applied the patch that
+	  Anton Blad provided to add support for the at90usb162
+	  and at90usb82.
+
 2007-07-22 Weston Schmidt <weston_schmidt AT alumni.purdue.edu>
 
 	* src/atmel.c: Fix the incorrect status to string conversion

@@ -1,6 +1,6 @@
 Name:           dfu-programmer
 Version:        @VERSION@
-Release:        2%{?dist}
+Release:        1%{?dist}
 Summary:        A Device Firmware Update based USB programmer for Atmel chips
 
 Group:          Development/Tools
@@ -22,6 +22,8 @@ Currently supported chips:
     at89c5130                   at90usb1286
     at89c5131                   at90usb647 
     at89c5132                   at90usb646
+                                at90usb162
+                                at90usb82
 
 %prep
 %setup -q
@@ -45,6 +47,8 @@ rm -rf $RPM_BUILD_ROOT
 
 %changelog
 
+* Sun Aug 12 2007 Weston Schmidt <weston_schmidt at alumni.purdue.edu> - 0.4.3-1
+- see NEWS for details about this release
 * Fri Jul 20 2007 Weston Schmidt <weston_schmidt at alumni.purdue.edu> - 0.4.2-2
 - updated the release to include the dist, and remove the runtime lib req.
 * Fri Jul 06 2007 Weston Schmidt <weston_schmidt at alumni.purdue.edu> - 0.4.2-1

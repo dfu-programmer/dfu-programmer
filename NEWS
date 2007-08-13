@@ -1,3 +1,6 @@
+Release 0.4.3
+* Added support for the at90usb162 and at90usb82 chips.
+* Applied path for incorrect status string conversion.
 Release 0.4.2
 * Minor spec file changes to be Fedora compliant
 Release 0.4.1

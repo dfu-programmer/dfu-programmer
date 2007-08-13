@@ -4,6 +4,8 @@ Original Author:
 Contributors:
     - Reinhard Arlt
         - at89c5131 chip support
+    - Anton Blad
+        - at90usb162 and at90usb82 chip support
     - David Brownell
         - compiler flag improvements
         - command line argument processing improvements
@@ -11,5 +13,7 @@ Contributors:
         - significant man page improvements
         - support for the at90usb series AVR chips
         - the beginnings of the move over to using stdint.h
+    - Nick Hibma
+        - bug fixes
     - Markus Schneider
         - OS X porting issues

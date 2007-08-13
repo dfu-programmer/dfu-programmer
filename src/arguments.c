@@ -43,7 +43,7 @@ struct target_mapping_structure {
     bool honor_interfaceclass;
 };
 
-/* NOTE FOR: at90usb1287, at90usb1286, at90usb647, at90usb646
+/* NOTE FOR: at90usb1287, at90usb1286, at90usb647, at90usb646, at90usb162, at90usb82
  *
  * The actual size of the user-programmable section is limited by the
  * space needed by the bootloader.  The size of the bootloader is set
@@ -62,6 +62,8 @@ static struct target_mapping_structure target_map[] = {
     { "at90usb1286",  tar_at90usb1286,  device_AVR,  0x2FFB, 0x03eb, 0x1E000, 128, true, false },
     { "at90usb647",   tar_at90usb647,   device_AVR,  0x2FFB, 0x03eb, 0x0E000, 128, true, false },
     { "at90usb646",   tar_at90usb646,   device_AVR,  0x2FFB, 0x03eb, 0x0E000, 128, true, false },
+    { "at90usb162",   tar_at90usb162,   device_AVR,  0x2FFA, 0x03eb, 0x03000, 128, true, false },
+    { "at90usb82",    tar_at90usb82,    device_AVR,  0x2FFA, 0x03eb, 0x01000, 128, true, false },
     { NULL }
 };
 
