@@ -1,10 +1,10 @@
 Name:           dfu-programmer
 Version:        @VERSION@
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        A Device Firmware Update based USB programmer for Atmel chips
 
 Group:          Development/Tools
-License:        GPL
+License:        GPLv2+
 URL:            http://dfu-programmer.sourceforge.net/
 Source0:        http://dl.sf.net/sourceforge/%{name}/%{name}-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
@@ -47,6 +47,8 @@ rm -rf $RPM_BUILD_ROOT
 
 %changelog
 
+* Sun Aug 15 2007 Weston Schmidt <weston_schmidt at alumni.purdue.edu> - 0.4.3-2
+- updated the license tag
 * Sun Aug 12 2007 Weston Schmidt <weston_schmidt at alumni.purdue.edu> - 0.4.3-1
 - see NEWS for details about this release
 * Fri Jul 20 2007 Weston Schmidt <weston_schmidt at alumni.purdue.edu> - 0.4.2-2

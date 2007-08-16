@@ -1,3 +1,7 @@
+2007-08-15 Weston Schmidt <weston_schmidt AT alumni.purdue.edu>
+
+	* dfu-programmer.spec.in: Updating the license tag.
+
 2007-08-12 Weston Schmidt <weston_schmidt AT alumni.purdue.edu>
 
 	* AUTHORS: added Anton Blad (for new devices) and Nick Hibma
