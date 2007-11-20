@@ -1,0 +1,2 @@
+<at90usb>=/dev/at90usb*
+<console> 0600 <at90usb> 0600 root

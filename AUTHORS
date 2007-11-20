@@ -17,3 +17,5 @@ Contributors:
         - bug fixes
     - Markus Schneider
         - OS X porting issues
+    - Geoffrey Wossum
+        - added reset command

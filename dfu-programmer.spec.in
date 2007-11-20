@@ -6,7 +6,10 @@ Summary:        A Device Firmware Update based USB programmer for Atmel chips
 Group:          Development/Tools
 License:        GPLv2+
 URL:            http://dfu-programmer.sourceforge.net/
-Source0:        http://dl.sf.net/sourceforge/%{name}/%{name}-%{version}.tar.gz
+Source0:        http://switch.dl.sf.net/sourceforge/%{name}/%{name}-%{version}.tar.gz
+Source1:        99-%{name}.rules
+Source2:        %{name}-at89c51.perms
+Source3:        %{name}-at90usb.perms
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 BuildRequires:  libusb-devel >= 0.1.10a
@@ -30,23 +33,35 @@ Currently supported chips:
 
 %build
 %configure
-make %{?_smp_mflags}
+%{__make} %{?_smp_mflags}
 
 %install
-rm -rf $RPM_BUILD_ROOT
-make install DESTDIR=$RPM_BUILD_ROOT
+%{__rm} -rf %{buildroot}
+%{__make} DESTDIR=%{buildroot} install 
+
+%{__install} -d %{buildroot}%{_sysconfdir}/udev/rules.d/
+%{__install} -d %{buildroot}%{_sysconfdir}/security/console.perms.d/
+%{__install} -pm 644 %{SOURCE1} %{buildroot}%{_sysconfdir}/udev/rules.d/99-%{name}.rules
+%{__install} -pm 644 %{SOURCE2} %{buildroot}%{_sysconfdir}/security/console.perms.d/%{name}-at89c51.perms
+%{__install} -pm 644 %{SOURCE3} %{buildroot}%{_sysconfdir}/security/console.perms.d/%{name}-at90usb.perms
+
 
 %clean
-rm -rf $RPM_BUILD_ROOT
+%{__rm} -rf %{buildroot}
 
 %files
 %defattr(-,root,root,-)
 %doc AUTHORS ChangeLog NEWS README COPYING
-%{_bindir}/dfu-programmer
+%{_bindir}/%{name}
 %{_mandir}/man1/%{name}.1*
+%config(noreplace) %{_sysconfdir}/udev/rules.d/99-%{name}.rules
+%config(noreplace) %{_sysconfdir}/security/console.perms.d/*.perms
 
 %changelog
 
+* Mon Nov 19 2007 Weston Schmidt <weston_schmidt at alumni.purdue.edu> - 0.4.4-1
+- added reset command
+- added udev rules and permissions
 * Sun Aug 15 2007 Weston Schmidt <weston_schmidt at alumni.purdue.edu> - 0.4.3-2
 - updated the license tag
 * Sun Aug 12 2007 Weston Schmidt <weston_schmidt at alumni.purdue.edu> - 0.4.3-1

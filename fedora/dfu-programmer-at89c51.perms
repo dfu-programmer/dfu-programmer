@@ -1,0 +1,2 @@
+<at89c51>=/dev/at89c51*
+<console> 0600 <at89c51> 0600 root
