@@ -31,5 +31,5 @@ AC_FUNC_MALLOC
 AC_FUNC_MEMCMP
 AC_CHECK_FUNCS([memset])
 
-AC_CONFIG_FILES(dfu-programmer.spec Makefile docs/Makefile src/Makefile)
+AC_CONFIG_FILES(fedora/dfu-programmer.spec Makefile docs/Makefile src/Makefile)
 AC_OUTPUT
