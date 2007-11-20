@@ -1,3 +1,7 @@
+Release 0.4.4
+* Added new reset command
+* Added out of the box permission changes to allow the console owner
+  to flash a device without needing to be root.
 Release 0.4.3
 * Added support for the at90usb162 and at90usb82 chips.
 * Applied path for incorrect status string conversion.

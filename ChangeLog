@@ -1,3 +1,17 @@
+2007-11-19 Weston Schmidt <weston_schmidt AT alumni.purdue.edu>
+
+	* docs/dfu-programmer.1, src/arguments.c, src/arguments.h,
+	  src/commands.c, AUTHORS: Applied the patch that Geoffrey
+	  Wossum provided to add a reset command.
+	* fedora/*: Adding udev rules for and permissions so that
+	  the console owner will automatically be able to flash
+	  any of the devices supported by dfu-programmer.
+	* dfu-programmer.spec.in, Makefile.am, configure.ac:
+	  Moved the spec file into the fedora specific
+	  directory and excluded from the tar dist.
+	* configure.ac: Incremented the release number
+	* NEWS: Updated the latest news about the 0.4.4 release
+
 2007-08-15 Weston Schmidt <weston_schmidt AT alumni.purdue.edu>
 
 	* dfu-programmer.spec.in: Updating the license tag.
