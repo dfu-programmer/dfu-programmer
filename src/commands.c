@@ -139,6 +139,15 @@ error:
 }
 
 
+static int execute_reset( struct usb_dev_handle *device,
+                          int interface,
+                          struct programmer_arguments *args )
+{
+    return atmel_reset( device, interface );
+}
+
+
+
 static int execute_start_app( struct usb_dev_handle *device,
                               int interface,
                               struct programmer_arguments *args )
@@ -334,6 +343,8 @@ int execute_command( struct usb_dev_handle *device,
             return execute_erase( device, interface, args );
         case com_flash:
             return execute_flash( device, interface, args );
+        case com_reset:
+            return execute_reset( device, interface, args );
         case com_start_app:
             return execute_start_app( device, interface, args );
         case com_get:

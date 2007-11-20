@@ -74,6 +74,7 @@ static struct option_mapping_structure command_map[] = {
     { "erase",     com_erase     },
     { "flash",     com_flash     },
     { "get",       com_get       },
+    { "reset",     com_reset     },
     { "start",     com_start_app },
     { "version",   com_version   },
     { NULL }
@@ -135,6 +136,7 @@ static void usage()
                      "            manufacturer|family|product-name|\n"
                      "            product-revision|HSB} "
                      "[global-options]\n" );
+    fprintf( stderr, "        reset [global-options]\n" );
     fprintf( stderr, "        start [global-options]\n" );
     fprintf( stderr, "        version [global-options]\n" );
 }

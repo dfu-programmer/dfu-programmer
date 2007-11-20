@@ -44,14 +44,14 @@ enum targets_enum { tar_at89c51snd1c = 0,
                     tar_at90usb1287  = 4,
                     tar_at90usb1286  = 5,
                     tar_at90usb647   = 6,
-					tar_at90usb646   = 7,
-					tar_at90usb162   = 8,
+                    tar_at90usb646   = 7,
+                    tar_at90usb162   = 8,
                     tar_at90usb82    = 9,
                     tar_none         = 10 };
 
 enum commands_enum { com_none, com_erase, com_flash,
                      com_configure, com_get, com_dump, com_start_app,
-                     com_version };
+                     com_version, com_reset };
 
 enum configure_enum { conf_BSB = ATMEL_SET_CONFIG_BSB,
                       conf_SBV = ATMEL_SET_CONFIG_SBV,
