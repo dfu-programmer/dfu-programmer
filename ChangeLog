@@ -1,3 +1,10 @@
+2008-05-22 Weston Schmidt <weston_schmidt AT alumni.purdue.edu>
+	* docs/dfu-programmer.1, src/arguments.c, src/arguments.h,
+	  src/atmel.c, src/atmel.h, src/commands.c: Added support
+	  for eeprom-dump and eeprom-flash for the supported chips.
+	* configure.ac, config.h.in: Added checks for stdbool.h
+	  stdint.h.
+
 2007-11-19 Weston Schmidt <weston_schmidt AT alumni.purdue.edu>
 
 	* docs/dfu-programmer.1, src/arguments.c, src/arguments.h,

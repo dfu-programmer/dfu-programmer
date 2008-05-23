@@ -21,6 +21,7 @@
 #ifndef __ATMEL_H__
 #define __ATMEL_H__
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <usb.h>
@@ -71,7 +72,8 @@ int atmel_read_flash( struct usb_dev_handle *device,
                       const u_int32_t start,
                       const u_int32_t end,
                       char* buffer,
-                      int buffer_len );
+                      int buffer_len,
+                      const bool eeprom );
 int atmel_blank_check( struct usb_dev_handle *device,
                       const int interface,
                       const u_int32_t start,
@@ -82,7 +84,8 @@ int atmel_flash( struct usb_dev_handle *device,
                  const int interface,
                  int16_t *buffer,
                  const uint32_t size,
-                 const uint16_t flash_page_size );
+                 const uint16_t flash_page_size,
+                 const bool eeprom );
 int atmel_start_app( struct usb_dev_handle *device,
                      const int interface );
 

@@ -49,9 +49,9 @@ enum targets_enum { tar_at89c51snd1c = 0,
                     tar_at90usb82    = 9,
                     tar_none         = 10 };
 
-enum commands_enum { com_none, com_erase, com_flash,
-                     com_configure, com_get, com_dump, com_start_app,
-                     com_version, com_reset };
+enum commands_enum { com_none, com_erase, com_flash, com_eflash,
+                     com_configure, com_get, com_dump, com_edump,
+                     com_start_app, com_version, com_reset };
 
 enum configure_enum { conf_BSB = ATMEL_SET_CONFIG_BSB,
                       conf_SBV = ATMEL_SET_CONFIG_SBV,
@@ -77,6 +77,9 @@ struct programmer_arguments {
     u_int16_t flash_page_size;
     bool initial_abort;
     bool honor_interfaceclass;
+    u_int32_t top_eeprom_memory_address;
+    u_int32_t eeprom_memory_size;
+    u_int16_t eeprom_page_size;
 
     /* command-specific state */
     enum commands_enum command;

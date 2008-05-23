@@ -56,6 +56,11 @@ configuration bytes.
 Reads all the available flash memory, and writes it as binary
 data to stdout.
 .HP
+.B eeprom-dump
+.br
+Reads all the available eeprom memory, and writes it as binary
+data to stdout.
+.HP
 .B erase
 [\-\-suppress\-validation]
 .br
@@ -67,6 +72,13 @@ This is required before the bootloader will perform other commands.
 file
 .br
 Writes flash memory.  The input file must use the "ihex" file
+format convention for a memory image.
+.HP
+.B eeprom-flash
+[\-\-suppress\-validation]
+file
+.br
+Writes to eeprom memory.  The input file must use the "ihex" file
 format convention for a memory image.
 .HP
 .B get

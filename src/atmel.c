@@ -20,6 +20,7 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
 #include <stddef.h>
@@ -51,7 +52,8 @@ static int atmel_flash_block( struct usb_dev_handle *device,
                               const int interface,
                               int16_t *buffer,
                               uint16_t base_address,
-                              uint16_t length );
+                              uint16_t length,
+                              const bool eeprom );
 static int atmel_select_page( struct usb_dev_handle *device,
                               const int interface,
                               const uint8_t mem_page );
@@ -305,7 +307,8 @@ int atmel_read_flash( struct usb_dev_handle *device,
                       const u_int32_t start,
                       const u_int32_t end,
                       char* buffer,
-                      const int buffer_len )
+                      const int buffer_len,
+                      const bool eeprom )
 {
     char command[6] = { 0x03, 0x00, 0x00, 0x00, 0x00, 0x00 };
     char *ptr = buffer;
@@ -322,6 +325,10 @@ int atmel_read_flash( struct usb_dev_handle *device,
     if( length > buffer_len ) {
         DEBUG( "buffer isn't large enough - bytes needed: %d : %d.\n", length, buffer_len );
         return -2;
+    }
+
+    if( true == eeprom ) {
+        command[1] = 0x02;
     }
 
     rxStart = start;
@@ -509,27 +516,27 @@ static int atmel_select_page( struct usb_dev_handle *device,
 
 
 static void atmel_flash_prepair_buffer( int16_t *buffer, const uint16_t size,
-                                        const uint16_t flash_page_size )
+                                        const uint16_t page_size )
 {
     int16_t *page;
 
     for( page = buffer;
-         &page[flash_page_size] < &buffer[size];
-         page = &page[flash_page_size] )
+         &page[page_size] < &buffer[size];
+         page = &page[page_size] )
     {
         int i;
 
-        for( i = 0; i < flash_page_size; i++ ) {
+        for( i = 0; i < page_size; i++ ) {
             if( (0 <= page[i]) && (page[i] < UINT8_MAX) ) {
                 /* We found a valid value. */
                 break;
             }
         }
 
-        if( flash_page_size != i ) {
+        if( page_size != i ) {
             /* There was valid data in the block & we need to make
              * sure there is no unassigned data.  */
-            for( i = 0; i < flash_page_size; i++ ) {
+            for( i = 0; i < page_size; i++ ) {
                 if( (page[i] < 0) || (UINT8_MAX < page[i]) ) {
                     /* Invalid memory value. */
                     page[i] = 0;
@@ -543,7 +550,8 @@ int atmel_flash( struct usb_dev_handle *device,
                  const int interface,
                  int16_t *buffer,
                  const uint32_t size,
-                 const uint16_t flash_page_size )
+                 const uint16_t page_size,
+                 const bool eeprom )
 {
     uint32_t start = 0;
     int sent = 0;
@@ -554,7 +562,7 @@ int atmel_flash( struct usb_dev_handle *device,
         return -1;
     }
 
-    atmel_flash_prepair_buffer( buffer, size, flash_page_size );
+    atmel_flash_prepair_buffer( buffer, size, page_size );
 
     while( 1 ) {
         uint32_t end;
@@ -606,7 +614,7 @@ int atmel_flash( struct usb_dev_handle *device,
             }
 
             result = atmel_flash_block( device, interface, &(buffer[start]),
-                                        (UINT16_MAX & start), length );
+                                        (UINT16_MAX & start), length, eeprom );
 
             if( result < 0 ) {
                 DEBUG( "error flashing the block: %d\n", result );
@@ -681,7 +689,7 @@ static void atmel_flash_populate_footer( char *message, char *footer,
 }
 
 static void atmel_flash_populate_header( char *header, uint16_t start_address,
-                                         uint16_t length )
+                                         uint16_t length, const bool eeprom )
 {
     uint16_t end;
 
@@ -696,7 +704,7 @@ static void atmel_flash_populate_header( char *header, uint16_t start_address,
     header[0] = 0x01;   /* ld_prog_start */
 
     /* data[0] */
-    header[1] = 0x00;
+    header[1] = ((true == eeprom) ? 0x01 : 0x00);
 
     /* start_address */
     header[2] = 0xff & (start_address >> 8);
@@ -711,7 +719,8 @@ static int atmel_flash_block( struct usb_dev_handle *device,
                               const int interface,
                               int16_t *buffer,
                               uint16_t base_address,
-                              uint16_t length )
+                              uint16_t length,
+                              const bool eeprom )
                               
 {
     char message[ATMEL_MAX_FLASH_BUFFER_SIZE];
@@ -739,7 +748,7 @@ static int atmel_flash_block( struct usb_dev_handle *device,
     data   = &message[0x20];
     footer = &message[0x20 + length];
 
-    atmel_flash_populate_header( header, base_address, length );
+    atmel_flash_populate_header( header, base_address, length, eeprom );
 
     DEBUG( "%d bytes to MCU %06x\n", length, base_address );
 

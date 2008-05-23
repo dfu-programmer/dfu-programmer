@@ -41,6 +41,8 @@ struct target_mapping_structure {
     unsigned short flash_page_size;
     bool initial_abort;
     bool honor_interfaceclass;
+    unsigned int eeprom_page_size;
+    unsigned int eeprom_memory_size;
 };
 
 /* NOTE FOR: at90usb1287, at90usb1286, at90usb647, at90usb646, at90usb162, at90usb82
@@ -54,29 +56,31 @@ struct target_mapping_structure {
 
 /* ----- target specific structures ----------------------------------------- */
 static struct target_mapping_structure target_map[] = {
-    { "at89c51snd1c", tar_at89c51snd1c, device_8051, 0x2FFF, 0x03eb, 0x10000, 128, false, true },
-    { "at89c5130",    tar_at89c5130,    device_8051, 0x2FFD, 0x03eb, 0x04000, 128, false, true },
-    { "at89c5131",    tar_at89c5131,    device_8051, 0x2FFD, 0x03eb, 0x08000, 128, false, true },
-    { "at89c5132",    tar_at89c5132,    device_8051, 0x2FFF, 0x03eb, 0x10000, 128, false, true },
-    { "at90usb1287",  tar_at90usb1287,  device_AVR,  0x2FFB, 0x03eb, 0x1E000, 128, true, false },
-    { "at90usb1286",  tar_at90usb1286,  device_AVR,  0x2FFB, 0x03eb, 0x1E000, 128, true, false },
-    { "at90usb647",   tar_at90usb647,   device_AVR,  0x2FFB, 0x03eb, 0x0E000, 128, true, false },
-    { "at90usb646",   tar_at90usb646,   device_AVR,  0x2FFB, 0x03eb, 0x0E000, 128, true, false },
-    { "at90usb162",   tar_at90usb162,   device_AVR,  0x2FFA, 0x03eb, 0x03000, 128, true, false },
-    { "at90usb82",    tar_at90usb82,    device_AVR,  0x2FFA, 0x03eb, 0x01000, 128, true, false },
+    { "at89c51snd1c", tar_at89c51snd1c, device_8051, 0x2FFF, 0x03eb, 0x10000, 128, false, true,  0,   0      },
+    { "at89c5130",    tar_at89c5130,    device_8051, 0x2FFD, 0x03eb, 0x04000, 128, false, true,  128, 0x03FF },
+    { "at89c5131",    tar_at89c5131,    device_8051, 0x2FFD, 0x03eb, 0x08000, 128, false, true,  128, 0x03FF },
+    { "at89c5132",    tar_at89c5132,    device_8051, 0x2FFF, 0x03eb, 0x10000, 128, false, true,  0,   0      },
+    { "at90usb1287",  tar_at90usb1287,  device_AVR,  0x2FFB, 0x03eb, 0x1E000, 128, true,  false, 128, 0x0FFF },
+    { "at90usb1286",  tar_at90usb1286,  device_AVR,  0x2FFB, 0x03eb, 0x1E000, 128, true,  false, 128, 0x0FFF },
+    { "at90usb647",   tar_at90usb647,   device_AVR,  0x2FFB, 0x03eb, 0x0E000, 128, true,  false, 128, 0x07FF },
+    { "at90usb646",   tar_at90usb646,   device_AVR,  0x2FFB, 0x03eb, 0x0E000, 128, true,  false, 128, 0x07FF },
+    { "at90usb162",   tar_at90usb162,   device_AVR,  0x2FFA, 0x03eb, 0x03000, 128, true,  false, 128, 0x01FF },
+    { "at90usb82",    tar_at90usb82,    device_AVR,  0x2FFA, 0x03eb, 0x01000, 128, true,  false, 128, 0x01FF },
     { NULL }
 };
 
 /* ----- command specific structures ---------------------------------------- */
 static struct option_mapping_structure command_map[] = {
-    { "configure", com_configure },
-    { "dump",      com_dump      },
-    { "erase",     com_erase     },
-    { "flash",     com_flash     },
-    { "get",       com_get       },
-    { "reset",     com_reset     },
-    { "start",     com_start_app },
-    { "version",   com_version   },
+    { "configure",    com_configure },
+    { "dump",         com_dump      },
+    { "dump-eeprom",  com_edump     },
+    { "erase",        com_erase     },
+    { "flash",        com_flash     },
+    { "flash-eeprom", com_eflash    },
+    { "get",          com_get       },
+    { "reset",        com_reset     },
+    { "start",        com_start_app },
+    { "version",      com_version   },
     { NULL }
 };
 
@@ -128,9 +132,13 @@ static void usage()
                      "[--suppress-validation] [global-options] data\n" );
     fprintf( stderr, "        dump "
                      "[global-options]\n" );
+    fprintf( stderr, "        dump-eeprom "
+                     "[global-options]\n" );
     fprintf( stderr, "        erase "
                      "[--suppress-validation] [global-options]\n" );
     fprintf( stderr, "        flash "
+                     "[--suppress-validation] [global-options] file\n" );
+    fprintf( stderr, "        flash-eeprom "
                      "[--suppress-validation] [global-options] file\n" );
     fprintf( stderr, "        get {bootloader-version|ID1|ID2|BSB|SBV|SSB|EB|\n"
                      "            manufacturer|family|product-name|\n"
@@ -169,10 +177,17 @@ static int assign_target( struct programmer_arguments *args,
             args->vendor_id = map->vendor_id;
             args->device_type = map->device_type;
             args->memory_size = map->memory_size;
+            args->eeprom_memory_size = map->eeprom_memory_size;
             args->flash_page_size = map->flash_page_size;
+            args->eeprom_page_size = map->eeprom_page_size;
             args->initial_abort = map->initial_abort;
             args->honor_interfaceclass = map->honor_interfaceclass;
             args->top_memory_address = map->memory_size - 1;
+            if( 0 < map->eeprom_memory_size ) {
+                args->top_eeprom_memory_address = map->eeprom_memory_size - 1;
+            } else {
+                args->top_eeprom_memory_address = 0;
+            }
             switch( args->device_type ) {
                 case device_8051:
                     strncpy( args->device_type_string, "8051",
@@ -221,6 +236,7 @@ static int assign_global_options( struct programmer_arguments *args,
                     args->com_erase_data.suppress_validation = 1;
                     break;
                 case com_flash:
+                case com_eflash:
                     args->com_flash_data.suppress_validation = 1;
                     break;
                 default:
@@ -335,6 +351,7 @@ static int assign_command_options( struct programmer_arguments *args,
                 break;
 
             case com_flash:
+            case com_eflash:
                 required_params = 1;
                 if( 0 != assign_com_flash_option(args, param, argv[i]) )
                     return -3;
@@ -404,6 +421,7 @@ static void print_args( struct programmer_arguments *args )
                         "false" : "true" );
             break;
         case com_flash:
+        case com_eflash:
             printf( "   validate: %s\n",
                     (args->com_flash_data.suppress_validation) ?
                         "false" : "true" );

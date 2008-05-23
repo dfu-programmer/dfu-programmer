@@ -61,18 +61,30 @@ static int execute_flash( struct usb_dev_handle *device,
     int   result = 0;
     char *buffer = NULL;
     int   i;
+    uint32_t memory_size = args->memory_size;
+    uint32_t top_memory_address = args->top_memory_address;
+    uint32_t page_size = args->flash_page_size;
+    bool eeprom = false;
 
-    buffer = (char *) malloc( args->memory_size );
+    if( com_eflash == args->command ) {
+        memory_size = args->eeprom_memory_size;
+        top_memory_address = args->top_eeprom_memory_address;
+        page_size = args->eeprom_page_size;
+        eeprom = true;
+    }
+
+    buffer = (char *) malloc( memory_size );
+
     if( NULL == buffer ) {
         fprintf( stderr, "Request for %d bytes of memory failed.\n",
-                 args->memory_size );
+                 memory_size );
         goto error;
     }
 
-    memset( buffer, 0, args->memory_size );
+    memset( buffer, 0, memory_size );
 
     hex_data = intel_hex_to_buffer( args->com_flash_data.file,
-                                    args->memory_size, &usage );
+                                    memory_size, &usage );
     if( NULL == hex_data ) {
         DEBUG( "Something went wrong with creating the memory image.\n" );
         fprintf( stderr,
@@ -80,10 +92,10 @@ static int execute_flash( struct usb_dev_handle *device,
         goto error;
     }
 
-    DEBUG( "write %d/%d bytes\n", usage, args->memory_size );
+    DEBUG( "write %d/%d bytes\n", usage, memory_size );
 
-    result = atmel_flash( device, interface, hex_data, args->top_memory_address,
-                          args->flash_page_size );
+    result = atmel_flash( device, interface, hex_data, top_memory_address,
+                          page_size, eeprom );
 
     if( result < 0 ) {
         DEBUG( "Error while flashing. (%d)\n", result );
@@ -95,10 +107,10 @@ static int execute_flash( struct usb_dev_handle *device,
         fprintf( stderr, "Validating...\n" );
 
         result = atmel_read_flash( device, interface, 0,
-                                   args->top_memory_address, buffer,
-                                   args->memory_size );
+                                   top_memory_address, buffer,
+                                   memory_size, eeprom );
 
-        if( args->memory_size != result ) {
+        if( memory_size != result ) {
             DEBUG( "Error while validating.\n" );
             fprintf( stderr, "Error while validating.\n" );
             goto error;
@@ -119,7 +131,7 @@ static int execute_flash( struct usb_dev_handle *device,
 
     if( 0 == args->quiet ) {
         fprintf( stderr, "%d bytes used (%.02f%%)\n", usage,
-                         ((float)(usage*100)/(float)(args->top_memory_address)) );
+                         ((float)(usage*100)/(float)(top_memory_address)) );
     }
 
     retval = 0;
@@ -269,26 +281,37 @@ static int execute_dump( struct usb_dev_handle *device,
 {
     int i = 0;
     char  *buffer = NULL;
+    uint32_t memory_size = args->memory_size;
+    uint32_t top_memory_address = args->top_memory_address;
+    uint32_t page_size = args->flash_page_size;
+    bool eeprom = false;
 
-    buffer = (char *) malloc( (args->memory_size) );
+    if( com_eflash == args->command ) {
+        memory_size = args->eeprom_memory_size;
+        top_memory_address = args->top_eeprom_memory_address;
+        page_size = args->eeprom_page_size;
+        eeprom = true;
+    }
+
+    buffer = (char *) malloc( memory_size );
     if( NULL == buffer ) {
         fprintf( stderr, "Request for %d bytes of memory failed.\n",
-                 args->memory_size );
+                 memory_size );
         goto error;
     }
 
-    DEBUG( "dump %d bytes\n", args->memory_size );
+    DEBUG( "dump %d bytes\n", memory_size );
 
-    if( args->memory_size != atmel_read_flash(device, interface, 0,
-                                  args->top_memory_address, buffer,
-                                  args->memory_size) )
+    if( memory_size != atmel_read_flash(device, interface, 0,
+                                  top_memory_address, buffer,
+                                  memory_size, eeprom) )
     {
         fprintf( stderr, "Request for %d bytes of memory failed.\n",
-                 args->memory_size );
+                 memory_size );
         return -1;
     }
 
-    for( i = 0; i < args->memory_size; i++ ) {
+    for( i = 0; i < memory_size; i++ ) {
         fprintf( stdout, "%c", buffer[i] );
     }
 
@@ -342,6 +365,7 @@ int execute_command( struct usb_dev_handle *device,
         case com_erase:
             return execute_erase( device, interface, args );
         case com_flash:
+        case com_eflash:
             return execute_flash( device, interface, args );
         case com_reset:
             return execute_reset( device, interface, args );
@@ -350,6 +374,7 @@ int execute_command( struct usb_dev_handle *device,
         case com_get:
             return execute_get( device, interface, args );
         case com_dump:
+        case com_edump:
             return execute_dump( device, interface, args );
         case com_configure:
             return execute_configure( device, interface, args );
