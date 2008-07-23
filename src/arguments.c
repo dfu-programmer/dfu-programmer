@@ -494,7 +494,7 @@ int parse_arguments( struct programmer_arguments *args,
     }
 
     /* if this is a flash command, restore the filename */
-    if( com_flash == args->command ) {
+    if( (com_flash == args->command) || (com_eflash == args->command) ) {
         if( 0 == args->com_flash_data.file ) {
             fprintf( stderr, "flash filename is missing\n" );
             status = -8;

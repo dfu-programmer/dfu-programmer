@@ -19,3 +19,5 @@ Contributors:
         - OS X porting issues
     - Geoffrey Wossum
         - added reset command
+    - Sean D'Epagnier
+        - eeprom bug fix

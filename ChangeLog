@@ -1,3 +1,7 @@
+2008-07-22 Weston Schmidt <weston_schmidt AT alumni.purdue.edu>
+	* src/arguments.c, AUTHORS: Apply the patch Sean D'Epagnier
+	  sent to fix eeprom flashing.
+
 2008-05-22 Weston Schmidt <weston_schmidt AT alumni.purdue.edu>
 	* docs/dfu-programmer.1, src/arguments.c, src/arguments.h,
 	  src/atmel.c, src/atmel.h, src/commands.c: Added support
