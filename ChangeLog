@@ -1,3 +1,10 @@
+2008-08-20 Weston Schmidt <weston_schmidt AT alumni.purdue.edu>
+	* src/arguments.c, AUTHORS: Apply the patch Sean D'Epagnier
+	  sent to enable 4K bootloaders.
+	* fedora/dfu-programmer.spec.in, configure.ac:
+	  Incremented the release number
+	* NEWS: Updated the latest news about the 0.4.5 release
+
 2008-07-22 Weston Schmidt <weston_schmidt AT alumni.purdue.edu>
 	* src/arguments.c, AUTHORS: Apply the patch Sean D'Epagnier
 	  sent to fix eeprom flashing.

@@ -49,9 +49,8 @@ struct target_mapping_structure {
  *
  * The actual size of the user-programmable section is limited by the
  * space needed by the bootloader.  The size of the bootloader is set
- * by BOOTSZ0/BOOTSZ1 fuse bits; here we assume the factory default and
- * maximum of 4K words.  The window used for the bootloader is at the top
- * of the of memory.
+ * by BOOTSZ0/BOOTSZ1 fuse bits; here we assume the bootloader is 4kb or 8kb.
+ * The window used for the bootloader is at the top of the of memory.
  */
 
 /* ----- target specific structures ----------------------------------------- */
@@ -60,10 +59,10 @@ static struct target_mapping_structure target_map[] = {
     { "at89c5130",    tar_at89c5130,    device_8051, 0x2FFD, 0x03eb, 0x04000, 128, false, true,  128, 0x03FF },
     { "at89c5131",    tar_at89c5131,    device_8051, 0x2FFD, 0x03eb, 0x08000, 128, false, true,  128, 0x03FF },
     { "at89c5132",    tar_at89c5132,    device_8051, 0x2FFF, 0x03eb, 0x10000, 128, false, true,  0,   0      },
-    { "at90usb1287",  tar_at90usb1287,  device_AVR,  0x2FFB, 0x03eb, 0x1E000, 128, true,  false, 128, 0x0FFF },
-    { "at90usb1286",  tar_at90usb1286,  device_AVR,  0x2FFB, 0x03eb, 0x1E000, 128, true,  false, 128, 0x0FFF },
-    { "at90usb647",   tar_at90usb647,   device_AVR,  0x2FFB, 0x03eb, 0x0E000, 128, true,  false, 128, 0x07FF },
-    { "at90usb646",   tar_at90usb646,   device_AVR,  0x2FFB, 0x03eb, 0x0E000, 128, true,  false, 128, 0x07FF },
+    { "at90usb1287",  tar_at90usb1287,  device_AVR,  0x2FFB, 0x03eb, 0x1F000, 128, true,  false, 128, 0x0FFF },
+    { "at90usb1286",  tar_at90usb1286,  device_AVR,  0x2FFB, 0x03eb, 0x1F000, 128, true,  false, 128, 0x0FFF },
+    { "at90usb647",   tar_at90usb647,   device_AVR,  0x2FFB, 0x03eb, 0x0F000, 128, true,  false, 128, 0x07FF },
+    { "at90usb646",   tar_at90usb646,   device_AVR,  0x2FFB, 0x03eb, 0x0F000, 128, true,  false, 128, 0x07FF },
     { "at90usb162",   tar_at90usb162,   device_AVR,  0x2FFA, 0x03eb, 0x03000, 128, true,  false, 128, 0x01FF },
     { "at90usb82",    tar_at90usb82,    device_AVR,  0x2FFA, 0x03eb, 0x01000, 128, true,  false, 128, 0x01FF },
     { NULL }

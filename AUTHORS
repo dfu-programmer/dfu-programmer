@@ -21,3 +21,4 @@ Contributors:
         - added reset command
     - Sean D'Epagnier
         - eeprom bug fix
+        - 4K bootloader support fix

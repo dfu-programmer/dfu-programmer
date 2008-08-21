@@ -56,6 +56,9 @@ Currently supported chips:
 
 %changelog
 
+* Wed Aug 20 2008 Weston Schmidt <weston_schmidt at alumni.purdue.edu> - 0.4.5-1
+- added 4K bootloader support
+- added eeprom-dump and eeprom-flash support
 * Mon Nov 19 2007 Weston Schmidt <weston_schmidt at alumni.purdue.edu> - 0.4.4-1
 - added reset command
 - added udev rules and permissions
