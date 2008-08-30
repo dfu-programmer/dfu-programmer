@@ -1,6 +1,4 @@
 SUBDIRS = src docs
 
-EXTRA_DIST = bootstrap.sh fedora/99-dfu-programmer.rules \
-             fedora/dfu-programmer-at90usb.perms \
-             fedora/dfu-programmer-at89c51.perms \
+EXTRA_DIST = bootstrap.sh fedora/10-dfu-programmer.fdi \
              fedora/dfu-programmer.spec

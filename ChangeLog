@@ -1,3 +1,14 @@
+2008-08-29 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
+	* fedora/dfu-programmer.spec.in,
+	  fedora/99-dfu-programmer.rules,
+	  fedora/10-dfu-programmer.fdi,
+	  fedora/dfu-programmer-at90usb.perms,
+	  fedora/dfu-programmer-at89c51.perms: Changed the permission
+	  handling code to be based on HAL instead of PAM to keep up
+	  with Fedora 9+ releases.
+	* configure.ac: Incremented the release number
+	* NEWS: Updated the latest news about the 0.4.6 release
+
 2008-08-20 Weston Schmidt <weston_schmidt AT alumni.purdue.edu>
 	* src/arguments.c, AUTHORS: Apply the patch Sean D'Epagnier
 	  sent to enable 4K bootloaders.

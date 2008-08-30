@@ -1,6 +1,12 @@
+Release 0.4.6
+* Minor release changes - focused on changing the permission handling.
+  code for fedora
+* This is the last planned 0.4.x release.  The next release will be
+  0.5.0 and will be focused on better cross platform support (for
+  windows, etc) in addition to new chips.
 Release 0.4.5
-* Added support for 4K bootloaders on supported chips
-* Added support for eeprom-dump and eeprom-flash on supported chips
+* Added support for 4K bootloaders on supported chips.
+* Added support for eeprom-dump and eeprom-flash on supported chips.
 Release 0.4.4
 * Added new reset command
 * Added out of the box permission changes to allow the console owner

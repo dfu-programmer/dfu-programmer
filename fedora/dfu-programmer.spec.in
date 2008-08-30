@@ -6,7 +6,7 @@ Summary:        A Device Firmware Update based USB programmer for Atmel chips
 Group:          Development/Tools
 License:        GPLv2+
 URL:            http://dfu-programmer.sourceforge.net/
-Source0:        http://switch.dl.sf.net/sourceforge/%{name}/%{name}-%{version}.tar.gz
+Source0:        http://downloads.sourceforge.net/%{name}/%{name}-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 BuildRequires:  libusb-devel >= 0.1.10a
@@ -36,12 +36,8 @@ Currently supported chips:
 %{__rm} -rf %{buildroot}
 %{__make} DESTDIR=%{buildroot} install 
 
-%{__install} -d %{buildroot}%{_sysconfdir}/udev/rules.d/
-%{__install} -d %{buildroot}%{_sysconfdir}/security/console.perms.d/
-%{__install} -pm 644 fedora/99-%{name}.rules %{buildroot}%{_sysconfdir}/udev/rules.d/99-%{name}.rules
-%{__install} -pm 644 fedora/%{name}-at89c51.perms %{buildroot}%{_sysconfdir}/security/console.perms.d/%{name}-at89c51.perms
-%{__install} -pm 644 fedora/%{name}-at90usb.perms %{buildroot}%{_sysconfdir}/security/console.perms.d/%{name}-at90usb.perms
-
+%{__install} -d %{buildroot}%{_datadir}/hal/fdi/policy/20thirdparty
+%{__install} -pm 644 fedora/10-dfu-programmer.fdi %{buildroot}%{_datadir}/hal/fdi/policy/20thirdparty/10-dfu-programmer.fdi
 
 %clean
 %{__rm} -rf %{buildroot}
@@ -51,14 +47,16 @@ Currently supported chips:
 %doc AUTHORS ChangeLog NEWS README COPYING
 %{_bindir}/%{name}
 %{_mandir}/man1/%{name}.1*
-%config(noreplace) %{_sysconfdir}/udev/rules.d/99-%{name}.rules
-%config(noreplace) %{_sysconfdir}/security/console.perms.d/*.perms
+%{_datadir}/hal/fdi/policy/20thirdparty/10-dfu-programmer.fdi
 
 %changelog
 
+* Fri Aug 29 2008 Weston Schmidt <weston_schmidt at alumni.purdue.edu> - 0.4.6-1
+- change udev rules and permissions to be hal based
 * Wed Aug 20 2008 Weston Schmidt <weston_schmidt at alumni.purdue.edu> - 0.4.5-1
 - added 4K bootloader support
 - added eeprom-dump and eeprom-flash support
+- fixed the Source0 url
 * Mon Nov 19 2007 Weston Schmidt <weston_schmidt at alumni.purdue.edu> - 0.4.4-1
 - added reset command
 - added udev rules and permissions
