@@ -22,9 +22,10 @@
 #define __COMMANDS_H__
 
 #include <usb.h>
+#include <stdint.h>
 #include "arguments.h"
 
-int execute_command( struct usb_dev_handle *device,
-                     int interface,
-                     struct programmer_arguments *args );
+int32_t execute_command( struct usb_dev_handle *device,
+                         int32_t interface,
+                         struct programmer_arguments *args );
 #endif

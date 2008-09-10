@@ -22,7 +22,10 @@
 #define __DFU_H__
 
 #include <usb.h>
-#include <stdbool.h>
+#include <stdint.h>
+#include <stddef.h>
+
+#include "dfu-bool.h"
 
 /* DFU states */
 #define STATE_APP_IDLE                  0x00
@@ -66,39 +69,39 @@
 */
 
 struct dfu_status {
-    unsigned char bStatus;
-    unsigned int  bwPollTimeout;
-    unsigned char bState;
-    unsigned char iString;
+    uint8_t bStatus;
+    uint32_t bwPollTimeout;
+    uint8_t bState;
+    uint8_t iString;
 };
 
-int dfu_detach( struct usb_dev_handle *handle,
-                const unsigned short interface,
-                const unsigned short timeout );
-int dfu_download( struct usb_dev_handle *handle,
-                  const unsigned short interface,
-                  const unsigned short length,
-                  char* data );
-int dfu_upload( struct usb_dev_handle *handle,
-                const unsigned short interface,
-                const unsigned short length,
-                char* data );
-int dfu_get_status( struct usb_dev_handle *handle,
-                    const unsigned short interface,
-                    struct dfu_status *status );
-int dfu_clear_status( struct usb_dev_handle *handle,
-                      const unsigned short interface );
-int dfu_get_state( struct usb_dev_handle *handle,
-                   const unsigned short interface );
-int dfu_abort( struct usb_dev_handle *handle,
-               const unsigned short interface );
-struct usb_device *dfu_device_init( const unsigned int vendor,
-                                    const unsigned int product,
+int32_t dfu_detach( struct usb_dev_handle *handle,
+                    const int32_t interface,
+                    const int32_t timeout );
+int32_t dfu_download( struct usb_dev_handle *handle,
+                      const int32_t interface,
+                      const size_t length,
+                      uint8_t* data );
+int32_t dfu_upload( struct usb_dev_handle *handle,
+                    const int32_t interface,
+                    const size_t length,
+                    uint8_t* data );
+int32_t dfu_get_status( struct usb_dev_handle *handle,
+                        const int32_t interface,
+                        struct dfu_status *status );
+int32_t dfu_clear_status( struct usb_dev_handle *handle,
+                          const int32_t interface );
+int32_t dfu_get_state( struct usb_dev_handle *handle,
+                       const int32_t interface );
+int32_t dfu_abort( struct usb_dev_handle *handle,
+                   const int32_t interface );
+struct usb_device *dfu_device_init( const uint32_t vendor,
+                                    const uint32_t product,
                                     struct usb_dev_handle **handle,
-                                    unsigned short *interface,
-                                    const bool initial_abort,
-                                    const bool honor_interfaceclass );
+                                    int32_t *interface,
+                                    const dfu_bool initial_abort,
+                                    const dfu_bool honor_interfaceclass );
 
-char* dfu_status_to_string( const int status );
-char* dfu_state_to_string( const int state );
+char* dfu_status_to_string( const int32_t status );
+char* dfu_state_to_string( const int32_t state );
 #endif

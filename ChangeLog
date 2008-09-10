@@ -1,3 +1,9 @@
+2008-09-10 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
+	* src/arguments.c, src/arguments.h, atmel.c, atmel.h
+	  commands.c, commands.h, dfu-bool.h, dfu.c, dfu.h
+	  main.c: Changed to using dfu_bool & stdint.h values.
+	* configure.ac: Removed dependency on stdbool.h.
+
 2008-08-29 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
 	* fedora/dfu-programmer.spec.in,
 	  fedora/99-dfu-programmer.rules,

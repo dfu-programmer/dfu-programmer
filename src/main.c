@@ -38,7 +38,7 @@ int main( int argc, char **argv )
     struct usb_device *device = NULL;
     struct usb_dev_handle *usb_handle = NULL;
     struct programmer_arguments args;
-    unsigned short interface;
+    int32_t interface;
 
     memset( &args, 0, sizeof(args) );
     if( 0 != parse_arguments(&args, argc, argv) ) {

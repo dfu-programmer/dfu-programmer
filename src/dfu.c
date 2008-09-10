@@ -20,11 +20,13 @@
 
 #include <stdio.h>
 #include <stdarg.h>
-#include <stdbool.h>
+#include <stdint.h>
+#include <stddef.h>
 #include <usb.h>
 #include <errno.h>
 #include "dfu.h"
 #include "util.h"
+#include "dfu-bool.h"
 
 /* DFU commands */
 #define DFU_DETACH      0
@@ -50,14 +52,13 @@
 #define DEBUG(...)  dfu_debug( __FILE__, __FUNCTION__, __LINE__, \
                                DFU_DEBUG_THRESHOLD, __VA_ARGS__ )
 
-static unsigned short transaction = 0;
+static uint16_t transaction = 0;
 
-static int dfu_find_interface( const struct usb_device *device,
-                               const bool honor_interfaceclass );
-static int dfu_make_idle( struct usb_dev_handle *handle,
-                          unsigned short interface,
-                          bool initial_abort );
-static void dfu_msg_response_output( const char *function, const int result );
+static int32_t dfu_find_interface( const struct usb_device *device,
+                                   const dfu_bool honor_interfaceclass );
+static int32_t dfu_make_idle( struct usb_dev_handle *handle,
+                              const int32_t interface, const dfu_bool initial_abort );
+static void dfu_msg_response_output( const char *function, const int32_t result );
 
 /*
  *  DFU_DETACH Request (DFU Spec 1.0, Section 5.1)
@@ -69,11 +70,11 @@ static void dfu_msg_response_output( const char *function, const int result );
  *
  *  returns 0 or < 0 on error
  */
-int dfu_detach( struct usb_dev_handle *handle,
-                const unsigned short interface,
-                const unsigned short timeout )
+int32_t dfu_detach( struct usb_dev_handle *handle,
+                    const int32_t interface,
+                    const int32_t timeout )
 {
-    int result;
+    int32_t result;
 
     result = usb_control_msg( handle,
           /* bmRequestType */ USB_ENDPOINT_OUT | USB_TYPE_CLASS | USB_RECIP_INTERFACE,
@@ -101,12 +102,12 @@ int dfu_detach( struct usb_dev_handle *handle,
  *
  *  returns the number of bytes written or < 0 on error
  */
-int dfu_download( struct usb_dev_handle *handle,
-                  const unsigned short interface,
-                  const unsigned short length,
-                  char* data )
+int32_t dfu_download( struct usb_dev_handle *handle,
+                      const int32_t interface,
+                      const size_t length,
+                      uint8_t* data )
 {
-    int result;
+    int32_t result;
 
     /* Sanity checks */
     if( (0 != length) && (NULL == data) ) {
@@ -124,7 +125,7 @@ int dfu_download( struct usb_dev_handle *handle,
           /* bRequest      */ DFU_DNLOAD,
           /* wValue        */ transaction++,
           /* wIndex        */ interface,
-          /* Data          */ data,
+          /* Data          */ (char *) data,
           /* wLength       */ length,
                               DFU_TIMEOUT );
 
@@ -145,12 +146,12 @@ int dfu_download( struct usb_dev_handle *handle,
  *
  *  returns the number of bytes received or < 0 on error
  */
-int dfu_upload( struct usb_dev_handle *handle,
-                const unsigned short interface,
-                const unsigned short length,
-                char* data )
+int32_t dfu_upload( struct usb_dev_handle *handle,
+                    const int32_t interface,
+                    const size_t length,
+                    uint8_t* data )
 {
-    int result;
+    int32_t result;
 
     /* Sanity checks */
     if( (0 == length) || (NULL == data) ) {
@@ -163,7 +164,7 @@ int dfu_upload( struct usb_dev_handle *handle,
           /* bRequest      */ DFU_UPLOAD,
           /* wValue        */ transaction++,
           /* wIndex        */ interface,
-          /* Data          */ data,
+          /* Data          */ (char *) data,
           /* wLength       */ length,
                               DFU_TIMEOUT );
 
@@ -182,12 +183,12 @@ int dfu_upload( struct usb_dev_handle *handle,
  *
  *  return the 0 if successful or < 0 on an error
  */
-int dfu_get_status( struct usb_dev_handle *handle,
-                    const unsigned short interface,
-                    struct dfu_status *status )
+int32_t dfu_get_status( struct usb_dev_handle *handle,
+                        const int32_t interface,
+                        struct dfu_status *status )
 {
     char buffer[6];
-    int result;
+    int32_t result;
 
     /* Initialize the status data structure */
     status->bStatus       = DFU_STATUS_ERROR_UNKNOWN;
@@ -243,10 +244,10 @@ int dfu_get_status( struct usb_dev_handle *handle,
  *
  *  return 0 or < 0 on an error
  */
-int dfu_clear_status( struct usb_dev_handle *handle,
-                      const unsigned short interface )
+int32_t dfu_clear_status( struct usb_dev_handle *handle,
+                          const int32_t interface )
 {
-    int result;
+    int32_t result;
 
     result = usb_control_msg( handle,
           /* bmRequestType */ USB_ENDPOINT_OUT| USB_TYPE_CLASS | USB_RECIP_INTERFACE,
@@ -274,10 +275,10 @@ int dfu_clear_status( struct usb_dev_handle *handle,
  *
  *  returns the state or < 0 on error
  */
-int dfu_get_state( struct usb_dev_handle *handle,
-                   const unsigned short interface )
+int32_t dfu_get_state( struct usb_dev_handle *handle,
+                       const int32_t interface )
 {
-    int result;
+    int32_t result;
     char buffer[1];
 
     result = usb_control_msg( handle,
@@ -309,10 +310,10 @@ int dfu_get_state( struct usb_dev_handle *handle,
  *
  *  returns 0 or < 0 on an error
  */
-int dfu_abort( struct usb_dev_handle *handle,
-               const unsigned short interface )
+int32_t dfu_abort( struct usb_dev_handle *handle,
+                   const int32_t interface )
 {
-    int result;
+    int32_t result;
 
     result = usb_control_msg( handle,
           /* bmRequestType */ USB_ENDPOINT_OUT | USB_TYPE_CLASS | USB_RECIP_INTERFACE,
@@ -340,16 +341,16 @@ int dfu_abort( struct usb_dev_handle *handle,
  *
  *  return a pointer to the usb_device if found, or NULL otherwise
  */
-struct usb_device *dfu_device_init( const unsigned int vendor,
-                                    const unsigned int product,
+struct usb_device *dfu_device_init( const uint32_t vendor,
+                                    const uint32_t product,
                                     struct usb_dev_handle **handle,
-                                    unsigned short *interface,
-                                    const bool initial_abort,
-                                    const bool honor_interfaceclass )
+                                    int32_t *interface,
+                                    const dfu_bool initial_abort,
+                                    const dfu_bool honor_interfaceclass )
 {
     struct usb_bus *usb_bus;
     struct usb_device *device;
-    int retries = 4;
+    int32_t retries = 4;
 
 retry:
 
@@ -363,14 +364,14 @@ retry:
                 if(    (vendor  == device->descriptor.idVendor)
                     && (product == device->descriptor.idProduct) )
                 {
-                    int tmp;
+                    int32_t tmp;
                     /* We found a device that looks like it matches...
                      * let's try to find the DFU interface, open the device
                      * and claim it. */
                     tmp = dfu_find_interface( device, honor_interfaceclass );
                     if( 0 <= tmp ) {
                         /* The interface is valid. */
-                        *interface = (unsigned short) tmp;
+                        *interface = (uint16_t) tmp;
                         *handle = usb_open( device );
                         if( NULL != *handle ) {
                             if( 0 == usb_claim_interface(*handle, *interface) ) {
@@ -417,7 +418,7 @@ retry:
  *
  *  returns the state name or "unknown state"
  */
-char* dfu_state_to_string( const int state )
+char* dfu_state_to_string( const int32_t state )
 {
     char *message = "unknown state";
 
@@ -468,7 +469,7 @@ char* dfu_state_to_string( const int state )
  *
  *  returns the status name or "unknown status"
  */
-char* dfu_status_to_string( const int status )
+char* dfu_status_to_string( const int32_t status )
 {
     char *message = "unknown status";
 
@@ -537,10 +538,10 @@ char* dfu_status_to_string( const int status )
  *
  *  returns the interface number if found, < 0 otherwise
  */
-static int dfu_find_interface( const struct usb_device *device,
-                               const bool honor_interfaceclass )
+static int32_t dfu_find_interface( const struct usb_device *device,
+                                   const dfu_bool honor_interfaceclass )
 {
-    int c, i;
+    int32_t c, i;
     struct usb_config_descriptor *config;
     struct usb_interface_descriptor *interface;
 
@@ -581,12 +582,12 @@ static int dfu_find_interface( const struct usb_device *device,
  *
  *  returns 0 on success, 1 if device was reset, error otherwise
  */
-static int dfu_make_idle( struct usb_dev_handle *handle,
-                          unsigned short interface,
-                          bool initial_abort )
+static int32_t dfu_make_idle( struct usb_dev_handle *handle,
+                              const int32_t interface,
+                              const dfu_bool initial_abort )
 {
     struct dfu_status status;
-    int retries = 4;
+    int32_t retries = 4;
 
     if( true == initial_abort ) {
         dfu_abort( handle, interface );
@@ -649,7 +650,7 @@ static int dfu_make_idle( struct usb_dev_handle *handle,
  *  function - the calling function to output on behalf of
  *  result   - the result to interpret
  */
-static void dfu_msg_response_output( const char *function, const int result )
+static void dfu_msg_response_output( const char *function, const int32_t result )
 {
     char *msg = NULL;
 

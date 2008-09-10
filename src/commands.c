@@ -22,6 +22,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "dfu-bool.h"
 #include "config.h"
 #include "commands.h"
 #include "arguments.h"
@@ -35,36 +36,37 @@
                                COMMAND_DEBUG_THRESHOLD, __VA_ARGS__ )
 
 
-static int execute_erase( struct usb_dev_handle *device,
-                          int interface,
-                          struct programmer_arguments *args )
+static int32_t execute_erase( struct usb_dev_handle *device,
+                              const int32_t interface,
+                              struct programmer_arguments *args )
 {
-    int result = 0;
+    int32_t result = 0;
 
     DEBUG( "erase %d bytes\n", args->memory_size );
 
     result = atmel_erase_flash( device, interface, ATMEL_ERASE_ALL );
-    if( 0 != result )
+    if( 0 != result ) {
         return result;
+    }
 
     return atmel_blank_check( device, interface, 0, args->top_memory_address );
 }
 
 
-static int execute_flash( struct usb_dev_handle *device,
-                          int interface,
-                          struct programmer_arguments *args )
+static int32_t execute_flash( struct usb_dev_handle *device,
+                              const int32_t interface,
+                              struct programmer_arguments *args )
 {
     int16_t *hex_data = NULL;
-    int   usage = 0;
-    int   retval = -1;
-    int   result = 0;
-    char *buffer = NULL;
-    int   i;
+    int32_t  usage = 0;
+    int32_t  retval = -1;
+    int32_t  result = 0;
+    uint8_t *buffer = NULL;
+    int32_t  i;
     uint32_t memory_size = args->memory_size;
     uint32_t top_memory_address = args->top_memory_address;
     uint32_t page_size = args->flash_page_size;
-    bool eeprom = false;
+    dfu_bool eeprom = false;
 
     if( com_eflash == args->command ) {
         memory_size = args->eeprom_memory_size;
@@ -73,7 +75,7 @@ static int execute_flash( struct usb_dev_handle *device,
         eeprom = true;
     }
 
-    buffer = (char *) malloc( memory_size );
+    buffer = (uint8_t *) malloc( memory_size );
 
     if( NULL == buffer ) {
         fprintf( stderr, "Request for %d bytes of memory failed.\n",
@@ -119,7 +121,7 @@ static int execute_flash( struct usb_dev_handle *device,
         for( i = 0; i < result; i++ ) {
             if( (0 <= hex_data[i]) && (hex_data[i] < UINT8_MAX) ) {
                 /* Memory should have been programmed in this location. */
-                if( ((char) hex_data[i]) != buffer[i] ) {
+                if( ((uint8_t) hex_data[i]) != buffer[i] ) {
                     DEBUG( "Image did not validate at location: %d (%02x != %02x)\n", i,
                            (0xff & hex_data[i]), (0xff & buffer[i]) );
                     fprintf( stderr, "Image did not validate.\n" );
@@ -151,32 +153,32 @@ error:
 }
 
 
-static int execute_reset( struct usb_dev_handle *device,
-                          int interface,
-                          struct programmer_arguments *args )
+static int32_t execute_reset( struct usb_dev_handle *device,
+                              const int32_t interface,
+                              struct programmer_arguments *args )
 {
     return atmel_reset( device, interface );
 }
 
 
 
-static int execute_start_app( struct usb_dev_handle *device,
-                              int interface,
-                              struct programmer_arguments *args )
+static int32_t execute_start_app( struct usb_dev_handle *device,
+                                  const int32_t interface,
+                                  struct programmer_arguments *args )
 {
     return atmel_start_app( device, interface );
 }
 
 
-static int execute_get( struct usb_dev_handle *device,
-                        int interface,
-                        struct programmer_arguments *args )
+static int32_t execute_get( struct usb_dev_handle *device,
+                            const int32_t interface,
+                            struct programmer_arguments *args )
 {
     struct atmel_device_info info;
     char *message = NULL;
-    short value = 0;
-    int status;
-    int controller_error = 0;
+    int16_t value = 0;
+    int32_t status;
+    int32_t controller_error = 0;
 
     if( device_8051 == args->device_type ) {
         status = atmel_read_config_8051( device, interface, &info );
@@ -275,16 +277,16 @@ static int execute_get( struct usb_dev_handle *device,
 }
 
 
-static int execute_dump( struct usb_dev_handle *device,
-                         int interface,
-                         struct programmer_arguments *args )
+static int32_t execute_dump( struct usb_dev_handle *device,
+                             const int32_t interface,
+                             struct programmer_arguments *args )
 {
-    int i = 0;
-    char  *buffer = NULL;
-    uint32_t memory_size = args->memory_size;
-    uint32_t top_memory_address = args->top_memory_address;
-    uint32_t page_size = args->flash_page_size;
-    bool eeprom = false;
+    int32_t i = 0;
+    uint8_t *buffer = NULL;
+    size_t memory_size = args->memory_size;
+    size_t top_memory_address = args->top_memory_address;
+    size_t page_size = args->flash_page_size;
+    dfu_bool eeprom = false;
 
     if( com_eflash == args->command ) {
         memory_size = args->eeprom_memory_size;
@@ -293,7 +295,7 @@ static int execute_dump( struct usb_dev_handle *device,
         eeprom = true;
     }
 
-    buffer = (char *) malloc( memory_size );
+    buffer = (uint8_t *) malloc( memory_size );
     if( NULL == buffer ) {
         fprintf( stderr, "Request for %d bytes of memory failed.\n",
                  memory_size );
@@ -327,12 +329,12 @@ error:
 }
 
 
-static int execute_configure( struct usb_dev_handle *device,
-                              int interface,
-                              struct programmer_arguments *args )
+static int32_t execute_configure( struct usb_dev_handle *device,
+                                  const int32_t interface,
+                                  struct programmer_arguments *args )
 {
-    int value = args->com_configure_data.value;
-    int name = args->com_configure_data.name;
+    int32_t value = args->com_configure_data.value;
+    int32_t name = args->com_configure_data.name;
 
     if( device_8051 != args->device_type ) {
         DEBUG( "target doesn't support configure operation.\n" );
@@ -357,9 +359,9 @@ static int execute_configure( struct usb_dev_handle *device,
 }
 
 
-int execute_command( struct usb_dev_handle *device,
-                     int interface,
-                     struct programmer_arguments *args )
+int32_t execute_command( struct usb_dev_handle *device,
+                         const int32_t interface,
+                         struct programmer_arguments *args )
 {
     switch( args->command ) {
         case com_erase:

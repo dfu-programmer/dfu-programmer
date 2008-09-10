@@ -18,31 +18,33 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
-#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "dfu-bool.h"
 #include "config.h"
 #include "arguments.h"
 
 struct option_mapping_structure {
     const char *name;
-    int value;
+    int32_t value;
 };
 
 struct target_mapping_structure {
     const char *name;
     enum targets_enum value;
     enum device_type_enum device_type;
-    unsigned short chip_id;
-    unsigned short vendor_id;
-    unsigned int memory_size;
-    unsigned short flash_page_size;
-    bool initial_abort;
-    bool honor_interfaceclass;
-    unsigned int eeprom_page_size;
-    unsigned int eeprom_memory_size;
+    uint16_t chip_id;
+    uint16_t vendor_id;
+    size_t memory_size;
+    size_t flash_page_size;
+    dfu_bool initial_abort;
+    dfu_bool honor_interfaceclass;
+    size_t eeprom_page_size;
+    size_t eeprom_memory_size;
 };
 
 /* NOTE FOR: at90usb1287, at90usb1286, at90usb647, at90usb646, at90usb162, at90usb82
@@ -121,7 +123,7 @@ static void usage()
     fprintf( stderr, "Usage: dfu-programmer target command [command-options] "
                      "[global-options] [file|data]\n" );
     fprintf( stderr, "targets:\n" );
-    while( 0 != *((int *) map) ) {
+    while( 0 != *((int32_t *) map) ) {
         fprintf( stderr, "        %s\n", map->name );
         map++;
     }
@@ -148,11 +150,11 @@ static void usage()
     fprintf( stderr, "        version [global-options]\n" );
 }
 
-static int assign_option( int *arg,
-                          char *value,
-                          struct option_mapping_structure *map )
+static int32_t assign_option( int32_t *arg,
+                              char *value,
+                              struct option_mapping_structure *map )
 {
-    while( 0 != *((int *) map) ) {
+    while( 0 != *((int32_t *) map) ) {
         if( 0 == strcasecmp(value, map->name) ) {
             *arg = map->value;
             return 0;
@@ -165,11 +167,11 @@ static int assign_option( int *arg,
 }
 
 
-static int assign_target( struct programmer_arguments *args,
-                          char *value,
-                          struct target_mapping_structure *map )
+static int32_t assign_target( struct programmer_arguments *args,
+                              char *value,
+                              struct target_mapping_structure *map )
 {
-    while( 0 != *((int *) map) ) {
+    while( 0 != *((int32_t *) map) ) {
         if( 0 == strcasecmp(value, map->name) ) {
             args->target  = map->value;
             args->chip_id = map->chip_id;
@@ -207,11 +209,11 @@ static int assign_target( struct programmer_arguments *args,
 }
 
 
-static int assign_global_options( struct programmer_arguments *args,
-                                  int argc,
-                                  char **argv )
+static int32_t assign_global_options( struct programmer_arguments *args,
+                                      const size_t argc,
+                                      char **argv )
 {
-    int i = 0;
+    size_t i = 0;
 
     /* Find '--quiet' if it is here */
     for( i = 0; i < argc; i++ ) {
@@ -273,20 +275,20 @@ static int assign_global_options( struct programmer_arguments *args,
 }
 
 
-static int assign_com_configure_option( struct programmer_arguments *args,
-                                        int parameter,
-                                        char *value )
+static int32_t assign_com_configure_option( struct programmer_arguments *args,
+                                            const int32_t parameter,
+                                            char *value )
 {
     /* name & value */
     if( 0 == parameter ) {
         /* name */
-        if( 0 != assign_option((int *) &(args->com_configure_data.name),
+        if( 0 != assign_option((int32_t *) &(args->com_configure_data.name),
                                value, configure_map) )
         {
             return -1;
         }
     } else {
-        int temp = 0;
+        int32_t temp = 0;
         /* value */
         if( 1 != sscanf(value, "%i", &(temp)) )
             return -2;
@@ -302,9 +304,9 @@ static int assign_com_configure_option( struct programmer_arguments *args,
 }
 
 
-static int assign_com_flash_option( struct programmer_arguments *args,
-                                    int parameter,
-                                    char *value )
+static int32_t assign_com_flash_option( struct programmer_arguments *args,
+                                        const int32_t parameter,
+                                        char *value )
 {
     /* file */
     args->com_flash_data.original_first_char = *value;
@@ -314,12 +316,12 @@ static int assign_com_flash_option( struct programmer_arguments *args,
 }
 
 
-static int assign_com_get_option( struct programmer_arguments *args,
-                                  int parameter,
-                                  char *value )
+static int32_t assign_com_get_option( struct programmer_arguments *args,
+                                      const int32_t parameter,
+                                      char *value )
 {
     /* name */
-    if( 0 != assign_option((int *) &(args->com_get_data.name),
+    if( 0 != assign_option((int32_t *) &(args->com_get_data.name),
                            value, get_map) )
     {
         return -1;
@@ -329,13 +331,13 @@ static int assign_com_get_option( struct programmer_arguments *args,
 }
 
 
-static int assign_command_options( struct programmer_arguments *args,
-                                   int argc,
-                                   char **argv )
+static int32_t assign_command_options( struct programmer_arguments *args,
+                                       const size_t argc,
+                                       char **argv )
 {
-    int i = 0;
-    int param = 0;
-    int required_params = 0;
+    size_t i = 0;
+    int32_t param = 0;
+    int32_t required_params = 0;
 
     /* Deal with all remaining command-specific arguments. */
     for( i = 0; i < argc; i++ ) {
@@ -381,7 +383,7 @@ static void print_args( struct programmer_arguments *args )
 {
     const char *command = "(unknown)";
     const char *target = "(unknown)";
-    int i;
+    size_t i;
 
     for( i = 0; i < sizeof(target_map) / sizeof(target_map[0]); i++ ) {
         if( args->target == target_map[i].value ) {
@@ -437,12 +439,12 @@ static void print_args( struct programmer_arguments *args )
 }
 
 
-int parse_arguments( struct programmer_arguments *args,
-                     int argc,
-                     char **argv )
+int32_t parse_arguments( struct programmer_arguments *args,
+                         const size_t argc,
+                         char **argv )
 {
-    int i;
-    int status = 0;
+    int32_t i;
+    int32_t status = 0;
 
     if( NULL == args )
         return -1;
@@ -463,7 +465,7 @@ int parse_arguments( struct programmer_arguments *args,
         goto done;
     }
 
-    if( 0 != assign_option((int *) &(args->command), argv[2], command_map) ) {
+    if( 0 != assign_option((int32_t *) &(args->command), argv[2], command_map) ) {
         status = -4;
         goto done;
     }

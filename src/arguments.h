@@ -21,7 +21,7 @@
 #ifndef __ARGUMENTS_H__
 #define __ARGUMENTS_H__
 
-#include <stdbool.h>
+#include "dfu-bool.h"
 #include "atmel.h"
 
 #define DEVICE_TYPE_STRING_MAX_LENGTH   5
@@ -68,18 +68,18 @@ enum device_type_enum { device_8051, device_AVR };
 struct programmer_arguments {
     /* target-specific inputs */
     enum targets_enum target;
-    u_int16_t vendor_id;
-    u_int16_t chip_id;
+    uint16_t vendor_id;
+    uint16_t chip_id;
     enum device_type_enum device_type;
     char device_type_string[DEVICE_TYPE_STRING_MAX_LENGTH];
-    u_int32_t top_memory_address;
-    u_int32_t memory_size;
-    u_int16_t flash_page_size;
-    bool initial_abort;
-    bool honor_interfaceclass;
-    u_int32_t top_eeprom_memory_address;
-    u_int32_t eeprom_memory_size;
-    u_int16_t eeprom_page_size;
+    size_t top_memory_address;
+    size_t memory_size;
+    size_t flash_page_size;
+    dfu_bool initial_abort;
+    dfu_bool honor_interfaceclass;
+    uint32_t top_eeprom_memory_address;
+    size_t eeprom_memory_size;
+    size_t eeprom_page_size;
 
     /* command-specific state */
     enum commands_enum command;
@@ -88,18 +88,18 @@ struct programmer_arguments {
     union {
         struct com_configure_struct {
             enum configure_enum name;
-            int suppress_validation;
-            int value;
+            int32_t suppress_validation;
+            int32_t value;
         } com_configure_data;
 
         /* No special data needed for 'dump' */
 
         struct com_erase_struct {
-            int suppress_validation;
+            int32_t suppress_validation;
         } com_erase_data;
 
         struct com_flash_struct {
-            int suppress_validation;
+            int32_t suppress_validation;
             char original_first_char;
             char *file;
         } com_flash_data;
@@ -110,7 +110,7 @@ struct programmer_arguments {
     };
 };
 
-int parse_arguments( struct programmer_arguments *args,
-                     int argc,
-                     char **argv );
+int32_t parse_arguments( struct programmer_arguments *args,
+                         const size_t argc,
+                         char **argv );
 #endif

@@ -20,13 +20,13 @@
 
 #include <stdio.h>
 #include <stdarg.h>
-#include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
 #include <stddef.h>
 #include <errno.h>
 #include <usb.h>
 
+#include "dfu-bool.h"
 #include "config.h"
 #include "arguments.h"
 #include "dfu.h"
@@ -48,24 +48,24 @@
 #define DEBUG(...)  dfu_debug( __FILE__, __FUNCTION__, __LINE__, \
                                ATMEL_DEBUG_THRESHOLD, __VA_ARGS__ )
 
-static int atmel_flash_block( struct usb_dev_handle *device,
-                              const int interface,
-                              int16_t *buffer,
-                              uint16_t base_address,
-                              uint16_t length,
-                              const bool eeprom );
-static int atmel_select_page( struct usb_dev_handle *device,
-                              const int interface,
-                              const uint8_t mem_page );
+static int32_t atmel_flash_block( struct usb_dev_handle *device,
+                                  const int32_t interface,
+                                  int16_t *buffer,
+                                  const uint32_t base_address,
+                                  const size_t length,
+                                  const dfu_bool eeprom );
+static int32_t atmel_select_page( struct usb_dev_handle *device,
+                                  const int32_t interface,
+                                  const uint8_t mem_page );
 
 /* returns 0 - 255 on success, < 0 otherwise */
-static int atmel_read_command( struct usb_dev_handle *device,
-                               const int interface,
-                               const char data0,
-                               const char data1 )
+static int32_t atmel_read_command( struct usb_dev_handle *device,
+                                   const int32_t interface,
+                                   const uint8_t data0,
+                                   const uint8_t data1 )
 {
-    char command[3] = { 0x05, 0x00, 0x00 };
-    char data[1]    = { 0x00 };
+    uint8_t command[3] = { 0x05, 0x00, 0x00 };
+    uint8_t data[1]    = { 0x00 };
     struct dfu_status status;
 
     command[1] = data0;
@@ -106,32 +106,32 @@ static int atmel_read_command( struct usb_dev_handle *device,
  *
  *  returns 0 if successful, < 0 if not
  */
-int atmel_read_config_8051( struct usb_dev_handle *device,
-                            const int interface,
-                            struct atmel_device_info *info )
+int32_t atmel_read_config_8051( struct usb_dev_handle *device,
+                                const int32_t interface,
+                                struct atmel_device_info *info )
 {
-    int result;
-    int retVal = 0;
-    int i = 0;
-    short *ptr = (short *) info;
+    int32_t result;
+    int32_t retVal = 0;
+    int32_t i = 0;
+    int16_t *ptr = (int16_t *) info;
 
     /* These commands are documented in Appendix A of the
      * "AT89C5131A USB Bootloader Datasheet"
      */
-    static const char data[24] = { 0x00, 0x00,
-                                   0x00, 0x01,
-                                   0x00, 0x02,
+    static const uint8_t data[24] = { 0x00, 0x00,
+                                      0x00, 0x01,
+                                      0x00, 0x02,
              
-                                   0x01, 0x00,
-                                   0x01, 0x01,
-                                   0x01, 0x05,
-                                   0x01, 0x06,
-                                   0x01, 0x30,
-                                   0x01, 0x31,
-                                   0x01, 0x60,
-                                   0x01, 0x61,
+                                      0x01, 0x00,
+                                      0x01, 0x01,
+                                      0x01, 0x05,
+                                      0x01, 0x06,
+                                      0x01, 0x30,
+                                      0x01, 0x31,
+                                      0x01, 0x60,
+                                      0x01, 0x61,
 
-                                   0x02, 0x00 };
+                                      0x02, 0x00 };
 
     for( i = 0; i < 24; i += 2 ) {
         result = atmel_read_command( device, interface, data[i], data[i+1] );
@@ -156,20 +156,21 @@ int atmel_read_config_8051( struct usb_dev_handle *device,
  *
  *  returns 0 if successful, < 0 if not
  */
-int atmel_read_config_avr( struct usb_dev_handle *device,
-                           const int interface,
-                           struct atmel_device_info *info )
+int32_t atmel_read_config_avr( struct usb_dev_handle *device,
+                               const int32_t interface,
+                               struct atmel_device_info *info )
 {
-    int result;
-    int retVal = 0;
-    int i = 0;
+    int32_t result;
+    int32_t retVal = 0;
+    int32_t i = 0;
 
     /* These commands are documented in Appendix A of the
      * "AT90usb128x/AT90usb64x USB DFU Bootloader Datasheet"
      */
     static const struct config_info {
-        unsigned char   data0, data1;
-        unsigned        offset;
+        uint8_t data0;
+        uint8_t data1;
+        size_t  offset;
     } data[] = {
         { 0x0, 0x0,  offsetof(struct atmel_device_info, bootloaderVersion ), },
         { 0x0, 0x1,  offsetof(struct atmel_device_info, bootID1 ),           },
@@ -181,7 +182,7 @@ int atmel_read_config_avr( struct usb_dev_handle *device,
     };
 
     for( i = 0; i < 7; i++ ) {
-        short *ptr = data[i].offset + (void *) info;
+        int16_t *ptr = data[i].offset + (void *) info;
         result = atmel_read_command( device, interface, data[i].data0, data[i].data1 );
         if( result < 0 ) {
             retVal = result;
@@ -207,13 +208,13 @@ int atmel_read_config_avr( struct usb_dev_handle *device,
  *
  *  returns status DFU_STATUS_OK if ok, anything else on error
  */
-int atmel_erase_flash( struct usb_dev_handle *device,
-                       const int interface,
-                       const unsigned char mode )
+int32_t atmel_erase_flash( struct usb_dev_handle *device,
+                           const int32_t interface,
+                           const uint8_t mode )
 {
-    char command[3] = { 0x04, 0x00, 0x00 };
+    uint8_t command[3] = { 0x04, 0x00, 0x00 };
     struct dfu_status status;
-    int i;
+    int32_t i;
 
     switch( mode ) {
         case ATMEL_ERASE_BLOCK_0:
@@ -254,12 +255,12 @@ int atmel_erase_flash( struct usb_dev_handle *device,
 }
 
 
-int atmel_set_config( struct usb_dev_handle *device,
-                      const int interface,
-                      const unsigned char property,
-                      const unsigned char value )
+int32_t atmel_set_config( struct usb_dev_handle *device,
+                          const int32_t interface,
+                          const uint8_t property,
+                          const uint8_t value )
 {
-    char command[4] = { 0x04, 0x01, 0x00, 0x00 };
+    uint8_t command[4] = { 0x04, 0x01, 0x00, 0x00 };
     struct dfu_status status;
 
     switch( property ) {
@@ -302,19 +303,19 @@ int atmel_set_config( struct usb_dev_handle *device,
 
 
 /* Just to be safe, let's limit the transfer size */
-int atmel_read_flash( struct usb_dev_handle *device,
-                      const int interface,
-                      const u_int32_t start,
-                      const u_int32_t end,
-                      char* buffer,
-                      const int buffer_len,
-                      const bool eeprom )
+int32_t atmel_read_flash( struct usb_dev_handle *device,
+                          const int32_t interface,
+                          const uint32_t start,
+                          const uint32_t end,
+                          uint8_t* buffer,
+                          const size_t buffer_len,
+                          const dfu_bool eeprom )
 {
-    char command[6] = { 0x03, 0x00, 0x00, 0x00, 0x00, 0x00 };
-    char *ptr = buffer;
-    int length = end - start + 1; /* + 1 because memory is 0 based */
-    int result;
-    int rxStart, rxEnd, rxLength;
+    uint8_t command[6] = { 0x03, 0x00, 0x00, 0x00, 0x00, 0x00 };
+    uint8_t *ptr = buffer;
+    int32_t length = end - start + 1; /* + 1 because memory is 0 based */
+    int32_t result;
+    int32_t rxStart, rxEnd, rxLength;
     uint8_t mem_page = 0;
 
     if( (NULL == buffer) || (start >= end) ) {
@@ -420,14 +421,14 @@ int atmel_read_flash( struct usb_dev_handle *device,
 }
 
 
-int atmel_blank_check( struct usb_dev_handle *device,
-                      const int interface,
-                      const u_int32_t start,
-                      const u_int32_t end )
+int32_t atmel_blank_check( struct usb_dev_handle *device,
+                           const int32_t interface,
+                           const uint32_t start,
+                           const uint32_t end )
 {
-    char command[6] = { 0x03, 0x01, 0x00, 0x00, 0x00, 0x00 };
+    uint8_t command[6] = { 0x03, 0x01, 0x00, 0x00, 0x00, 0x00 };
     struct dfu_status status;
-    int i;
+    int32_t i;
 
     if( start >= end ) {
         DEBUG( "invalid arguments.\n" );
@@ -459,10 +460,10 @@ int atmel_blank_check( struct usb_dev_handle *device,
 
 
 /* Not really sure how to test this one. */
-int atmel_reset( struct usb_dev_handle *device,
-                 const int interface )
+int32_t atmel_reset( struct usb_dev_handle *device,
+                     const int32_t interface )
 {
-    char command[3] = { 0x04, 0x03, 0x00 };
+    uint8_t command[3] = { 0x04, 0x03, 0x00 };
 
     if( 3 != dfu_download(device, interface, 3, command) ) {
         DEBUG( "dfu_download failed.\n" );
@@ -479,10 +480,10 @@ int atmel_reset( struct usb_dev_handle *device,
 }
 
 
-int atmel_start_app( struct usb_dev_handle *device,
-                     const int interface )
+int32_t atmel_start_app( struct usb_dev_handle *device,
+                         const int32_t interface )
 {
-    char command[5] = { 0x04, 0x03, 0x01, 0x00, 0x00 };
+    uint8_t command[5] = { 0x04, 0x03, 0x01, 0x00, 0x00 };
 
     if( 5 != dfu_download(device, interface, 5, command) ) {
         DEBUG( "dfu_download failed.\n" );
@@ -498,11 +499,11 @@ int atmel_start_app( struct usb_dev_handle *device,
 }
 
 
-static int atmel_select_page( struct usb_dev_handle *device,
-                              const int interface,
-                              const uint8_t mem_page )
+static int32_t atmel_select_page( struct usb_dev_handle *device,
+                                  const int32_t interface,
+                                  const uint8_t mem_page )
 {
-    char command[4] = { 0x06, 0x03, 0x00, 0x00 };
+    uint8_t command[4] = { 0x06, 0x03, 0x00, 0x00 };
 
     command[3] = (char) mem_page;
 
@@ -515,8 +516,8 @@ static int atmel_select_page( struct usb_dev_handle *device,
 }
 
 
-static void atmel_flash_prepair_buffer( int16_t *buffer, const uint16_t size,
-                                        const uint16_t page_size )
+static void atmel_flash_prepair_buffer( int16_t *buffer, const size_t size,
+                                        const size_t page_size )
 {
     int16_t *page;
 
@@ -524,7 +525,7 @@ static void atmel_flash_prepair_buffer( int16_t *buffer, const uint16_t size,
          &page[page_size] < &buffer[size];
          page = &page[page_size] )
     {
-        int i;
+        int32_t i;
 
         for( i = 0; i < page_size; i++ ) {
             if( (0 <= page[i]) && (page[i] < UINT8_MAX) ) {
@@ -546,15 +547,15 @@ static void atmel_flash_prepair_buffer( int16_t *buffer, const uint16_t size,
     }
 }
 
-int atmel_flash( struct usb_dev_handle *device,
-                 const int interface,
-                 int16_t *buffer,
-                 const uint32_t size,
-                 const uint16_t page_size,
-                 const bool eeprom )
+int32_t atmel_flash( struct usb_dev_handle *device,
+                     const int32_t interface,
+                     int16_t *buffer,
+                     const size_t size,
+                     const size_t page_size,
+                     const dfu_bool eeprom )
 {
     uint32_t start = 0;
-    int sent = 0;
+    int32_t sent = 0;
     uint8_t mem_page = 0;
 
     if( (NULL == buffer) || (size == 0) ) {
@@ -566,7 +567,7 @@ int atmel_flash( struct usb_dev_handle *device,
 
     while( 1 ) {
         uint32_t end;
-        int length;
+        int32_t length;
 
         /* Find the next valid character to start sending from */
         for( ; start < size; start++ ) {
@@ -592,7 +593,7 @@ int atmel_flash( struct usb_dev_handle *device,
             if( start <= (UINT16_MAX * (1 + mem_page)) ) {
                 end = UINT16_MAX + 1;
             } else {
-                int result;
+                int32_t result;
 
                 mem_page++;
                 result = atmel_select_page( device, interface, mem_page );
@@ -607,7 +608,7 @@ int atmel_flash( struct usb_dev_handle *device,
         DEBUG( "valid block length: %d, (%d - %d)\n", length, start, end );
 
         do {
-            int result;
+            int32_t result;
 
             if( ATMEL_MAX_TRANSFER_SIZE < length ) {
                 length = ATMEL_MAX_TRANSFER_SIZE;
@@ -633,7 +634,7 @@ int atmel_flash( struct usb_dev_handle *device,
 
 done:
     if( mem_page > 0 ) {
-        int result = atmel_select_page( device, interface, 0 );
+        int32_t result = atmel_select_page( device, interface, 0 );
         if( result < 0) {
             DEBUG( "error selecting the page: %d\n", result );
             return -5;
@@ -644,11 +645,12 @@ done:
 }
 
 
-static void atmel_flash_populate_footer( char *message, char *footer,
-                                         uint16_t vendorId, uint16_t productId,
-                                         uint16_t bcdFirmware )
+static void atmel_flash_populate_footer( uint8_t *message, uint8_t *footer,
+                                         const uint16_t vendorId,
+                                         const uint16_t productId,
+                                         const uint16_t bcdFirmware )
 {
-    int crc;
+    int32_t crc;
 
     if( (NULL == message) || (NULL == footer) ) {
         return;
@@ -688,8 +690,9 @@ static void atmel_flash_populate_footer( char *message, char *footer,
     footer[15] = 0xff & bcdFirmware;
 }
 
-static void atmel_flash_populate_header( char *header, uint16_t start_address,
-                                         uint16_t length, const bool eeprom )
+static void atmel_flash_populate_header( uint8_t *header,
+                                         const uint32_t start_address,
+                                         const size_t length, const dfu_bool eeprom )
 {
     uint16_t end;
 
@@ -715,22 +718,22 @@ static void atmel_flash_populate_header( char *header, uint16_t start_address,
     header[5] = 0xff & end;
 }
 
-static int atmel_flash_block( struct usb_dev_handle *device,
-                              const int interface,
-                              int16_t *buffer,
-                              uint16_t base_address,
-                              uint16_t length,
-                              const bool eeprom )
+static int32_t atmel_flash_block( struct usb_dev_handle *device,
+                                  const int32_t interface,
+                                  int16_t *buffer,
+                                  const uint32_t base_address,
+                                  const size_t length,
+                                  const dfu_bool eeprom )
                               
 {
-    char message[ATMEL_MAX_FLASH_BUFFER_SIZE];
-    char *header;
-    char *data;
-    char *footer;
-    int message_length;
-    int result;
+    uint8_t message[ATMEL_MAX_FLASH_BUFFER_SIZE];
+    uint8_t *header;
+    uint8_t *data;
+    uint8_t *footer;
+    size_t message_length;
+    int32_t result;
     struct dfu_status status;
-    int i;
+    int32_t i;
 
     if( (NULL == buffer) || (ATMEL_MAX_TRANSFER_SIZE < length) ) {
         DEBUG( "invalid arguments.\n" );
@@ -754,7 +757,7 @@ static int atmel_flash_block( struct usb_dev_handle *device,
 
     /* Copy the data */
     for( i = 0; i < length; i++ ) {
-        data[i] = (char) buffer[i];
+        data[i] = (uint8_t) buffer[i];
     }
 
     atmel_flash_populate_footer( message, footer, 0xffff, 0xffff, 0xffff );
@@ -788,7 +791,7 @@ static int atmel_flash_block( struct usb_dev_handle *device,
         return -4;
     }
 
-    return length;
+    return (int32_t) length;
 }
 
 
