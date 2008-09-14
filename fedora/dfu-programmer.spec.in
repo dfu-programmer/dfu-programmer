@@ -36,8 +36,8 @@ Currently supported chips:
 %{__rm} -rf %{buildroot}
 %{__make} DESTDIR=%{buildroot} install 
 
-%{__install} -d %{buildroot}%{_datadir}/hal/fdi/policy/20thirdparty
-%{__install} -pm 644 fedora/10-dfu-programmer.fdi %{buildroot}%{_datadir}/hal/fdi/policy/20thirdparty/10-dfu-programmer.fdi
+%{__install} -d %{buildroot}%{_datadir}/hal/fdi/information/20thirdparty
+%{__install} -pm 644 fedora/10-dfu-programmer.fdi %{buildroot}%{_datadir}/hal/fdi/information/20thirdparty/10-dfu-programmer.fdi
 
 %clean
 %{__rm} -rf %{buildroot}
@@ -47,10 +47,12 @@ Currently supported chips:
 %doc AUTHORS ChangeLog NEWS README COPYING
 %{_bindir}/%{name}
 %{_mandir}/man1/%{name}.1*
-%{_datadir}/hal/fdi/policy/20thirdparty/10-dfu-programmer.fdi
+%{_datadir}/hal/fdi/information/20thirdparty/10-dfu-programmer.fdi
 
 %changelog
 
+* Sat Sep 13 2008 Weston Schmidt <weston_schmidt at alumni.purdue.edu> - 0.5.0-1
+- fix the broken hal rules
 * Fri Aug 29 2008 Weston Schmidt <weston_schmidt at alumni.purdue.edu> - 0.4.6-1
 - change udev rules and permissions to be hal based
 * Wed Aug 20 2008 Weston Schmidt <weston_schmidt at alumni.purdue.edu> - 0.4.5-1

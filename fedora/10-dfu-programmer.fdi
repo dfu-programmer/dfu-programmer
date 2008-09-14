@@ -13,15 +13,11 @@
         <!-- 0x2ffa - at90usb162, at90usb82 -->
         <match key="usb_device.product_id" int_outof="0x2fff;0x2ffb;0x2ffb;0x2ffa">
           <append key="info.capabilities" type="strlist">dfu-device</append>
-          <append key="access_control.grant_group" type="strlist">uucp</append>
+          <append key="info.capabilities" type="strlist">access_control</append>
+          <merge key="access_control.file" type="copy_property">linux.device_file</merge>
+          <merge key="access_control.type" type="string">dfu-device</merge>
         </match>
       </match>
-    </match>
-
-    <match key="info.capabilities" contains="dfu-device">
-      <append key="info.capabilities" type="strlist">access_control</append>
-      <merge key="access_control.file" type="copy_property">linux.device_file</merge>
-      <merge key="access_control.type" type="string">dfu-device</merge>
     </match>
   </device>
 </deviceinfo>
