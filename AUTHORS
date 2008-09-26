@@ -22,3 +22,5 @@ Contributors:
     - Sean D'Epagnier
         - eeprom bug fix
         - 4K bootloader support fix
+    - Peter Gammie
+        - at90usb647 PID fix

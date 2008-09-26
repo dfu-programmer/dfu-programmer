@@ -63,10 +63,10 @@ static struct target_mapping_structure target_map[] = {
     { "at89c5132",    tar_at89c5132,    device_8051, 0x2FFF, 0x03eb, 0x10000, 128, false, true,  0,   0      },
     { "at90usb1287",  tar_at90usb1287,  device_AVR,  0x2FFB, 0x03eb, 0x1F000, 128, true,  false, 128, 0x0FFF },
     { "at90usb1286",  tar_at90usb1286,  device_AVR,  0x2FFB, 0x03eb, 0x1F000, 128, true,  false, 128, 0x0FFF },
-    { "at90usb647",   tar_at90usb647,   device_AVR,  0x2FFB, 0x03eb, 0x0F000, 128, true,  false, 128, 0x07FF },
-    { "at90usb646",   tar_at90usb646,   device_AVR,  0x2FFB, 0x03eb, 0x0F000, 128, true,  false, 128, 0x07FF },
+    { "at90usb647",   tar_at90usb647,   device_AVR,  0x2FF9, 0x03eb, 0x0F000, 128, true,  false, 128, 0x07FF },
+    { "at90usb646",   tar_at90usb646,   device_AVR,  0x2FF9, 0x03eb, 0x0F000, 128, true,  false, 128, 0x07FF },
     { "at90usb162",   tar_at90usb162,   device_AVR,  0x2FFA, 0x03eb, 0x03000, 128, true,  false, 128, 0x01FF },
-    { "at90usb82",    tar_at90usb82,    device_AVR,  0x2FFA, 0x03eb, 0x01000, 128, true,  false, 128, 0x01FF },
+    { "at90usb82",    tar_at90usb82,    device_AVR,  0x2FF7, 0x03eb, 0x01000, 128, true,  false, 128, 0x01FF },
     { NULL }
 };
 

@@ -1,3 +1,7 @@
+2008-09-10 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
+	* src/arguments.c, AUTHORS: Fixed PID values for the
+	  at90usb82 and at90usb182 chips based on Peter's findings.
+
 2008-09-13 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
 	* fedora/dfu-programmer.spec.in,
 	  fedora/10-dfu-programmer.fdi: Fixed the broken HAL rules.
