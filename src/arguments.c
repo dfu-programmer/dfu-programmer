@@ -58,16 +58,19 @@ struct target_mapping_structure {
 
 /* ----- target specific structures ----------------------------------------- */
 static struct target_mapping_structure target_map[] = {
-    { "at89c51snd1c", tar_at89c51snd1c, adc_8051, 0x2FFF, 0x03eb, 0x10000, 128, false, true,  0,   0      },
-    { "at89c5130",    tar_at89c5130,    adc_8051, 0x2FFD, 0x03eb, 0x04000, 128, false, true,  128, 0x03FF },
-    { "at89c5131",    tar_at89c5131,    adc_8051, 0x2FFD, 0x03eb, 0x08000, 128, false, true,  128, 0x03FF },
-    { "at89c5132",    tar_at89c5132,    adc_8051, 0x2FFF, 0x03eb, 0x10000, 128, false, true,  0,   0      },
-    { "at90usb1287",  tar_at90usb1287,  adc_AVR,  0x2FFB, 0x03eb, 0x1F000, 128, true,  false, 128, 0x0FFF },
-    { "at90usb1286",  tar_at90usb1286,  adc_AVR,  0x2FFB, 0x03eb, 0x1F000, 128, true,  false, 128, 0x0FFF },
-    { "at90usb647",   tar_at90usb647,   adc_AVR,  0x2FF9, 0x03eb, 0x0F000, 128, true,  false, 128, 0x07FF },
-    { "at90usb646",   tar_at90usb646,   adc_AVR,  0x2FF9, 0x03eb, 0x0F000, 128, true,  false, 128, 0x07FF },
-    { "at90usb162",   tar_at90usb162,   adc_AVR,  0x2FFA, 0x03eb, 0x03000, 128, true,  false, 128, 0x01FF },
-    { "at90usb82",    tar_at90usb82,    adc_AVR,  0x2FF7, 0x03eb, 0x01000, 128, true,  false, 128, 0x01FF },
+    { "at89c51snd1c",   tar_at89c51snd1c,   adc_8051,  0x2FFF, 0x03eb, 0x10000, 128, false, true,  0,   0      },
+    { "at89c5130",      tar_at89c5130,      adc_8051,  0x2FFD, 0x03eb, 0x04000, 128, false, true,  128, 0x03FF },
+    { "at89c5131",      tar_at89c5131,      adc_8051,  0x2FFD, 0x03eb, 0x08000, 128, false, true,  128, 0x03FF },
+    { "at89c5132",      tar_at89c5132,      adc_8051,  0x2FFF, 0x03eb, 0x10000, 128, false, true,  0,   0      },
+    { "at90usb1287",    tar_at90usb1287,    adc_AVR,   0x2FFB, 0x03eb, 0x1E000, 128, true,  false, 128, 0x0FFF },
+    { "at90usb1286",    tar_at90usb1286,    adc_AVR,   0x2FFB, 0x03eb, 0x1E000, 128, true,  false, 128, 0x0FFF },
+    { "at90usb1287-4k", tar_at90usb1287_4k, adc_AVR,   0x2FFB, 0x03eb, 0x1F000, 128, true,  false, 128, 0x0FFF },
+    { "at90usb1286-4k", tar_at90usb1286_4k, adc_AVR,   0x2FFB, 0x03eb, 0x1F000, 128, true,  false, 128, 0x0FFF },
+    { "at90usb647",     tar_at90usb647,     adc_AVR,   0x2FF9, 0x03eb, 0x0F000, 128, true,  false, 128, 0x07FF },
+    { "at90usb646",     tar_at90usb646,     adc_AVR,   0x2FF9, 0x03eb, 0x0F000, 128, true,  false, 128, 0x07FF },
+    { "at90usb162",     tar_at90usb162,     adc_AVR,   0x2FFA, 0x03eb, 0x03000, 128, true,  false, 128, 0x01FF },
+    { "at90usb82",      tar_at90usb82,      adc_AVR,   0x2FF7, 0x03eb, 0x01000, 128, true,  false, 128, 0x01FF },
+    { "at32uc3a512",    tar_at32uc3a512,    adc_AVR32, 0x2FF8, 0x03eb, 0x7E000, 128, false, true,  0,   0      },
     { NULL }
 };
 

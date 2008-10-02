@@ -38,17 +38,20 @@
 
 extern int debug;
 
-enum targets_enum { tar_at89c51snd1c = 0,
-                    tar_at89c5130    = 1,
-                    tar_at89c5131    = 2,
-                    tar_at89c5132    = 3,
-                    tar_at90usb1287  = 4,
-                    tar_at90usb1286  = 5,
-                    tar_at90usb647   = 6,
-                    tar_at90usb646   = 7,
-                    tar_at90usb162   = 8,
-                    tar_at90usb82    = 9,
-                    tar_none         = 10 };
+enum targets_enum { tar_at89c51snd1c,
+                    tar_at89c5130,
+                    tar_at89c5131,
+                    tar_at89c5132,
+                    tar_at90usb1287,
+                    tar_at90usb1286,
+                    tar_at90usb1287_4k,
+                    tar_at90usb1286_4k,
+                    tar_at90usb647,
+                    tar_at90usb646,
+                    tar_at90usb162,
+                    tar_at90usb82,
+                    tar_at32uc3a512,
+                    tar_none };
 
 enum commands_enum { com_none, com_erase, com_flash, com_eflash,
                      com_configure, com_get, com_dump, com_edump,
