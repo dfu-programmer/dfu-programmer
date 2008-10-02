@@ -26,6 +26,7 @@
 #include <stddef.h>
 
 #include "dfu-bool.h"
+#include "dfu-device.h"
 
 /* DFU states */
 #define STATE_APP_IDLE                  0x00
@@ -68,37 +69,24 @@
  *  1 unsigned byte iString
 */
 
-struct dfu_status {
+typedef struct {
     uint8_t bStatus;
     uint32_t bwPollTimeout;
     uint8_t bState;
     uint8_t iString;
-};
+} dfu_status_t;
 
-int32_t dfu_detach( struct usb_dev_handle *handle,
-                    const int32_t interface,
-                    const int32_t timeout );
-int32_t dfu_download( struct usb_dev_handle *handle,
-                      const int32_t interface,
-                      const size_t length,
-                      uint8_t* data );
-int32_t dfu_upload( struct usb_dev_handle *handle,
-                    const int32_t interface,
-                    const size_t length,
-                    uint8_t* data );
-int32_t dfu_get_status( struct usb_dev_handle *handle,
-                        const int32_t interface,
-                        struct dfu_status *status );
-int32_t dfu_clear_status( struct usb_dev_handle *handle,
-                          const int32_t interface );
-int32_t dfu_get_state( struct usb_dev_handle *handle,
-                       const int32_t interface );
-int32_t dfu_abort( struct usb_dev_handle *handle,
-                   const int32_t interface );
+int32_t dfu_detach( dfu_device_t *device, const int32_t timeout );
+int32_t dfu_download( dfu_device_t *device, const size_t length, uint8_t* data );
+int32_t dfu_upload( dfu_device_t *device, const size_t length, uint8_t* data );
+int32_t dfu_get_status( dfu_device_t *device, dfu_status_t *status );
+int32_t dfu_clear_status( dfu_device_t *device );
+int32_t dfu_get_state( dfu_device_t *device );
+int32_t dfu_abort( dfu_device_t *device );
+
 struct usb_device *dfu_device_init( const uint32_t vendor,
                                     const uint32_t product,
-                                    struct usb_dev_handle **handle,
-                                    int32_t *interface,
+                                    dfu_device_t *device,
                                     const dfu_bool initial_abort,
                                     const dfu_bool honor_interfaceclass );
 

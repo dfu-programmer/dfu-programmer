@@ -21,11 +21,10 @@
 #ifndef __COMMANDS_H__
 #define __COMMANDS_H__
 
-#include <usb.h>
 #include <stdint.h>
 #include "arguments.h"
+#include "dfu-device.h"
 
-int32_t execute_command( struct usb_dev_handle *device,
-                         int32_t interface,
+int32_t execute_command( dfu_device_t *device,
                          struct programmer_arguments *args );
 #endif

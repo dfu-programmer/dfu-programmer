@@ -23,6 +23,7 @@
 #include <usb.h>
 
 #include "config.h"
+#include "dfu-device.h"
 #include "dfu.h"
 #include "atmel.h"
 #include "arguments.h"
@@ -35,12 +36,12 @@ int main( int argc, char **argv )
 {
     static const char *progname = PACKAGE;
     int retval = 0;
+    dfu_device_t dfu_device;
     struct usb_device *device = NULL;
-    struct usb_dev_handle *usb_handle = NULL;
     struct programmer_arguments args;
-    int32_t interface;
 
     memset( &args, 0, sizeof(args) );
+    memset( &dfu_device, 0, sizeof(dfu_device) );
     if( 0 != parse_arguments(&args, argc, argv) ) {
         retval = 1;
         goto error;
@@ -57,8 +58,8 @@ int main( int argc, char **argv )
 
     usb_init();
 
-    device = dfu_device_init( args.vendor_id, args.chip_id, &usb_handle,
-                              &interface, args.initial_abort,
+    device = dfu_device_init( args.vendor_id, args.chip_id, &dfu_device,
+                              args.initial_abort,
                               args.honor_interfaceclass );
 
     if( NULL == device ) {
@@ -67,7 +68,7 @@ int main( int argc, char **argv )
         goto error;
     }
 
-    if( 0 != execute_command(usb_handle, interface, &args) ) {
+    if( 0 != execute_command(&dfu_device, &args) ) {
         /* command issued a specific diagnostic already */
         retval = 1;
         goto error;
@@ -76,16 +77,16 @@ int main( int argc, char **argv )
     retval = 0;
 
 error:
-    if( NULL != usb_handle ) {
-        if( 0 != usb_release_interface(usb_handle, interface) ) {
+    if( NULL != dfu_device.handle ) {
+        if( 0 != usb_release_interface(dfu_device.handle, dfu_device.interface) ) {
             fprintf( stderr, "%s: failed to release interface %d.\n",
-                             progname, interface );
+                             progname, dfu_device.interface );
             retval = 1;
         }
     }
 
-    if( NULL != usb_handle ) {
-        if( 0 != usb_close(usb_handle) ) {
+    if( NULL != dfu_device.handle ) {
+        if( 0 != usb_close(dfu_device.handle) ) {
             fprintf( stderr, "%s: failed to close the handle.\n", progname );
             retval = 1;
         }

@@ -23,8 +23,8 @@
 
 #include <stdio.h>
 #include <stdint.h>
-#include <usb.h>
 #include "dfu-bool.h"
+#include "dfu-device.h"
 
 #define ATMEL_ERASE_BLOCK_0     0
 #define ATMEL_ERASE_BLOCK_1     1
@@ -54,40 +54,31 @@ struct atmel_device_info {
     short hsb;                  // Hardware Security Byte
 };
 
-int32_t atmel_read_config_8051( struct usb_dev_handle *device,
-                                const int32_t interface,
+int32_t atmel_read_config_8051( dfu_device_t *device,
                                 struct atmel_device_info *info );
-int32_t atmel_read_config_avr( struct usb_dev_handle *device,
-                               const int32_t interface,
+int32_t atmel_read_config_avr( dfu_device_t *device,
                                struct atmel_device_info *info );
-int32_t atmel_erase_flash( struct usb_dev_handle *device,
-                           const int32_t interface,
+int32_t atmel_erase_flash( dfu_device_t *device,
                            const uint8_t mode );
-int32_t atmel_set_config( struct usb_dev_handle *device,
-                          const int32_t interface,
+int32_t atmel_set_config( dfu_device_t *device,
                           const uint8_t property,
                           const uint8_t value );
-int32_t atmel_read_flash( struct usb_dev_handle *device,
-                          const int32_t interface,
+int32_t atmel_read_flash( dfu_device_t *device,
                           const uint32_t start,
                           const uint32_t end,
                           uint8_t* buffer,
                           const size_t buffer_len,
                           const dfu_bool eeprom );
-int32_t atmel_blank_check( struct usb_dev_handle *device,
-                           const int32_t interface,
+int32_t atmel_blank_check( dfu_device_t *device,
                            const uint32_t start,
                            const uint32_t end );
-int32_t atmel_reset( struct usb_dev_handle *device,
-                     const int32_t interface );
-int32_t atmel_flash( struct usb_dev_handle *device,
-                     const int32_t interface,
+int32_t atmel_reset( dfu_device_t *device );
+int32_t atmel_flash( dfu_device_t *device,
                      int16_t *buffer,
                      const size_t size,
                      const size_t flash_page_size,
                      const dfu_bool eeprom );
-int32_t atmel_start_app( struct usb_dev_handle *device,
-                         const int32_t interface );
+int32_t atmel_start_app( dfu_device_t *device );
 
 void atmel_print_device_info( FILE *stream, struct atmel_device_info *info );
 #endif

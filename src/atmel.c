@@ -24,9 +24,9 @@
 #include <string.h>
 #include <stddef.h>
 #include <errno.h>
-#include <usb.h>
 
 #include "dfu-bool.h"
+#include "dfu-device.h"
 #include "config.h"
 #include "arguments.h"
 #include "dfu.h"
@@ -48,35 +48,32 @@
 #define DEBUG(...)  dfu_debug( __FILE__, __FUNCTION__, __LINE__, \
                                ATMEL_DEBUG_THRESHOLD, __VA_ARGS__ )
 
-static int32_t atmel_flash_block( struct usb_dev_handle *device,
-                                  const int32_t interface,
+static int32_t atmel_flash_block( dfu_device_t *device,
                                   int16_t *buffer,
                                   const uint32_t base_address,
                                   const size_t length,
                                   const dfu_bool eeprom );
-static int32_t atmel_select_page( struct usb_dev_handle *device,
-                                  const int32_t interface,
+static int32_t atmel_select_page( dfu_device_t *device,
                                   const uint8_t mem_page );
 
 /* returns 0 - 255 on success, < 0 otherwise */
-static int32_t atmel_read_command( struct usb_dev_handle *device,
-                                   const int32_t interface,
+static int32_t atmel_read_command( dfu_device_t *device,
                                    const uint8_t data0,
                                    const uint8_t data1 )
 {
     uint8_t command[3] = { 0x05, 0x00, 0x00 };
     uint8_t data[1]    = { 0x00 };
-    struct dfu_status status;
+    dfu_status_t status;
 
     command[1] = data0;
     command[2] = data1;
 
-    if( 3 != dfu_download(device, interface, 3, command) ) {
+    if( 3 != dfu_download(device, 3, command) ) {
         DEBUG( "dfu_download failed\n" );
         return -1;
     }
 
-    if( 0 != dfu_get_status(device, interface, &status) ) {
+    if( 0 != dfu_get_status(device, &status) ) {
         DEBUG( "dfu_get_status failed\n" );
         return -2;
     }
@@ -87,7 +84,7 @@ static int32_t atmel_read_command( struct usb_dev_handle *device,
         return -3;
     }
 
-    if( 1 != dfu_upload(device, interface, 1, data) ) {
+    if( 1 != dfu_upload(device, 1, data) ) {
         DEBUG( "dfu_upload failed\n" );
         return -4;
     }
@@ -101,13 +98,11 @@ static int32_t atmel_read_command( struct usb_dev_handle *device,
  *  into the atmel_device_info data structure for easier use later.
  *
  *  device    - the usb_dev_handle to communicate with
- *  interface - the interface to communicate with
  *  info      - the data structure to populate
  *
  *  returns 0 if successful, < 0 if not
  */
-int32_t atmel_read_config_8051( struct usb_dev_handle *device,
-                                const int32_t interface,
+int32_t atmel_read_config_8051( dfu_device_t *device,
                                 struct atmel_device_info *info )
 {
     int32_t result;
@@ -134,7 +129,7 @@ int32_t atmel_read_config_8051( struct usb_dev_handle *device,
                                       0x02, 0x00 };
 
     for( i = 0; i < 24; i += 2 ) {
-        result = atmel_read_command( device, interface, data[i], data[i+1] );
+        result = atmel_read_command( device, data[i], data[i+1] );
         if( result < 0 ) {
             retVal = result;
         }
@@ -151,13 +146,11 @@ int32_t atmel_read_config_8051( struct usb_dev_handle *device,
  *  into the atmel_device_info data structure for easier use later.
  *
  *  device    - the usb_dev_handle to communicate with
- *  interface - the interface to communicate with
  *  info      - the data structure to populate
  *
  *  returns 0 if successful, < 0 if not
  */
-int32_t atmel_read_config_avr( struct usb_dev_handle *device,
-                               const int32_t interface,
+int32_t atmel_read_config_avr( dfu_device_t *device,
                                struct atmel_device_info *info )
 {
     int32_t result;
@@ -183,7 +176,7 @@ int32_t atmel_read_config_avr( struct usb_dev_handle *device,
 
     for( i = 0; i < 7; i++ ) {
         int16_t *ptr = data[i].offset + (void *) info;
-        result = atmel_read_command( device, interface, data[i].data0, data[i].data1 );
+        result = atmel_read_command( device, data[i].data0, data[i].data1 );
         if( result < 0 ) {
             retVal = result;
         }
@@ -198,7 +191,6 @@ int32_t atmel_read_config_avr( struct usb_dev_handle *device,
 /*
  *
  *  device    - the usb_dev_handle to communicate with
- *  interface - the interface to communicate with
  *  mode      - the mode to use when erasing flash
  *              ATMEL_ERASE_BLOCK_0
  *              ATMEL_ERASE_BLOCK_1
@@ -208,12 +200,11 @@ int32_t atmel_read_config_avr( struct usb_dev_handle *device,
  *
  *  returns status DFU_STATUS_OK if ok, anything else on error
  */
-int32_t atmel_erase_flash( struct usb_dev_handle *device,
-                           const int32_t interface,
+int32_t atmel_erase_flash( dfu_device_t *device,
                            const uint8_t mode )
 {
     uint8_t command[3] = { 0x04, 0x00, 0x00 };
-    struct dfu_status status;
+    dfu_status_t status;
     int32_t i;
 
     switch( mode ) {
@@ -237,7 +228,7 @@ int32_t atmel_erase_flash( struct usb_dev_handle *device,
             return -1;
     }
 
-    if( 3 != dfu_download(device, interface, 3, command) ) {
+    if( 3 != dfu_download(device, 3, command) ) {
         DEBUG( "dfu_download failed\n" );
         return -2;
     }
@@ -246,7 +237,7 @@ int32_t atmel_erase_flash( struct usb_dev_handle *device,
      * We will try for 10 seconds before giving up.
      */
     for( i = 0; i < 10; i++ ) {
-        if( 0 == dfu_get_status(device, interface, &status) ) {
+        if( 0 == dfu_get_status(device, &status) ) {
             return status.bStatus;
         }
     }
@@ -255,13 +246,12 @@ int32_t atmel_erase_flash( struct usb_dev_handle *device,
 }
 
 
-int32_t atmel_set_config( struct usb_dev_handle *device,
-                          const int32_t interface,
+int32_t atmel_set_config( dfu_device_t *device,
                           const uint8_t property,
                           const uint8_t value )
 {
     uint8_t command[4] = { 0x04, 0x01, 0x00, 0x00 };
-    struct dfu_status status;
+    dfu_status_t status;
 
     switch( property ) {
         case ATMEL_SET_CONFIG_BSB:
@@ -284,12 +274,12 @@ int32_t atmel_set_config( struct usb_dev_handle *device,
 
     command[3] = value;
 
-    if( 4 != dfu_download(device, interface, 4, command) ) {
+    if( 4 != dfu_download(device, 4, command) ) {
         DEBUG( "dfu_download failed\n" );
         return -2;
     }
 
-    if( 0 != dfu_get_status(device, interface, &status) ) {
+    if( 0 != dfu_get_status(device, &status) ) {
         DEBUG( "dfu_get_status failed\n" );
         return -3;
     }
@@ -303,8 +293,7 @@ int32_t atmel_set_config( struct usb_dev_handle *device,
 
 
 /* Just to be safe, let's limit the transfer size */
-int32_t atmel_read_flash( struct usb_dev_handle *device,
-                          const int32_t interface,
+int32_t atmel_read_flash( dfu_device_t *device,
                           const uint32_t start,
                           const uint32_t end,
                           uint8_t* buffer,
@@ -362,7 +351,7 @@ int32_t atmel_read_flash( struct usb_dev_handle *device,
             } else {
                 mem_page++;
 
-                result = atmel_select_page( device, interface, mem_page );
+                result = atmel_select_page( device, mem_page );
                 if( result < 0) {
                     DEBUG( "error selecting the page: %d\n", result );
                     return -3;
@@ -379,22 +368,22 @@ int32_t atmel_read_flash( struct usb_dev_handle *device,
 
         DEBUG( "%d bytes to %p, from MCU %06x\n", rxLength, ptr, rxStart );
 
-        if( 6 != dfu_download(device, interface, 6, command) ) {
+        if( 6 != dfu_download(device, 6, command) ) {
             DEBUG( "dfu_download failed\n" );
             return -4;
         }
 
-        result = dfu_upload( device, interface, rxLength, ptr );
+        result = dfu_upload( device, rxLength, ptr );
 
         if( result > 0 ) {
             rxStart = rxEnd;
             length -= result;
             ptr += result;
         } else {
-            struct dfu_status status;
+            dfu_status_t status;
 
             DEBUG( "result: %d\n", result );
-            if( 0 == dfu_get_status(device, interface, &status) ) {
+            if( 0 == dfu_get_status(device, &status) ) {
                 if( DFU_STATUS_ERROR_FILE == status.bStatus ) {
                     fprintf( stderr,
                              "The device is read protected.\n" );
@@ -410,7 +399,7 @@ int32_t atmel_read_flash( struct usb_dev_handle *device,
     }
 
     if( mem_page > 0 ) {
-        result = atmel_select_page( device, interface, 0 );
+        result = atmel_select_page( device, 0 );
         if( result < 0) {
             DEBUG( "error selecting the page: %d\n", result );
             return -5;
@@ -421,13 +410,12 @@ int32_t atmel_read_flash( struct usb_dev_handle *device,
 }
 
 
-int32_t atmel_blank_check( struct usb_dev_handle *device,
-                           const int32_t interface,
+int32_t atmel_blank_check( dfu_device_t *device,
                            const uint32_t start,
                            const uint32_t end )
 {
     uint8_t command[6] = { 0x03, 0x01, 0x00, 0x00, 0x00, 0x00 };
-    struct dfu_status status;
+    dfu_status_t status;
     int32_t i;
 
     if( start >= end ) {
@@ -440,7 +428,7 @@ int32_t atmel_blank_check( struct usb_dev_handle *device,
     command[4] = 0xff & (end >> 8);
     command[5] = 0xff & end;
 
-    if( 6 != dfu_download(device, interface, 6, command) ) {
+    if( 6 != dfu_download(device, 6, command) ) {
         DEBUG( "dfu_download failed.\n" );
         return -2;
     }
@@ -449,7 +437,7 @@ int32_t atmel_blank_check( struct usb_dev_handle *device,
      * We will try for 10 seconds before giving up.
      */
     for( i = 0; i < 10; i++ ) {
-        if( 0 == dfu_get_status(device, interface, &status) ) {
+        if( 0 == dfu_get_status(device, &status) ) {
             return status.bStatus;
         }
     }
@@ -460,18 +448,17 @@ int32_t atmel_blank_check( struct usb_dev_handle *device,
 
 
 /* Not really sure how to test this one. */
-int32_t atmel_reset( struct usb_dev_handle *device,
-                     const int32_t interface )
+int32_t atmel_reset( dfu_device_t *device )
 {
     uint8_t command[3] = { 0x04, 0x03, 0x00 };
 
-    if( 3 != dfu_download(device, interface, 3, command) ) {
+    if( 3 != dfu_download(device, 3, command) ) {
         DEBUG( "dfu_download failed.\n" );
         return -1;
     }
 
     /*
-    if( 0 != dfu_download(device, interface, 0, NULL) ) {
+    if( 0 != dfu_download(device, 0, NULL) ) {
         return -2;
     }
     */
@@ -480,17 +467,16 @@ int32_t atmel_reset( struct usb_dev_handle *device,
 }
 
 
-int32_t atmel_start_app( struct usb_dev_handle *device,
-                         const int32_t interface )
+int32_t atmel_start_app( dfu_device_t *device )
 {
     uint8_t command[5] = { 0x04, 0x03, 0x01, 0x00, 0x00 };
 
-    if( 5 != dfu_download(device, interface, 5, command) ) {
+    if( 5 != dfu_download(device, 5, command) ) {
         DEBUG( "dfu_download failed.\n" );
         return -1;
     }
 
-    if( 0 != dfu_download(device, interface, 0, NULL) ) {
+    if( 0 != dfu_download(device, 0, NULL) ) {
         DEBUG( "dfu_download failed.\n" );
         return -2;
     }
@@ -499,15 +485,14 @@ int32_t atmel_start_app( struct usb_dev_handle *device,
 }
 
 
-static int32_t atmel_select_page( struct usb_dev_handle *device,
-                                  const int32_t interface,
+static int32_t atmel_select_page( dfu_device_t *device,
                                   const uint8_t mem_page )
 {
     uint8_t command[4] = { 0x06, 0x03, 0x00, 0x00 };
 
     command[3] = (char) mem_page;
 
-    if( 4 != dfu_download(device, interface, 4, command) ) {
+    if( 4 != dfu_download(device, 4, command) ) {
         DEBUG( "dfu_download failed.\n" );
         return -1;
     }
@@ -547,8 +532,7 @@ static void atmel_flash_prepair_buffer( int16_t *buffer, const size_t size,
     }
 }
 
-int32_t atmel_flash( struct usb_dev_handle *device,
-                     const int32_t interface,
+int32_t atmel_flash( dfu_device_t *device,
                      int16_t *buffer,
                      const size_t size,
                      const size_t page_size,
@@ -596,7 +580,7 @@ int32_t atmel_flash( struct usb_dev_handle *device,
                 int32_t result;
 
                 mem_page++;
-                result = atmel_select_page( device, interface, mem_page );
+                result = atmel_select_page( device, mem_page );
                 if( result < 0 ) {
                     DEBUG( "error selecting the page: %d\n", result );
                     return -3;
@@ -614,7 +598,7 @@ int32_t atmel_flash( struct usb_dev_handle *device,
                 length = ATMEL_MAX_TRANSFER_SIZE;
             }
 
-            result = atmel_flash_block( device, interface, &(buffer[start]),
+            result = atmel_flash_block( device, &(buffer[start]),
                                         (UINT16_MAX & start), length, eeprom );
 
             if( result < 0 ) {
@@ -634,7 +618,7 @@ int32_t atmel_flash( struct usb_dev_handle *device,
 
 done:
     if( mem_page > 0 ) {
-        int32_t result = atmel_select_page( device, interface, 0 );
+        int32_t result = atmel_select_page( device, 0 );
         if( result < 0) {
             DEBUG( "error selecting the page: %d\n", result );
             return -5;
@@ -718,8 +702,7 @@ static void atmel_flash_populate_header( uint8_t *header,
     header[5] = 0xff & end;
 }
 
-static int32_t atmel_flash_block( struct usb_dev_handle *device,
-                                  const int32_t interface,
+static int32_t atmel_flash_block( dfu_device_t *device,
                                   int16_t *buffer,
                                   const uint32_t base_address,
                                   const size_t length,
@@ -732,7 +715,7 @@ static int32_t atmel_flash_block( struct usb_dev_handle *device,
     uint8_t *footer;
     size_t message_length;
     int32_t result;
-    struct dfu_status status;
+    dfu_status_t status;
     int32_t i;
 
     if( (NULL == buffer) || (ATMEL_MAX_TRANSFER_SIZE < length) ) {
@@ -762,7 +745,7 @@ static int32_t atmel_flash_block( struct usb_dev_handle *device,
 
     atmel_flash_populate_footer( message, footer, 0xffff, 0xffff, 0xffff );
 
-    result = dfu_download( device, interface, message_length, message );
+    result = dfu_download( device, message_length, message );
 
     if( message_length != result ) {
         if( -EPIPE == result ) {
@@ -772,7 +755,7 @@ static int32_t atmel_flash_block( struct usb_dev_handle *device,
              */
             fprintf( stderr, "Device is write protected.\n" );
 
-            dfu_clear_status( device, interface );
+            dfu_clear_status( device );
         } else {
             DEBUG( "dfu_download failed. %d\n", result );
         }
@@ -780,7 +763,7 @@ static int32_t atmel_flash_block( struct usb_dev_handle *device,
     }
 
     /* check status */
-    if( 0 != dfu_get_status(device, interface, &status) ) {
+    if( 0 != dfu_get_status(device, &status) ) {
         DEBUG( "dfu_get_status failed.\n" );
         return -3;
     }

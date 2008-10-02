@@ -36,25 +36,23 @@
                                COMMAND_DEBUG_THRESHOLD, __VA_ARGS__ )
 
 
-static int32_t execute_erase( struct usb_dev_handle *device,
-                              const int32_t interface,
+static int32_t execute_erase( dfu_device_t *device,
                               struct programmer_arguments *args )
 {
     int32_t result = 0;
 
     DEBUG( "erase %d bytes\n", args->memory_size );
 
-    result = atmel_erase_flash( device, interface, ATMEL_ERASE_ALL );
+    result = atmel_erase_flash( device, ATMEL_ERASE_ALL );
     if( 0 != result ) {
         return result;
     }
 
-    return atmel_blank_check( device, interface, 0, args->top_memory_address );
+    return atmel_blank_check( device, 0, args->top_memory_address );
 }
 
 
-static int32_t execute_flash( struct usb_dev_handle *device,
-                              const int32_t interface,
+static int32_t execute_flash( dfu_device_t *device,
                               struct programmer_arguments *args )
 {
     int16_t *hex_data = NULL;
@@ -96,7 +94,7 @@ static int32_t execute_flash( struct usb_dev_handle *device,
 
     DEBUG( "write %d/%d bytes\n", usage, memory_size );
 
-    result = atmel_flash( device, interface, hex_data, top_memory_address,
+    result = atmel_flash( device, hex_data, top_memory_address,
                           page_size, eeprom );
 
     if( result < 0 ) {
@@ -108,7 +106,7 @@ static int32_t execute_flash( struct usb_dev_handle *device,
     if( 0 == args->com_flash_data.suppress_validation ) {
         fprintf( stderr, "Validating...\n" );
 
-        result = atmel_read_flash( device, interface, 0,
+        result = atmel_read_flash( device, 0,
                                    top_memory_address, buffer,
                                    memory_size, eeprom );
 
@@ -153,25 +151,7 @@ error:
 }
 
 
-static int32_t execute_reset( struct usb_dev_handle *device,
-                              const int32_t interface,
-                              struct programmer_arguments *args )
-{
-    return atmel_reset( device, interface );
-}
-
-
-
-static int32_t execute_start_app( struct usb_dev_handle *device,
-                                  const int32_t interface,
-                                  struct programmer_arguments *args )
-{
-    return atmel_start_app( device, interface );
-}
-
-
-static int32_t execute_get( struct usb_dev_handle *device,
-                            const int32_t interface,
+static int32_t execute_get( dfu_device_t *device,
                             struct programmer_arguments *args )
 {
     struct atmel_device_info info;
@@ -181,9 +161,9 @@ static int32_t execute_get( struct usb_dev_handle *device,
     int32_t controller_error = 0;
 
     if( device_8051 == args->device_type ) {
-        status = atmel_read_config_8051( device, interface, &info );
+        status = atmel_read_config_8051( device, &info );
     } else {
-        status = atmel_read_config_avr( device, interface, &info );
+        status = atmel_read_config_avr( device, &info );
     }
 
     if( 0 != status ) {
@@ -277,8 +257,7 @@ static int32_t execute_get( struct usb_dev_handle *device,
 }
 
 
-static int32_t execute_dump( struct usb_dev_handle *device,
-                             const int32_t interface,
+static int32_t execute_dump( dfu_device_t *device,
                              struct programmer_arguments *args )
 {
     int32_t i = 0;
@@ -304,7 +283,7 @@ static int32_t execute_dump( struct usb_dev_handle *device,
 
     DEBUG( "dump %d bytes\n", memory_size );
 
-    if( memory_size != atmel_read_flash(device, interface, 0,
+    if( memory_size != atmel_read_flash(device, 0,
                                   top_memory_address, buffer,
                                   memory_size, eeprom) )
     {
@@ -329,8 +308,7 @@ error:
 }
 
 
-static int32_t execute_configure( struct usb_dev_handle *device,
-                                  const int32_t interface,
+static int32_t execute_configure( dfu_device_t *device,
                                   struct programmer_arguments *args )
 {
     int32_t value = args->com_configure_data.value;
@@ -348,7 +326,7 @@ static int32_t execute_configure( struct usb_dev_handle *device,
         return -1;
     }
 
-    if( 0 != atmel_set_config(device, interface, name, value) )
+    if( 0 != atmel_set_config(device, name, value) )
     {
         DEBUG( "Configuration set failed.\n" );
         fprintf( stderr, "Configuration set failed.\n" );
@@ -359,27 +337,26 @@ static int32_t execute_configure( struct usb_dev_handle *device,
 }
 
 
-int32_t execute_command( struct usb_dev_handle *device,
-                         const int32_t interface,
+int32_t execute_command( dfu_device_t *device,
                          struct programmer_arguments *args )
 {
     switch( args->command ) {
         case com_erase:
-            return execute_erase( device, interface, args );
+            return execute_erase( device, args );
         case com_flash:
         case com_eflash:
-            return execute_flash( device, interface, args );
+            return execute_flash( device, args );
         case com_reset:
-            return execute_reset( device, interface, args );
+            return atmel_reset( device ); 
         case com_start_app:
-            return execute_start_app( device, interface, args );
+            return atmel_start_app( device );
         case com_get:
-            return execute_get( device, interface, args );
+            return execute_get( device, args );
         case com_dump:
         case com_edump:
-            return execute_dump( device, interface, args );
+            return execute_dump( device, args );
         case com_configure:
-            return execute_configure( device, interface, args );
+            return execute_configure( device, args );
         default:
             fprintf( stderr, "Not supported at this time.\n" );
     }

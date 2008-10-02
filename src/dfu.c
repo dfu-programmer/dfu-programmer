@@ -56,31 +56,32 @@ static uint16_t transaction = 0;
 
 static int32_t dfu_find_interface( const struct usb_device *device,
                                    const dfu_bool honor_interfaceclass );
-static int32_t dfu_make_idle( struct usb_dev_handle *handle,
-                              const int32_t interface, const dfu_bool initial_abort );
+static int32_t dfu_make_idle( dfu_device_t *device, const dfu_bool initial_abort );
 static void dfu_msg_response_output( const char *function, const int32_t result );
 
 /*
  *  DFU_DETACH Request (DFU Spec 1.0, Section 5.1)
  *
- *  handle    - the usb_dev_handle to communicate with
- *  interface - the interface to communicate with
+ *  device    - the dfu device to commmunicate with
  *  timeout   - the timeout in ms the USB device should wait for a pending
  *              USB reset before giving up and terminating the operation
  *
  *  returns 0 or < 0 on error
  */
-int32_t dfu_detach( struct usb_dev_handle *handle,
-                    const int32_t interface,
-                    const int32_t timeout )
+int32_t dfu_detach( dfu_device_t *device, const int32_t timeout )
 {
     int32_t result;
 
-    result = usb_control_msg( handle,
+    if( (NULL == device) || (NULL == device->handle) || (timeout < 0) ) {
+        DEBUG( "Invalid parameter\n" );
+        return -1;
+    }
+
+    result = usb_control_msg( device->handle,
           /* bmRequestType */ USB_ENDPOINT_OUT | USB_TYPE_CLASS | USB_RECIP_INTERFACE,
           /* bRequest      */ DFU_DETACH,
           /* wValue        */ timeout,
-          /* wIndex        */ interface,
+          /* wIndex        */ device->interface,
           /* Data          */ NULL,
           /* wLength       */ 0,
                               DFU_TIMEOUT );
@@ -94,37 +95,38 @@ int32_t dfu_detach( struct usb_dev_handle *handle,
 /*
  *  DFU_DNLOAD Request (DFU Spec 1.0, Section 6.1.1)
  *
- *  handle    - the usb_dev_handle to communicate with
- *  interface - the interface to communicate with
+ *  device    - the dfu device to commmunicate with
  *  length    - the total number of bytes to transfer to the USB
  *              device - must be less than wTransferSize
  *  data      - the data to transfer
  *
  *  returns the number of bytes written or < 0 on error
  */
-int32_t dfu_download( struct usb_dev_handle *handle,
-                      const int32_t interface,
-                      const size_t length,
-                      uint8_t* data )
+int32_t dfu_download( dfu_device_t *device, const size_t length, uint8_t* data )
 {
     int32_t result;
 
     /* Sanity checks */
+    if( (NULL == device) || (NULL == device->handle) ) {
+        DEBUG( "Invalid parameter\n" );
+        return -1;
+    }
+
     if( (0 != length) && (NULL == data) ) {
         DEBUG( "data was NULL, but length != 0\n" );
-        return -1;
+        return -2;
     }
 
     if( (0 == length) && (NULL != data) ) {
         DEBUG( "data was not NULL, but length == 0\n" );
-        return -2;
+        return -3;
     }
 
-    result = usb_control_msg( handle,
+    result = usb_control_msg( device->handle,
           /* bmRequestType */ USB_ENDPOINT_OUT | USB_TYPE_CLASS | USB_RECIP_INTERFACE,
           /* bRequest      */ DFU_DNLOAD,
           /* wValue        */ transaction++,
-          /* wIndex        */ interface,
+          /* wIndex        */ device->interface,
           /* Data          */ (char *) data,
           /* wLength       */ length,
                               DFU_TIMEOUT );
@@ -138,32 +140,33 @@ int32_t dfu_download( struct usb_dev_handle *handle,
 /*
  *  DFU_UPLOAD Request (DFU Spec 1.0, Section 6.2)
  *
- *  handle    - the usb_dev_handle to communicate with
- *  interface - the interface to communicate with
+ *  device    - the dfu device to commmunicate with
  *  length    - the maximum number of bytes to receive from the USB
  *              device - must be less than wTransferSize
  *  data      - the buffer to put the received data in
  *
  *  returns the number of bytes received or < 0 on error
  */
-int32_t dfu_upload( struct usb_dev_handle *handle,
-                    const int32_t interface,
-                    const size_t length,
-                    uint8_t* data )
+int32_t dfu_upload( dfu_device_t *device, const size_t length, uint8_t* data )
 {
     int32_t result;
 
     /* Sanity checks */
-    if( (0 == length) || (NULL == data) ) {
-        DEBUG( "data was NULL, or length is 0\n" );
+    if( (NULL == device) || (NULL == device->handle) ) {
+        DEBUG( "Invalid parameter\n" );
         return -1;
     }
 
-    result = usb_control_msg( handle,
+    if( (0 == length) || (NULL == data) ) {
+        DEBUG( "data was NULL, or length is 0\n" );
+        return -2;
+    }
+
+    result = usb_control_msg( device->handle,
           /* bmRequestType */ USB_ENDPOINT_IN | USB_TYPE_CLASS | USB_RECIP_INTERFACE,
           /* bRequest      */ DFU_UPLOAD,
           /* wValue        */ transaction++,
-          /* wIndex        */ interface,
+          /* wIndex        */ device->interface,
           /* Data          */ (char *) data,
           /* wLength       */ length,
                               DFU_TIMEOUT );
@@ -177,18 +180,20 @@ int32_t dfu_upload( struct usb_dev_handle *handle,
 /*
  *  DFU_GETSTATUS Request (DFU Spec 1.0, Section 6.1.2)
  *
- *  handle    - the usb_dev_handle to communicate with
- *  interface - the interface to communicate with
+ *  device    - the dfu device to commmunicate with
  *  status    - the data structure to be populated with the results
  *
  *  return the 0 if successful or < 0 on an error
  */
-int32_t dfu_get_status( struct usb_dev_handle *handle,
-                        const int32_t interface,
-                        struct dfu_status *status )
+int32_t dfu_get_status( dfu_device_t *device, dfu_status_t *status )
 {
     char buffer[6];
     int32_t result;
+
+    if( (NULL == device) || (NULL == device->handle) ) {
+        DEBUG( "Invalid parameter\n" );
+        return -1;
+    }
 
     /* Initialize the status data structure */
     status->bStatus       = DFU_STATUS_ERROR_UNKNOWN;
@@ -196,11 +201,11 @@ int32_t dfu_get_status( struct usb_dev_handle *handle,
     status->bState        = STATE_DFU_ERROR;
     status->iString       = 0;
 
-    result = usb_control_msg( handle,
+    result = usb_control_msg( device->handle,
           /* bmRequestType */ USB_ENDPOINT_IN | USB_TYPE_CLASS | USB_RECIP_INTERFACE,
           /* bRequest      */ DFU_GETSTATUS,
           /* wValue        */ 0,
-          /* wIndex        */ interface,
+          /* wIndex        */ device->interface,
           /* Data          */ buffer,
           /* wLength       */ 6,
                               DFU_TIMEOUT );
@@ -228,7 +233,7 @@ int32_t dfu_get_status( struct usb_dev_handle *handle,
         if( 0 < result ) {
             /* There was an error, we didn't get the entire message. */
             DEBUG( "result: %d\n", result );
-            return -1;
+            return -2;
         }
     }
 
@@ -239,21 +244,24 @@ int32_t dfu_get_status( struct usb_dev_handle *handle,
 /*
  *  DFU_CLRSTATUS Request (DFU Spec 1.0, Section 6.1.3)
  *
- *  handle    - the usb_dev_handle to communicate with
- *  interface - the interface to communicate with
+ *  device    - the dfu device to commmunicate with
  *
  *  return 0 or < 0 on an error
  */
-int32_t dfu_clear_status( struct usb_dev_handle *handle,
-                          const int32_t interface )
+int32_t dfu_clear_status( dfu_device_t *device )
 {
     int32_t result;
 
-    result = usb_control_msg( handle,
+    if( (NULL == device) || (NULL == device->handle) ) {
+        DEBUG( "Invalid parameter\n" );
+        return -1;
+    }
+
+    result = usb_control_msg( device->handle,
           /* bmRequestType */ USB_ENDPOINT_OUT| USB_TYPE_CLASS | USB_RECIP_INTERFACE,
           /* bRequest      */ DFU_CLRSTATUS,
           /* wValue        */ 0,
-          /* wIndex        */ interface,
+          /* wIndex        */ device->interface,
           /* Data          */ NULL,
           /* wLength       */ 0,
                               DFU_TIMEOUT );
@@ -267,25 +275,25 @@ int32_t dfu_clear_status( struct usb_dev_handle *handle,
 /*
  *  DFU_GETSTATE Request (DFU Spec 1.0, Section 6.1.5)
  *
- *  handle    - the usb_dev_handle to communicate with
- *  interface - the interface to communicate with
- *  length    - the maximum number of bytes to receive from the USB
- *              device - must be less than wTransferSize
- *  data      - the buffer to put the received data in
+ *  device    - the dfu device to commmunicate with
  *
  *  returns the state or < 0 on error
  */
-int32_t dfu_get_state( struct usb_dev_handle *handle,
-                       const int32_t interface )
+int32_t dfu_get_state( dfu_device_t *device )
 {
     int32_t result;
     char buffer[1];
 
-    result = usb_control_msg( handle,
+    if( (NULL == device) || (NULL == device->handle) ) {
+        DEBUG( "Invalid parameter\n" );
+        return -1;
+    }
+
+    result = usb_control_msg( device->handle,
           /* bmRequestType */ USB_ENDPOINT_IN | USB_TYPE_CLASS | USB_RECIP_INTERFACE,
           /* bRequest      */ DFU_GETSTATE,
           /* wValue        */ 0,
-          /* wIndex        */ interface,
+          /* wIndex        */ device->interface,
           /* Data          */ buffer,
           /* wLength       */ 1,
                               DFU_TIMEOUT );
@@ -305,21 +313,24 @@ int32_t dfu_get_state( struct usb_dev_handle *handle,
 /*
  *  DFU_ABORT Request (DFU Spec 1.0, Section 6.1.4)
  *
- *  handle    - the usb_dev_handle to communicate with
- *  interface - the interface to communicate with
+ *  device    - the dfu device to commmunicate with
  *
  *  returns 0 or < 0 on an error
  */
-int32_t dfu_abort( struct usb_dev_handle *handle,
-                   const int32_t interface )
+int32_t dfu_abort( dfu_device_t *device )
 {
     int32_t result;
 
-    result = usb_control_msg( handle,
+    if( (NULL == device) || (NULL == device->handle) ) {
+        DEBUG( "Invalid parameter\n" );
+        return -1;
+    }
+
+    result = usb_control_msg( device->handle,
           /* bmRequestType */ USB_ENDPOINT_OUT | USB_TYPE_CLASS | USB_RECIP_INTERFACE,
           /* bRequest      */ DFU_ABORT,
           /* wValue        */ 0,
-          /* wIndex        */ interface,
+          /* wIndex        */ device->interface,
           /* Data          */ NULL,
           /* wLength       */ 0,
                               DFU_TIMEOUT );
@@ -336,15 +347,13 @@ int32_t dfu_abort( struct usb_dev_handle *handle,
  *
  *  vendor  - the vender number of the device to look for
  *  product - the product number of the device to look for
- *  [out] handle - the usb_dev_handle to communicate with
- *  [out] interface - the interface to communicate with
+ *  [out] device - the dfu device to commmunicate with
  *
  *  return a pointer to the usb_device if found, or NULL otherwise
  */
 struct usb_device *dfu_device_init( const uint32_t vendor,
                                     const uint32_t product,
-                                    struct usb_dev_handle **handle,
-                                    int32_t *interface,
+                                    dfu_device_t *dfu_device,
                                     const dfu_bool initial_abort,
                                     const dfu_bool honor_interfaceclass )
 {
@@ -371,12 +380,11 @@ retry:
                     tmp = dfu_find_interface( device, honor_interfaceclass );
                     if( 0 <= tmp ) {
                         /* The interface is valid. */
-                        *interface = (uint16_t) tmp;
-                        *handle = usb_open( device );
-                        if( NULL != *handle ) {
-                            if( 0 == usb_claim_interface(*handle, *interface) ) {
-                                switch( dfu_make_idle(*handle, *interface,
-                                                      initial_abort) )
+                        dfu_device->interface = tmp;
+                        dfu_device->handle = usb_open( device );
+                        if( NULL != dfu_device->handle ) {
+                            if( 0 == usb_claim_interface(dfu_device->handle, dfu_device->interface) ) {
+                                switch( dfu_make_idle(dfu_device, initial_abort) )
                                 {
                                     case 0:
                                         return device;
@@ -386,12 +394,12 @@ retry:
                                 }
 
                                 DEBUG( "Failed to put the device in dfuIDLE mode.\n" );
-                                usb_release_interface( *handle, *interface );
-                                usb_close( *handle );
+                                usb_release_interface( dfu_device->handle, dfu_device->interface );
+                                usb_close( dfu_device->handle );
                                 retries = 4;
                             } else {
                                 DEBUG( "Failed to claim the DFU interface.\n" );
-                                usb_close( *handle );
+                                usb_close( dfu_device->handle );
                             }
                         } else {
                             DEBUG( "Failed to open device.\n" );
@@ -404,8 +412,8 @@ retry:
         }
     }
 
-    *handle = NULL;
-    *interface = 0;
+    dfu_device->handle = NULL;
+    dfu_device->interface = 0;
 
     return NULL;
 }
@@ -577,25 +585,23 @@ static int32_t dfu_find_interface( const struct usb_device *device,
 /*
  *  Gets the device into the dfuIDLE state if possible.
  *
- *  handle - the usb_dev_handle to communicate with
- *  interface - the interface to communicate with
+ *  device    - the dfu device to commmunicate with
  *
  *  returns 0 on success, 1 if device was reset, error otherwise
  */
-static int32_t dfu_make_idle( struct usb_dev_handle *handle,
-                              const int32_t interface,
+static int32_t dfu_make_idle( dfu_device_t *device,
                               const dfu_bool initial_abort )
 {
-    struct dfu_status status;
+    dfu_status_t status;
     int32_t retries = 4;
 
     if( true == initial_abort ) {
-        dfu_abort( handle, interface );
+        dfu_abort( device );
     }
 
     while( 0 < retries ) {
-        if( 0 != dfu_get_status(handle, interface, &status) ) {
-            dfu_clear_status( handle, interface );
+        if( 0 != dfu_get_status(device, &status) ) {
+            dfu_clear_status( device );
             continue;
         }
 
@@ -608,7 +614,7 @@ static int32_t dfu_make_idle( struct usb_dev_handle *handle,
                 }
 
                 /* We need the device to have the DFU_STATUS_OK status. */
-                dfu_clear_status( handle, interface );
+                dfu_clear_status( device );
                 break;
 
             case STATE_DFU_DOWNLOAD_SYNC:   /* abort -> idle */
@@ -617,21 +623,21 @@ static int32_t dfu_make_idle( struct usb_dev_handle *handle,
             case STATE_DFU_UPLOAD_IDLE:     /* abort -> idle */
             case STATE_DFU_DOWNLOAD_BUSY:   /* abort -> error */
             case STATE_DFU_MANIFEST:        /* abort -> error */
-                dfu_abort( handle, interface );
+                dfu_abort( device );
                 break;
 
             case STATE_DFU_ERROR:
-                dfu_clear_status( handle, interface );
+                dfu_clear_status( device );
                 break;
 
             case STATE_APP_IDLE:
-                dfu_detach( handle, interface, DFU_DETACH_TIMEOUT );
+                dfu_detach( device, DFU_DETACH_TIMEOUT );
                 break;
 
             case STATE_APP_DETACH:
             case STATE_DFU_MANIFEST_WAIT_RESET:
                 DEBUG( "Resetting the device\n" );
-                usb_reset( handle );
+                usb_reset( device->handle );
                 return 1;
         }
 
