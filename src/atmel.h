@@ -39,25 +39,23 @@
 #define ATMEL_SET_CONFIG_HSB    4
 
 /* All values are valid if in the range of 0-255, invalid otherwise */
-struct atmel_device_info {
-    short bootloaderVersion;    // Bootloader Version
-    short bootID1;              // Device boot ID 1
-    short bootID2;              // Device boot ID 2
-    short bsb;                  // Boot Status Byte
-    short sbv;                  // Software Boot Vector
-    short ssb;                  // Software Security Byte
-    short eb;                   // Extra Byte
-    short manufacturerCode;     // Manufacturer Code
-    short familyCode;           // Family Code
-    short productName;          // Product Name
-    short productRevision;      // Product Revision
-    short hsb;                  // Hardware Security Byte
-};
+typedef struct {
+    int16_t bootloaderVersion;  // Bootloader Version
+    int16_t bootID1;            // Device boot ID 1
+    int16_t bootID2;            // Device boot ID 2
+    int16_t bsb;                // Boot Status Byte
+    int16_t sbv;                // Software Boot Vector
+    int16_t ssb;                // Software Security Byte
+    int16_t eb;                 // Extra Byte
+    int16_t manufacturerCode;   // Manufacturer Code
+    int16_t familyCode;         // Family Code
+    int16_t productName;        // Product Name
+    int16_t productRevision;    // Product Revision
+    int16_t hsb;                // Hardware Security Byte
+} atmel_device_info_t;
 
-int32_t atmel_read_config_8051( dfu_device_t *device,
-                                struct atmel_device_info *info );
-int32_t atmel_read_config_avr( dfu_device_t *device,
-                               struct atmel_device_info *info );
+int32_t atmel_read_config( dfu_device_t *device,
+                           atmel_device_info_t *info );
 int32_t atmel_erase_flash( dfu_device_t *device,
                            const uint8_t mode );
 int32_t atmel_set_config( dfu_device_t *device,
@@ -80,5 +78,5 @@ int32_t atmel_flash( dfu_device_t *device,
                      const dfu_bool eeprom );
 int32_t atmel_start_app( dfu_device_t *device );
 
-void atmel_print_device_info( FILE *stream, struct atmel_device_info *info );
+void atmel_print_device_info( FILE *stream, atmel_device_info_t *info );
 #endif

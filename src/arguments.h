@@ -22,9 +22,10 @@
 #define __ARGUMENTS_H__
 
 #include "dfu-bool.h"
+#include "dfu-device.h"
 #include "atmel.h"
 
-#define DEVICE_TYPE_STRING_MAX_LENGTH   5
+#define DEVICE_TYPE_STRING_MAX_LENGTH   6
 /*
  *  atmel_programmer target command
  *
@@ -63,14 +64,12 @@ enum get_enum { get_bootloader, get_ID1, get_ID2, get_BSB, get_SBV, get_SSB,
                 get_EB, get_manufacturer, get_family, get_product_name,
                 get_product_rev, get_HSB };
 
-enum device_type_enum { device_8051, device_AVR };
-
 struct programmer_arguments {
     /* target-specific inputs */
     enum targets_enum target;
     uint16_t vendor_id;
     uint16_t chip_id;
-    enum device_type_enum device_type;
+    atmel_device_class_t device_type;
     char device_type_string[DEVICE_TYPE_STRING_MAX_LENGTH];
     size_t top_memory_address;
     size_t memory_size;

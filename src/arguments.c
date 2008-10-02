@@ -25,6 +25,7 @@
 #include <string.h>
 
 #include "dfu-bool.h"
+#include "dfu-device.h"
 #include "config.h"
 #include "arguments.h"
 
@@ -36,7 +37,7 @@ struct option_mapping_structure {
 struct target_mapping_structure {
     const char *name;
     enum targets_enum value;
-    enum device_type_enum device_type;
+    atmel_device_class_t device_type;
     uint16_t chip_id;
     uint16_t vendor_id;
     size_t memory_size;
@@ -57,16 +58,16 @@ struct target_mapping_structure {
 
 /* ----- target specific structures ----------------------------------------- */
 static struct target_mapping_structure target_map[] = {
-    { "at89c51snd1c", tar_at89c51snd1c, device_8051, 0x2FFF, 0x03eb, 0x10000, 128, false, true,  0,   0      },
-    { "at89c5130",    tar_at89c5130,    device_8051, 0x2FFD, 0x03eb, 0x04000, 128, false, true,  128, 0x03FF },
-    { "at89c5131",    tar_at89c5131,    device_8051, 0x2FFD, 0x03eb, 0x08000, 128, false, true,  128, 0x03FF },
-    { "at89c5132",    tar_at89c5132,    device_8051, 0x2FFF, 0x03eb, 0x10000, 128, false, true,  0,   0      },
-    { "at90usb1287",  tar_at90usb1287,  device_AVR,  0x2FFB, 0x03eb, 0x1F000, 128, true,  false, 128, 0x0FFF },
-    { "at90usb1286",  tar_at90usb1286,  device_AVR,  0x2FFB, 0x03eb, 0x1F000, 128, true,  false, 128, 0x0FFF },
-    { "at90usb647",   tar_at90usb647,   device_AVR,  0x2FF9, 0x03eb, 0x0F000, 128, true,  false, 128, 0x07FF },
-    { "at90usb646",   tar_at90usb646,   device_AVR,  0x2FF9, 0x03eb, 0x0F000, 128, true,  false, 128, 0x07FF },
-    { "at90usb162",   tar_at90usb162,   device_AVR,  0x2FFA, 0x03eb, 0x03000, 128, true,  false, 128, 0x01FF },
-    { "at90usb82",    tar_at90usb82,    device_AVR,  0x2FF7, 0x03eb, 0x01000, 128, true,  false, 128, 0x01FF },
+    { "at89c51snd1c", tar_at89c51snd1c, adc_8051, 0x2FFF, 0x03eb, 0x10000, 128, false, true,  0,   0      },
+    { "at89c5130",    tar_at89c5130,    adc_8051, 0x2FFD, 0x03eb, 0x04000, 128, false, true,  128, 0x03FF },
+    { "at89c5131",    tar_at89c5131,    adc_8051, 0x2FFD, 0x03eb, 0x08000, 128, false, true,  128, 0x03FF },
+    { "at89c5132",    tar_at89c5132,    adc_8051, 0x2FFF, 0x03eb, 0x10000, 128, false, true,  0,   0      },
+    { "at90usb1287",  tar_at90usb1287,  adc_AVR,  0x2FFB, 0x03eb, 0x1F000, 128, true,  false, 128, 0x0FFF },
+    { "at90usb1286",  tar_at90usb1286,  adc_AVR,  0x2FFB, 0x03eb, 0x1F000, 128, true,  false, 128, 0x0FFF },
+    { "at90usb647",   tar_at90usb647,   adc_AVR,  0x2FF9, 0x03eb, 0x0F000, 128, true,  false, 128, 0x07FF },
+    { "at90usb646",   tar_at90usb646,   adc_AVR,  0x2FF9, 0x03eb, 0x0F000, 128, true,  false, 128, 0x07FF },
+    { "at90usb162",   tar_at90usb162,   adc_AVR,  0x2FFA, 0x03eb, 0x03000, 128, true,  false, 128, 0x01FF },
+    { "at90usb82",    tar_at90usb82,    adc_AVR,  0x2FF7, 0x03eb, 0x01000, 128, true,  false, 128, 0x01FF },
     { NULL }
 };
 
@@ -190,12 +191,16 @@ static int32_t assign_target( struct programmer_arguments *args,
                 args->top_eeprom_memory_address = 0;
             }
             switch( args->device_type ) {
-                case device_8051:
+                case adc_8051:
                     strncpy( args->device_type_string, "8051",
                              DEVICE_TYPE_STRING_MAX_LENGTH );
                     break;
-                case device_AVR:
+                case adc_AVR:
                     strncpy( args->device_type_string, "AVR",
+                             DEVICE_TYPE_STRING_MAX_LENGTH );
+                    break;
+                case adc_AVR32:
+                    strncpy( args->device_type_string, "AVR32",
                              DEVICE_TYPE_STRING_MAX_LENGTH );
                     break;
             }

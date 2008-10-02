@@ -154,17 +154,13 @@ error:
 static int32_t execute_get( dfu_device_t *device,
                             struct programmer_arguments *args )
 {
-    struct atmel_device_info info;
+    atmel_device_info_t info;
     char *message = NULL;
     int16_t value = 0;
     int32_t status;
     int32_t controller_error = 0;
 
-    if( device_8051 == args->device_type ) {
-        status = atmel_read_config_8051( device, &info );
-    } else {
-        status = atmel_read_config_avr( device, &info );
-    }
+    status = atmel_read_config( device, &info );
 
     if( 0 != status ) {
         DEBUG( "Error reading %s config information.\n",
@@ -190,28 +186,28 @@ static int32_t execute_get( dfu_device_t *device,
         case get_BSB:
             value = info.bsb;
             message = "Boot Status Byte";
-            if( device_8051 != args->device_type ) {
+            if( adc_8051 != args->device_type ) {
                 controller_error = 1;
             }
             break;
         case get_SBV:
             value = info.sbv;
             message = "Software Boot Vector";
-            if( device_8051 != args->device_type ) {
+            if( adc_8051 != args->device_type ) {
                 controller_error = 1;
             }
             break;
         case get_SSB:
             value = info.ssb;
             message = "Software Security Byte";
-            if( device_8051 != args->device_type ) {
+            if( adc_8051 != args->device_type ) {
                 controller_error = 1;
             }
             break;
         case get_EB:
             value = info.eb;
             message = "Extra Byte";
-            if( device_8051 != args->device_type ) {
+            if( adc_8051 != args->device_type ) {
                 controller_error = 1;
             }
             break;
@@ -314,7 +310,7 @@ static int32_t execute_configure( dfu_device_t *device,
     int32_t value = args->com_configure_data.value;
     int32_t name = args->com_configure_data.name;
 
-    if( device_8051 != args->device_type ) {
+    if( adc_8051 != args->device_type ) {
         DEBUG( "target doesn't support configure operation.\n" );
         fprintf( stderr, "target doesn't support configure operation.\n" );
         return -1;
@@ -340,6 +336,7 @@ static int32_t execute_configure( dfu_device_t *device,
 int32_t execute_command( dfu_device_t *device,
                          struct programmer_arguments *args )
 {
+    device->type = args->device_type;
     switch( args->command ) {
         case com_erase:
             return execute_erase( device, args );

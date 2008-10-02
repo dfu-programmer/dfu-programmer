@@ -5,9 +5,9 @@
 #include <usb.h>
 
 typedef enum {
-    device_class__8051,
-    device_class__AVR,
-    device_class__AVR32
+    adc_8051,
+    adc_AVR,
+    adc_AVR32
 } atmel_device_class_t;
 
 typedef struct {

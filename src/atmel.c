@@ -102,86 +102,55 @@ static int32_t atmel_read_command( dfu_device_t *device,
  *
  *  returns 0 if successful, < 0 if not
  */
-int32_t atmel_read_config_8051( dfu_device_t *device,
-                                struct atmel_device_info *info )
+int32_t atmel_read_config( dfu_device_t *device,
+                           atmel_device_info_t *info )
 {
-    int32_t result;
-    int32_t retVal = 0;
-    int32_t i = 0;
-    int16_t *ptr = (int16_t *) info;
-
-    /* These commands are documented in Appendix A of the
-     * "AT89C5131A USB Bootloader Datasheet"
-     */
-    static const uint8_t data[24] = { 0x00, 0x00,
-                                      0x00, 0x01,
-                                      0x00, 0x02,
-             
-                                      0x01, 0x00,
-                                      0x01, 0x01,
-                                      0x01, 0x05,
-                                      0x01, 0x06,
-                                      0x01, 0x30,
-                                      0x01, 0x31,
-                                      0x01, 0x60,
-                                      0x01, 0x61,
-
-                                      0x02, 0x00 };
-
-    for( i = 0; i < 24; i += 2 ) {
-        result = atmel_read_command( device, data[i], data[i+1] );
-        if( result < 0 ) {
-            retVal = result;
-        }
-        *ptr = result;
-        ptr++;
-    }
-
-    return retVal;
-}
-
-
-/*
- *  This reads in all of the configuration and Manufacturer Information
- *  into the atmel_device_info data structure for easier use later.
- *
- *  device    - the usb_dev_handle to communicate with
- *  info      - the data structure to populate
- *
- *  returns 0 if successful, < 0 if not
- */
-int32_t atmel_read_config_avr( dfu_device_t *device,
-                               struct atmel_device_info *info )
-{
-    int32_t result;
-    int32_t retVal = 0;
-    int32_t i = 0;
-
-    /* These commands are documented in Appendix A of the
-     * "AT90usb128x/AT90usb64x USB DFU Bootloader Datasheet"
-     */
-    static const struct config_info {
+    typedef struct {
         uint8_t data0;
         uint8_t data1;
+        uint8_t device_map;
         size_t  offset;
-    } data[] = {
-        { 0x0, 0x0,  offsetof(struct atmel_device_info, bootloaderVersion ), },
-        { 0x0, 0x1,  offsetof(struct atmel_device_info, bootID1 ),           },
-        { 0x0, 0x2,  offsetof(struct atmel_device_info, bootID2 ),           },
-        { 0x1, 0x30, offsetof(struct atmel_device_info, manufacturerCode ),  },
-        { 0x1, 0x31, offsetof(struct atmel_device_info, familyCode ),        },
-        { 0x1, 0x60, offsetof(struct atmel_device_info, productName ),       },
-        { 0x1, 0x61, offsetof(struct atmel_device_info, productRevision ),   },
+    } atmel_read_config_t;
+#   define DM_8051  0x01
+#   define DM_AVR   0x02
+
+    /* These commands are documented in Appendix A of the
+     * "AT89C5131A USB Bootloader Datasheet" or
+     * "AT90usb128x/AT90usb64x USB DFU Bootloader Datasheet"
+     */
+    static const atmel_read_config_t data[] = {
+        { 0x00, 0x00, (DM_8051 | DM_AVR), offsetof(atmel_device_info_t, bootloaderVersion) },
+        { 0x00, 0x01, (DM_8051 | DM_AVR), offsetof(atmel_device_info_t, bootID1)           },
+        { 0x00, 0x02, (DM_8051 | DM_AVR), offsetof(atmel_device_info_t, bootID2)           },
+        { 0x01, 0x30, (DM_8051 | DM_AVR), offsetof(atmel_device_info_t, manufacturerCode)  },
+        { 0x01, 0x31, (DM_8051 | DM_AVR), offsetof(atmel_device_info_t, familyCode)        },
+        { 0x01, 0x60, (DM_8051 | DM_AVR), offsetof(atmel_device_info_t, productName)       },
+        { 0x01, 0x61, (DM_8051 | DM_AVR), offsetof(atmel_device_info_t, productRevision)   },
+        { 0x01, 0x00, DM_8051,            offsetof(atmel_device_info_t, bsb)               },
+        { 0x01, 0x01, DM_8051,            offsetof(atmel_device_info_t, sbv)               },
+        { 0x01, 0x05, DM_8051,            offsetof(atmel_device_info_t, ssb)               },
+        { 0x01, 0x06, DM_8051,            offsetof(atmel_device_info_t, eb)                },
+        { 0x02, 0x00, DM_8051,            offsetof(atmel_device_info_t, hsb)               }
     };
 
-    for( i = 0; i < 7; i++ ) {
-        int16_t *ptr = data[i].offset + (void *) info;
-        result = atmel_read_command( device, data[i].data0, data[i].data1 );
-        if( result < 0 ) {
-            retVal = result;
+    int32_t result;
+    int32_t retVal = 0;
+    int32_t i = 0;
+
+    for( i = 0; i < sizeof(data)/sizeof(atmel_read_config_t); i++ ) {
+        atmel_read_config_t *row = (atmel_read_config_t*) &data[i];
+
+        if( ((DM_8051 & row->device_map) && (adc_8051 == device->type)) ||
+            ((DM_AVR & row->device_map) && (adc_AVR == device->type)) )
+        {
+            int16_t *ptr = row->offset + (void *) info;
+
+            result = atmel_read_command( device, row->data0, row->data1 );
+            if( result < 0 ) {
+                retVal = result;
+            }
+            *ptr = result;
         }
-        *ptr = result;
-        ptr++;
     }
 
     return retVal;
@@ -778,7 +747,7 @@ static int32_t atmel_flash_block( dfu_device_t *device,
 }
 
 
-void atmel_print_device_info( FILE *stream, struct atmel_device_info *info )
+void atmel_print_device_info( FILE *stream, atmel_device_info_t *info )
 {
     fprintf( stream, "%18s: 0x%04x - %d\n", "Bootloader Version", info->bootloaderVersion, info->bootloaderVersion );
     fprintf( stream, "%18s: 0x%04x - %d\n", "Device boot ID 1", info->bootID1, info->bootID1 );
