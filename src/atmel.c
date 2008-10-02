@@ -40,7 +40,7 @@
  * We use 3KB for wTransferSize (MAX_TRANSFER_SIZE).
  */
 
-#define ATMEL_MAX_TRANSFER_SIZE     0x0c00
+#define ATMEL_MAX_TRANSFER_SIZE     0x03FF
 #define ATMEL_MAX_FLASH_BUFFER_SIZE (ATMEL_MAX_TRANSFER_SIZE + 0x30)
 
 #define ATMEL_DEBUG_THRESHOLD   50
@@ -53,8 +53,9 @@ static int32_t atmel_flash_block( dfu_device_t *device,
                                   const uint32_t base_address,
                                   const size_t length,
                                   const dfu_bool eeprom );
+static int32_t atmel_select_flash( dfu_device_t *device );
 static int32_t atmel_select_page( dfu_device_t *device,
-                                  const uint8_t mem_page );
+                                  const uint16_t mem_page );
 
 /* returns 0 - 255 on success, < 0 otherwise */
 static int32_t atmel_read_command( dfu_device_t *device,
@@ -260,95 +261,40 @@ int32_t atmel_set_config( dfu_device_t *device,
     return status.bStatus;
 }
 
-
-/* Just to be safe, let's limit the transfer size */
-int32_t atmel_read_flash( dfu_device_t *device,
-                          const uint32_t start,
-                          const uint32_t end,
-                          uint8_t* buffer,
-                          const size_t buffer_len,
-                          const dfu_bool eeprom )
+static int32_t __atmel_read_page( dfu_device_t *device,
+                                  const uint32_t start,
+                                  const uint32_t end,
+                                  uint8_t* buffer,
+                                  const dfu_bool eeprom )
 {
     uint8_t command[6] = { 0x03, 0x00, 0x00, 0x00, 0x00, 0x00 };
-    uint8_t *ptr = buffer;
-    int32_t length = end - start + 1; /* + 1 because memory is 0 based */
+    uint32_t current_start;
+    size_t size;
+    uint32_t mini_page;
     int32_t result;
-    int32_t rxStart, rxEnd, rxLength;
-    uint8_t mem_page = 0;
-
-    if( (NULL == buffer) || (start >= end) ) {
-        DEBUG( "invalid arguments.\n" );
-        return -1;
-    }
-
-    if( length > buffer_len ) {
-        DEBUG( "buffer isn't large enough - bytes needed: %d : %d.\n", length, buffer_len );
-        return -2;
-    }
 
     if( true == eeprom ) {
         command[1] = 0x02;
     }
 
-    rxStart = start;
-
-    DEBUG( "read %d bytes\n", length );
-
-    while( length > 0 ) {
-
-        rxLength = length;
-        if( length > ATMEL_MAX_TRANSFER_SIZE ) {
-            rxLength = ATMEL_MAX_TRANSFER_SIZE;
+    current_start = start;
+    size = end - current_start;
+    for( mini_page = 0; 0 < size; mini_page++ ) {
+        if( ATMEL_MAX_TRANSFER_SIZE < size ) {
+            size = ATMEL_MAX_TRANSFER_SIZE;
         }
-
-        /* Why do we subtract 1, then add it back?
-         * Because the transfer is inclusive of the end address,
-         * we want to be 1 less, but when the time comes to
-         * say where to start reading next time we need to start
-         * with the next byte... since this is inclusive.
-         *
-         * Example: 0x0000 -> 0x0001 actually transmits 2 bytes:
-         * 0x0000 and 0x0001.
-         */
-        rxEnd = rxStart + rxLength - 1;
-
-        /* Make sure any reads align with the memory page boudary. */
-        if( rxEnd > (UINT16_MAX * (1 + mem_page)) ) {
-            if( rxStart <= (UINT16_MAX * (1 + mem_page)) ) {
-                rxEnd = UINT16_MAX * (1 + mem_page);
-                rxLength = rxEnd - rxStart + 1;
-            } else {
-                mem_page++;
-
-                result = atmel_select_page( device, mem_page );
-                if( result < 0) {
-                    DEBUG( "error selecting the page: %d\n", result );
-                    return -3;
-                }
-            }
-        }
-
-        command[2] = 0xff & (rxStart >> 8);
-        command[3] = 0xff & rxStart;
-        command[4] = 0xff & (rxEnd >> 8);
-        command[5] = 0xff & rxEnd;
-
-        rxEnd++;
-
-        DEBUG( "%d bytes to %p, from MCU %06x\n", rxLength, ptr, rxStart );
+        command[2] = 0xff & (current_start >> 8);
+        command[3] = 0xff & current_start;
+        command[4] = 0xff & ((current_start + size)>> 8);
+        command[5] = 0xff & (current_start + size);
 
         if( 6 != dfu_download(device, 6, command) ) {
             DEBUG( "dfu_download failed\n" );
-            return -4;
+            return -1;
         }
 
-        result = dfu_upload( device, rxLength, ptr );
-
-        if( result > 0 ) {
-            rxStart = rxEnd;
-            length -= result;
-            ptr += result;
-        } else {
+        result = dfu_upload( device, (size+1), buffer );
+        if( result < 0) {
             dfu_status_t status;
 
             DEBUG( "result: %d\n", result );
@@ -365,33 +311,89 @@ int32_t atmel_read_flash( dfu_device_t *device,
 
             return result;
         }
-    }
 
-    if( mem_page > 0 ) {
-        result = atmel_select_page( device, 0 );
-        if( result < 0) {
-            DEBUG( "error selecting the page: %d\n", result );
-            return -5;
+        buffer += size + 1;
+        current_start += size + 1;
+
+        if( current_start < end ) {
+            size = end - current_start;
+        } else {
+            size = 0;
         }
     }
 
     return (end - start + 1);
 }
 
-
-int32_t atmel_blank_check( dfu_device_t *device,
-                           const uint32_t start,
-                           const uint32_t end )
+/* Just to be safe, let's limit the transfer size */
+int32_t atmel_read_flash( dfu_device_t *device,
+                          const uint32_t start,
+                          const uint32_t end,
+                          uint8_t* buffer,
+                          const size_t buffer_len,
+                          const dfu_bool eeprom )
 {
-    uint8_t command[6] = { 0x03, 0x01, 0x00, 0x00, 0x00, 0x00 };
-    dfu_status_t status;
-    int32_t i;
+    uint16_t page = 0;
+    uint32_t current_start;
+    size_t size;
 
-    if( start >= end ) {
+    if( (0 != start) || (NULL == buffer) || (start >= end) || (NULL == device) ) {
         DEBUG( "invalid arguments.\n" );
         return -1;
     }
 
+    if( (end - start) > buffer_len ) {
+        DEBUG( "buffer isn't large enough - bytes needed: %d : %d.\n", (end - start), buffer_len );
+        return -2;
+    }
+
+    /* For the AVR32 chips, select the flash space. */
+    if( adc_AVR32 == device->type ) {
+        if( 0 != atmel_select_flash(device) ) {
+            return -3;
+        }
+    }
+
+    current_start = start;
+    size = end - current_start;
+    for( page = 0; 0 < size; page++ ) {
+        int32_t result;
+        if( size > UINT16_MAX ) {
+            size = UINT16_MAX;
+        }
+
+        if( 0 != atmel_select_page(device, page) ) {
+            return -4;
+        }
+
+        result = __atmel_read_page( device, current_start, (current_start + size), buffer, eeprom );
+        size++;
+        if( size != result ) {
+            return -5;
+        }
+
+        /* Move the buffer forward. */
+        buffer += size;
+
+        current_start += size;
+
+        if( current_start < end ) {
+            size = end - current_start;
+        } else {
+            size = 0;
+        }
+    }
+
+    return (end - start + 1);
+}
+
+static int32_t __atmel_blank_check_internal( dfu_device_t *device,
+                                             const uint32_t start,
+                                             const uint32_t end )
+{
+    uint8_t command[6] = { 0x03, 0x01, 0x00, 0x00, 0x00, 0x00 };
+
+    DEBUG( "%s( %p, 0x%08x, 0x%08x )\n", __FUNCTION__, device, start, end );
     command[2] = 0xff & (start >> 8);
     command[3] = 0xff & start;
     command[4] = 0xff & (end >> 8);
@@ -402,18 +404,86 @@ int32_t atmel_blank_check( dfu_device_t *device,
         return -2;
     }
 
-    /* It looks like it can take a while to erase the chip.
-     * We will try for 10 seconds before giving up.
-     */
-    for( i = 0; i < 10; i++ ) {
-        if( 0 == dfu_get_status(device, &status) ) {
-            return status.bStatus;
+    return 0;
+}
+
+int32_t atmel_blank_check( dfu_device_t *device,
+                           const uint32_t start,
+                           const uint32_t end )
+{
+    int32_t rv;
+    uint16_t page;
+    uint32_t current_start;
+    size_t size;
+
+    if( (start >= end) || (NULL == device) ) {
+        DEBUG( "invalid arguments.\n" );
+        return -1;
+    }
+
+    rv = -3;
+
+    /* Handle non AVR32 devices. */
+    if( adc_AVR32 != device->type ) {
+        rv = __atmel_blank_check_internal( device, start, end );
+        goto done;
+    }
+
+    /* Select FLASH memory */
+    if( 0 != atmel_select_flash(device) ) {
+        return -2;
+    }
+
+    current_start = start;
+    size = end - current_start;
+    for( page = 0; 0 < size; page++ ) {
+        if( UINT16_MAX < size ) {
+            size = UINT16_MAX;
+        }
+
+        /* Select the page of memory */
+        if( 0 != atmel_select_page(device, page) ) {
+            return -2;
+        }
+
+        rv = __atmel_blank_check_internal( device, 0, size );
+        if( 0 != rv ) {
+            /* We ran into a problem. */
+            return rv;
+        }
+
+        /* Add 1 because we checked an inclusive number of bytes. */
+        current_start += size + 1;
+
+        /* because we are subtracting the number of bytes compared, the
+         * next starting position is 1 after the end, which causes all
+         * sorts of problems if size_t is unsigned. */
+        if( current_start < end ) {
+            size = end - current_start;
+        } else {
+            size = 0;
+        }
+    }
+
+done:
+    if( 0 == rv ) {
+        int32_t i;
+
+        /* It looks like it can take a while to erase the chip.
+         * We will try for 10 seconds before giving up.
+         */
+        for( i = 0; i < 20; i++ ) {
+            dfu_status_t status;
+            if( 0 == dfu_get_status(device, &status) ) {
+                return status.bStatus;
+            }
         }
     }
 
     DEBUG( "erase chip failed.\n" );
     return -3;
 }
+
 
 
 /* Not really sure how to test this one. */
@@ -454,16 +524,44 @@ int32_t atmel_start_app( dfu_device_t *device )
 }
 
 
-static int32_t atmel_select_page( dfu_device_t *device,
-                                  const uint8_t mem_page )
+static int32_t atmel_select_flash( dfu_device_t *device )
 {
-    uint8_t command[4] = { 0x06, 0x03, 0x00, 0x00 };
+    if( (NULL != device) && (adc_AVR32 == device->type) ) {
+        uint8_t command[4] = { 0x06, 0x03, 0x00, 0x00 };
 
-    command[3] = (char) mem_page;
+        if( 4 != dfu_download(device, 4, command) ) {
+            DEBUG( "dfu_download failed.\n" );
+            return -1;
+        }
+        DEBUG( "flash selected\n" );
+    }
 
-    if( 4 != dfu_download(device, 4, command) ) {
-        DEBUG( "dfu_download failed.\n" );
-        return -1;
+    return 0;
+}
+
+static int32_t atmel_select_page( dfu_device_t *device,
+                                  const uint16_t mem_page )
+{
+    if( NULL != device ) {
+        if( adc_AVR32 == device->type ) {
+            uint8_t command[5] = { 0x06, 0x03, 0x01, 0x00, 0x00 };
+            command[3] = 0xff & (mem_page >> 8);
+            command[4] = 0xff & mem_page;
+
+            if( 5 != dfu_download(device, 5, command) ) {
+                DEBUG( "dfu_download failed.\n" );
+                return -1;
+            }
+        } else if( adc_AVR == device->type ) {
+            uint8_t command[4] = { 0x06, 0x03, 0x00, 0x00 };
+
+            command[3] = (char) mem_page;
+
+            if( 4 != dfu_download(device, 4, command) ) {
+                DEBUG( "dfu_download failed.\n" );
+                return -1;
+            }
+        }
     }
 
     return 0;

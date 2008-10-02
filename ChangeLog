@@ -1,3 +1,7 @@
+2008-10-02 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
+	* src/atmel.c: Enable chip erase, blank checking and
+	  reading from flash for the AVR32 devices.
+
 2008-10-01 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
 	* src/*, fedora/10-dfu-programmer.fdi: Change the
 	  parameters to use a struct instead of passing the usb
