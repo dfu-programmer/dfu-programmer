@@ -71,8 +71,9 @@ static int intel_validate_checksum( struct intel_record *record )
 static int intel_validate_line( struct intel_record *record )
 {
     /* Validate the checksum */
-    //if( 0 != intel_validate_checksum(record) )
-        //return -1;
+    if( 0 != intel_validate_checksum(record) ) {
+        return -1;
+    }
 
     /* Validate the type */
     switch( record->type ) {
@@ -262,7 +263,6 @@ int16_t *intel_hex_to_buffer( char *filename, int max_size, int *usage )
                         goto error;
                     }
 
-                    fprintf( stderr, "Data[0x%08x] = 0x%02x\n", address, 0xff & record.data[i] );
                     memory[address++] = 0xff & record.data[i];
                     (*usage)++;
                 }
