@@ -50,7 +50,10 @@ enum targets_enum { tar_at89c51snd1c,
                     tar_at90usb646,
                     tar_at90usb162,
                     tar_at90usb82,
-                    tar_at32uc3a512,
+                    tar_at32uc3_64,
+                    tar_at32uc3_128,
+                    tar_at32uc3_256,
+                    tar_at32uc3_512,
                     tar_none };
 
 enum commands_enum { com_none, com_erase, com_flash, com_eflash,
@@ -74,8 +77,8 @@ struct programmer_arguments {
     uint16_t chip_id;
     atmel_device_class_t device_type;
     char device_type_string[DEVICE_TYPE_STRING_MAX_LENGTH];
-    size_t top_memory_address;
-    size_t memory_size;
+    uint32_t flash_address_top;
+    uint32_t flash_address_bottom;
     size_t flash_page_size;
     dfu_bool initial_abort;
     dfu_bool honor_interfaceclass;

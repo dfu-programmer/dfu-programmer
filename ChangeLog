@@ -1,3 +1,11 @@
+2008-10-31 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
+	* src/*, AUTHORS, fedora/dfu-programmer.spec.in,
+	  docs/dfu-programmer.1: Apply Zachary Clifford patch to
+	  add more support for AVR32 devices & merged the two
+	  together.
+	* src/*: Fixed a number of off-by-one errors that were
+	  all over the place.
+
 2008-10-02 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
 	* src/atmel.c: Enable chip erase, blank checking and
 	  reading from flash for the AVR32 devices.

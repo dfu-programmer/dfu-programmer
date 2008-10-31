@@ -14,16 +14,12 @@ BuildRequires:  libusb-devel >= 0.1.10a
 %description 
 A linux based command-line programmer for Atmel chips with a USB
 bootloader supporting ISP. This is a mostly Device Firmware Update
-(DFU) 1.0 compliant user-space application.
-Currently supported chips:
-        8051                        AVR
-    ------------                -----------
-    at89c51snd1c                at90usb1287
-    at89c5130                   at90usb1286
-    at89c5131                   at90usb647 
-    at89c5132                   at90usb646
-                                at90usb162
-                                at90usb82
+(DFU) 1.0 compliant user-space application. Currently supported chips:
+at89c51snd1c, at89c5130, at89c5131, at89c5132, at90usb1287,
+at90usb1286, at90usb647, at90usb646, at90usb162, at90usb82,
+at32uc3a0128, at32uc3a0256, at32uc3a0512, at32uc3a1128, at32uc3a1256,
+at32uc3a1512, at32uc3b064, at32uc3b0128, at32uc3b0256, at32uc3b164,
+at32uc3b1128, at32uc3b1256
 
 %prep
 %setup -q

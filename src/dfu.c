@@ -47,10 +47,16 @@
  * before the giving up going into dfu mode. */
 #define DFU_DETACH_TIMEOUT 1000
 
-#define DFU_DEBUG_THRESHOLD 100
+#define DFU_DEBUG_THRESHOLD         100
+#define DFU_TRACE_THRESHOLD         200
+#define DFU_MESSAGE_DEBUG_THRESHOLD 300
 
 #define DEBUG(...)  dfu_debug( __FILE__, __FUNCTION__, __LINE__, \
                                DFU_DEBUG_THRESHOLD, __VA_ARGS__ )
+#define TRACE(...)  dfu_debug( __FILE__, __FUNCTION__, __LINE__, \
+                               DFU_TRACE_THRESHOLD, __VA_ARGS__ )
+#define MSG_DEBUG(...)  dfu_debug( __FILE__, __FUNCTION__, __LINE__, \
+                               DFU_MESSAGE_DEBUG_THRESHOLD, __VA_ARGS__ )
 
 static uint16_t transaction = 0;
 
@@ -71,6 +77,8 @@ static void dfu_msg_response_output( const char *function, const int32_t result 
 int32_t dfu_detach( dfu_device_t *device, const int32_t timeout )
 {
     int32_t result;
+
+    TRACE( "%s( %p, %d )\n", __FUNCTION__, device, timeout );
 
     if( (NULL == device) || (NULL == device->handle) || (timeout < 0) ) {
         DEBUG( "Invalid parameter\n" );
@@ -106,6 +114,8 @@ int32_t dfu_download( dfu_device_t *device, const size_t length, uint8_t* data )
 {
     int32_t result;
 
+    TRACE( "%s( %p, %u, %p )\n", __FUNCTION__, device, length, data );
+
     /* Sanity checks */
     if( (NULL == device) || (NULL == device->handle) ) {
         DEBUG( "Invalid parameter\n" );
@@ -120,6 +130,14 @@ int32_t dfu_download( dfu_device_t *device, const size_t length, uint8_t* data )
     if( (0 == length) && (NULL != data) ) {
         DEBUG( "data was not NULL, but length == 0\n" );
         return -3;
+    }
+
+
+    {
+        size_t i;
+        for( i = 0; i < length; i++ ) {
+            MSG_DEBUG( "Message: m[%u] = 0x%02x\n", i, data[i] );
+        }
     }
 
     result = usb_control_msg( device->handle,
@@ -150,6 +168,8 @@ int32_t dfu_download( dfu_device_t *device, const size_t length, uint8_t* data )
 int32_t dfu_upload( dfu_device_t *device, const size_t length, uint8_t* data )
 {
     int32_t result;
+
+    TRACE( "%s( %p, %u, %p )\n", __FUNCTION__, device, length, data );
 
     /* Sanity checks */
     if( (NULL == device) || (NULL == device->handle) ) {
@@ -189,6 +209,8 @@ int32_t dfu_get_status( dfu_device_t *device, dfu_status_t *status )
 {
     char buffer[6];
     int32_t result;
+
+    TRACE( "%s( %p, %p )\n", __FUNCTION__, device, status );
 
     if( (NULL == device) || (NULL == device->handle) ) {
         DEBUG( "Invalid parameter\n" );
@@ -252,6 +274,8 @@ int32_t dfu_clear_status( dfu_device_t *device )
 {
     int32_t result;
 
+    TRACE( "%s( %p )\n", __FUNCTION__, device );
+
     if( (NULL == device) || (NULL == device->handle) ) {
         DEBUG( "Invalid parameter\n" );
         return -1;
@@ -283,6 +307,8 @@ int32_t dfu_get_state( dfu_device_t *device )
 {
     int32_t result;
     char buffer[1];
+
+    TRACE( "%s( %p )\n", __FUNCTION__, device );
 
     if( (NULL == device) || (NULL == device->handle) ) {
         DEBUG( "Invalid parameter\n" );
@@ -320,6 +346,8 @@ int32_t dfu_get_state( dfu_device_t *device )
 int32_t dfu_abort( dfu_device_t *device )
 {
     int32_t result;
+
+    TRACE( "%s( %p )\n", __FUNCTION__, device );
 
     if( (NULL == device) || (NULL == device->handle) ) {
         DEBUG( "Invalid parameter\n" );
@@ -360,6 +388,10 @@ struct usb_device *dfu_device_init( const uint32_t vendor,
     struct usb_bus *usb_bus;
     struct usb_device *device;
     int32_t retries = 4;
+
+    TRACE( "%s( %u, %u, %p, %s, %s )\n", __FUNCTION__, vendor, product,
+           dfu_device, ((true == initial_abort) ? "true" : "false"),
+           ((true == honor_interfaceclass) ? "true" : "false") );
 
 retry:
 

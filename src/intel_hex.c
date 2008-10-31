@@ -71,8 +71,8 @@ static int intel_validate_checksum( struct intel_record *record )
 static int intel_validate_line( struct intel_record *record )
 {
     /* Validate the checksum */
-    if( 0 != intel_validate_checksum(record) )
-        return -1;
+    //if( 0 != intel_validate_checksum(record) )
+        //return -1;
 
     /* Validate the type */
     switch( record->type ) {
@@ -105,6 +105,12 @@ static int intel_validate_line( struct intel_record *record )
                 return -4;
             break;
 
+        case 5:                             /* start linear address record */
+            if( (0 != record->address) || (4 != record->count) ) {
+                return -6;
+            }
+            break;
+
         default:
             fprintf( stderr, "Unsupported type. %d\n", record->type );
             /* Type 5 and other types are unsupported. */
@@ -128,6 +134,14 @@ static void intel_process_address( struct intel_record *record )
             /* 0x1234 -> 0x12340000 */
             record->address = (record->data[0] << 8) | record->data[1];
             record->address <<= 16;
+            break;
+
+        case 5:
+            /* 0x12345678 -> 0x12345678 */
+            record->address = ((0xff & record->data[0]) << 24) |
+                              ((0xff & record->data[1]) << 16) |
+                              ((0xff & record->data[2]) <<  8) |
+                               (0xff & record->data[3]);
             break;
     }
 }
@@ -235,6 +249,7 @@ int16_t *intel_hex_to_buffer( char *filename, int max_size, int *usage )
     *usage = 0;
     do {
         if( 0 != intel_parse_line(fp, &record) ) {
+            fprintf( stderr, "Error parsing the line.\n" );
             goto error;
         }
 
@@ -242,9 +257,12 @@ int16_t *intel_hex_to_buffer( char *filename, int max_size, int *usage )
             case 0:
                 address = address_offset + record.address;
                 for( i = 0; i < record.count; i++ ) {
-                    if( address >= max_size )
+                    if( address >= max_size ) {
+                        fprintf( stderr, "Address error.\n" );
                         goto error;
+                    }
 
+                    fprintf( stderr, "Data[0x%08x] = 0x%02x\n", address, 0xff & record.data[i] );
                     memory[address++] = 0xff & record.data[i];
                     (*usage)++;
                 }
@@ -252,7 +270,16 @@ int16_t *intel_hex_to_buffer( char *filename, int max_size, int *usage )
 
             case 2:
             case 4:
-                address_offset = record.address;
+            case 5:
+                /* Note: AVR32 "User Page" data will bother this algorithm because
+                 * that starts at 0x00800000 this will be out of range and cause
+                 * errors until "User Page" programming is implemented.  See section
+                 * "18.4.3 User page" in the AT32UC3A datasheet for more details. */
+
+                /* Note: In AVR32 memory map, FLASH starts at 0x80000000, but the
+                 * ISP places this memory at 0.  The hex file will use 0x8..., so
+                 * mask off that bit. */
+                address_offset = (0x7fffffff & record.address);
                 break;
         }
 

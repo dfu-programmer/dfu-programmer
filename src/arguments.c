@@ -41,6 +41,8 @@ struct target_mapping_structure {
     uint16_t chip_id;
     uint16_t vendor_id;
     size_t memory_size;
+    size_t bootloader_size;
+    dfu_bool bootloader_at_highmem;
     size_t flash_page_size;
     dfu_bool initial_abort;
     dfu_bool honor_interfaceclass;
@@ -58,19 +60,22 @@ struct target_mapping_structure {
 
 /* ----- target specific structures ----------------------------------------- */
 static struct target_mapping_structure target_map[] = {
-    { "at89c51snd1c",   tar_at89c51snd1c,   adc_8051,  0x2FFF, 0x03eb, 0x10000, 128, false, true,  0,   0      },
-    { "at89c5130",      tar_at89c5130,      adc_8051,  0x2FFD, 0x03eb, 0x04000, 128, false, true,  128, 0x03FF },
-    { "at89c5131",      tar_at89c5131,      adc_8051,  0x2FFD, 0x03eb, 0x08000, 128, false, true,  128, 0x03FF },
-    { "at89c5132",      tar_at89c5132,      adc_8051,  0x2FFF, 0x03eb, 0x10000, 128, false, true,  0,   0      },
-    { "at90usb1287",    tar_at90usb1287,    adc_AVR,   0x2FFB, 0x03eb, 0x1E000, 128, true,  false, 128, 0x0FFF },
-    { "at90usb1286",    tar_at90usb1286,    adc_AVR,   0x2FFB, 0x03eb, 0x1E000, 128, true,  false, 128, 0x0FFF },
-    { "at90usb1287-4k", tar_at90usb1287_4k, adc_AVR,   0x2FFB, 0x03eb, 0x1F000, 128, true,  false, 128, 0x0FFF },
-    { "at90usb1286-4k", tar_at90usb1286_4k, adc_AVR,   0x2FFB, 0x03eb, 0x1F000, 128, true,  false, 128, 0x0FFF },
-    { "at90usb647",     tar_at90usb647,     adc_AVR,   0x2FF9, 0x03eb, 0x0F000, 128, true,  false, 128, 0x07FF },
-    { "at90usb646",     tar_at90usb646,     adc_AVR,   0x2FF9, 0x03eb, 0x0F000, 128, true,  false, 128, 0x07FF },
-    { "at90usb162",     tar_at90usb162,     adc_AVR,   0x2FFA, 0x03eb, 0x03000, 128, true,  false, 128, 0x01FF },
-    { "at90usb82",      tar_at90usb82,      adc_AVR,   0x2FF7, 0x03eb, 0x01000, 128, true,  false, 128, 0x01FF },
-    { "at32uc3a512",    tar_at32uc3a512,    adc_AVR32, 0x2FF8, 0x03eb, 0x7E000, 128, false, true,  0,   0      },
+    { "at89c51snd1c",   tar_at89c51snd1c,   adc_8051,  0x2FFF, 0x03eb, 0x10000, 0x1000, true,  128, false, true,  0,   0      },
+    { "at89c5130",      tar_at89c5130,      adc_8051,  0x2FFD, 0x03eb, 0x04000, 0x0000, true,  128, false, true,  128, 0x03FF },    /* The bootloader is out of the normal flash. */
+    { "at89c5131",      tar_at89c5131,      adc_8051,  0x2FFD, 0x03eb, 0x08000, 0x0000, true,  128, false, true,  128, 0x03FF },    /* The bootloader is out of the normal flash. */
+    { "at89c5132",      tar_at89c5132,      adc_8051,  0x2FFF, 0x03eb, 0x10000, 0x0C00, true,  128, false, true,  0,   0      },
+    { "at90usb1287",    tar_at90usb1287,    adc_AVR,   0x2FFB, 0x03eb, 0x20000, 0x2000, true,  128, true,  false, 128, 0x0FFF },
+    { "at90usb1286",    tar_at90usb1286,    adc_AVR,   0x2FFB, 0x03eb, 0x20000, 0x2000, true,  128, true,  false, 128, 0x0FFF },
+    { "at90usb1287-4k", tar_at90usb1287_4k, adc_AVR,   0x2FFB, 0x03eb, 0x20000, 0x1000, true,  128, true,  false, 128, 0x0FFF },
+    { "at90usb1286-4k", tar_at90usb1286_4k, adc_AVR,   0x2FFB, 0x03eb, 0x20000, 0x1000, true,  128, true,  false, 128, 0x0FFF },
+    { "at90usb647",     tar_at90usb647,     adc_AVR,   0x2FF9, 0x03eb, 0x10000, 0x2000, true,  128, true,  false, 128, 0x07FF },
+    { "at90usb646",     tar_at90usb646,     adc_AVR,   0x2FF9, 0x03eb, 0x10000, 0x2000, true,  128, true,  false, 128, 0x07FF },
+    { "at90usb162",     tar_at90usb162,     adc_AVR,   0x2FFA, 0x03eb, 0x04000, 0x1000, true,  128, true,  false, 128, 0x01FF },
+    { "at90usb82",      tar_at90usb82,      adc_AVR,   0x2FF7, 0x03eb, 0x02000, 0x1000, true,  128, true,  false, 128, 0x01FF },
+    { "at32uc3xx64",    tar_at32uc3_64,     adc_AVR32, 0x2FF8, 0x03eb, 0x10000, 0x2000, false, 128, false, true,  0,   0      },
+    { "at32uc3xx128",   tar_at32uc3_128,    adc_AVR32, 0x2FF8, 0x03eb, 0x20000, 0x2000, false, 128, false, true,  0,   0      },
+    { "at32uc3xx256",   tar_at32uc3_256,    adc_AVR32, 0x2FF8, 0x03eb, 0x40000, 0x2000, false, 128, false, true,  0,   0      },
+    { "at32uc3xx512",   tar_at32uc3_512,    adc_AVR32, 0x2FF8, 0x03eb, 0x80000, 0x2000, false, 128, false, true,  0,   0      },
     { NULL }
 };
 
@@ -181,13 +186,18 @@ static int32_t assign_target( struct programmer_arguments *args,
             args->chip_id = map->chip_id;
             args->vendor_id = map->vendor_id;
             args->device_type = map->device_type;
-            args->memory_size = map->memory_size;
             args->eeprom_memory_size = map->eeprom_memory_size;
             args->flash_page_size = map->flash_page_size;
             args->eeprom_page_size = map->eeprom_page_size;
             args->initial_abort = map->initial_abort;
             args->honor_interfaceclass = map->honor_interfaceclass;
-            args->top_memory_address = map->memory_size - 1;
+            args->flash_address_top = map->memory_size;
+            args->flash_address_bottom = 0;
+            if( true == map->bootloader_at_highmem ) {
+                args->flash_address_top -= map->bootloader_size;
+            } else {
+                args->flash_address_bottom += map->bootloader_size;
+            }
             if( 0 < map->eeprom_memory_size ) {
                 args->top_eeprom_memory_address = map->eeprom_memory_size - 1;
             } else {

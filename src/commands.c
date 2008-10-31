@@ -41,14 +41,16 @@ static int32_t execute_erase( dfu_device_t *device,
 {
     int32_t result = 0;
 
-    DEBUG( "erase %d bytes\n", args->memory_size );
+    DEBUG( "erase %d bytes\n",
+           (args->flash_address_top - args->flash_address_bottom) );
 
     result = atmel_erase_flash( device, ATMEL_ERASE_ALL );
     if( 0 != result ) {
         return result;
     }
 
-    return atmel_blank_check( device, 0, args->top_memory_address );
+    return atmel_blank_check( device, args->flash_address_bottom,
+                              args->flash_address_top );
 }
 
 
@@ -60,18 +62,21 @@ static int32_t execute_flash( dfu_device_t *device,
     int32_t  retval = -1;
     int32_t  result = 0;
     uint8_t *buffer = NULL;
-    int32_t  i;
-    uint32_t memory_size = args->memory_size;
-    uint32_t top_memory_address = args->top_memory_address;
+    int32_t  i,j;
+    uint32_t memory_size;
+    uint32_t top_memory_address = args->flash_address_top;
+    uint32_t bottom_memory_address = args->flash_address_bottom;
     uint32_t page_size = args->flash_page_size;
     dfu_bool eeprom = false;
 
     if( com_eflash == args->command ) {
-        memory_size = args->eeprom_memory_size;
         top_memory_address = args->top_eeprom_memory_address;
+        bottom_memory_address = 0;
         page_size = args->eeprom_page_size;
         eeprom = true;
     }
+
+    memory_size = top_memory_address - bottom_memory_address;
 
     buffer = (uint8_t *) malloc( memory_size );
 
@@ -84,7 +89,7 @@ static int32_t execute_flash( dfu_device_t *device,
     memset( buffer, 0, memory_size );
 
     hex_data = intel_hex_to_buffer( args->com_flash_data.file,
-                                    memory_size, &usage );
+                                    top_memory_address , &usage );
     if( NULL == hex_data ) {
         DEBUG( "Something went wrong with creating the memory image.\n" );
         fprintf( stderr,
@@ -92,10 +97,17 @@ static int32_t execute_flash( dfu_device_t *device,
         goto error;
     }
 
+    for( i = 0; i < bottom_memory_address; i++ ) {
+        if( -1 != hex_data[i] ) {
+            fprintf( stderr, "Attempted to write to illegal memory address.\n" );
+            goto error;
+        }
+    }
+
     DEBUG( "write %d/%d bytes\n", usage, memory_size );
 
-    result = atmel_flash( device, hex_data, top_memory_address,
-                          page_size, eeprom );
+    result = atmel_flash( device, hex_data, bottom_memory_address,
+                          top_memory_address, page_size, eeprom );
 
     if( result < 0 ) {
         DEBUG( "Error while flashing. (%d)\n", result );
@@ -106,7 +118,7 @@ static int32_t execute_flash( dfu_device_t *device,
     if( 0 == args->com_flash_data.suppress_validation ) {
         fprintf( stderr, "Validating...\n" );
 
-        result = atmel_read_flash( device, 0,
+        result = atmel_read_flash( device, bottom_memory_address,
                                    top_memory_address, buffer,
                                    memory_size, eeprom );
 
@@ -116,12 +128,12 @@ static int32_t execute_flash( dfu_device_t *device,
             goto error;
         }
 
-        for( i = 0; i < result; i++ ) {
-            if( (0 <= hex_data[i]) && (hex_data[i] < UINT8_MAX) ) {
+        for( i = 0, j = bottom_memory_address; i < result; i++, j++ ) {
+            if( (0 <= hex_data[j]) && (hex_data[j] < UINT8_MAX) ) {
                 /* Memory should have been programmed in this location. */
-                if( ((uint8_t) hex_data[i]) != buffer[i] ) {
+                if( ((uint8_t) hex_data[j]) != buffer[i] ) {
                     DEBUG( "Image did not validate at location: %d (%02x != %02x)\n", i,
-                           (0xff & hex_data[i]), (0xff & buffer[i]) );
+                           (0xff & hex_data[j]), (0xff & buffer[i]) );
                     fprintf( stderr, "Image did not validate.\n" );
                     goto error;
                 }
@@ -258,14 +270,16 @@ static int32_t execute_dump( dfu_device_t *device,
 {
     int32_t i = 0;
     uint8_t *buffer = NULL;
-    size_t memory_size = args->memory_size;
-    size_t top_memory_address = args->top_memory_address;
+    size_t memory_size = args->flash_address_top - args->flash_address_bottom;
+    size_t top_memory_address = args->flash_address_top;
+    size_t bottom_memory_address = args->flash_address_bottom;
     size_t page_size = args->flash_page_size;
     dfu_bool eeprom = false;
 
     if( com_eflash == args->command ) {
         memory_size = args->eeprom_memory_size;
         top_memory_address = args->top_eeprom_memory_address;
+        bottom_memory_address = 0;
         page_size = args->eeprom_page_size;
         eeprom = true;
     }
@@ -279,7 +293,7 @@ static int32_t execute_dump( dfu_device_t *device,
 
     DEBUG( "dump %d bytes\n", memory_size );
 
-    if( memory_size != atmel_read_flash(device, 0,
+    if( memory_size != atmel_read_flash(device, bottom_memory_address,
                                   top_memory_address, buffer,
                                   memory_size, eeprom) )
     {
@@ -288,6 +302,9 @@ static int32_t execute_dump( dfu_device_t *device,
         return -1;
     }
 
+    for( i = 0; i < bottom_memory_address; i++ ) {
+        fprintf( stdout, "%c", 0xff );
+    }
     for( i = 0; i < memory_size; i++ ) {
         fprintf( stdout, "%c", buffer[i] );
     }

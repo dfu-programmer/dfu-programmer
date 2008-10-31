@@ -24,3 +24,7 @@ Contributors:
         - 4K bootloader support fix
     - Peter Gammie
         - at90usb647 PID fix
+    - Zachary Clifford
+        - completed AVR32 support
+        - identified a number of off-by-one errors waiting to happen
+        - identified that AVR32 "User Pages" aren't supported yet

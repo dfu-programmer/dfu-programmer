@@ -1,4 +1,4 @@
-.TH DFU\-PROGRAMMER 1 "April 25, 2007" "DFU\-PROGRAMMER" ""
+.TH DFU\-PROGRAMMER 1 "October 31, 2008" "DFU\-PROGRAMMER" ""
 .SH NAME
 dfu\-programmer \- USB firmware upgrading for Atmel microcontrollers
 .nh
@@ -8,8 +8,8 @@ target command [options] [parameters]
 .SH DESCRIPTION
 .B dfu\-programmer
 is a Linux command line Device Firmware Upgrade (DFU) based programmer
-for the flash memory on Atmel AVR and 8051 based microcontrollers which
-ship with a USB boot loader. 
+for the flash memory on Atmel AVR, AVR32 and 8051 based microcontrollers
+which ship with a USB boot loader. 
 It supports In System Programming (ISP) for developers and potentially
 product updates in the field.
 Those boot loaders are patterned after the standard USB DFU 1.0 class
@@ -31,11 +31,13 @@ at89c51snd1c, at89c5130, at89c5131, and at89c5132.
 .IP "AVR based controllers:"
 at90usb1287, at90usb1286, at90usb162, at90usb647, at90usb646
 and at90usb82.
+.IP "AVR32 based controllers:"
+at32uc3xx64, at32uc3xx128, at32uc3xx256, at32uc3xx512
 .SH USAGE
 There are no mechanisms for selecting which single device
 should be programmed, or to implement gang programming.
 Accordingly, you will usually avoid connecting more than one
-device of a given family (AVR or 8051) at a time.
+device of a given family (AVR, AVR32 or 8051) at a time.
 .PP
 All of these commands support the "global options".
 Unless you override it,
@@ -158,7 +160,7 @@ Weston Schmidt <weston_schmidt@alumni.purdue.edu>
 .UR dfu-programmer.sourceforge.net
 http://dfu-programmer.sourceforge.net
 .SH COPYRIGHT
-Copyright (C) 2005, 2006 Weston Schmidt
+Copyright (C) 2005-2008 Weston Schmidt
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
