@@ -28,3 +28,5 @@ Contributors:
         - completed AVR32 support
         - identified a number of off-by-one errors waiting to happen
         - identified that AVR32 "User Pages" aren't supported yet
+    - Donald Davis
+        - patch with new AVR devices & testing of support for the devices

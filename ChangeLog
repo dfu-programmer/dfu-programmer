@@ -1,3 +1,9 @@
+2008-12-03 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
+	* src/*, AUTHORS, docs/dfu-programmer.1: Update the
+	  project to support all the devices that FLIP supports.
+	* NEWS, fedora/dfu-programmer.spec.in, configure.ac:
+	  Updated the latest news about the 0.5.0 release
+
 2008-10-31 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
 	* src/*, AUTHORS, fedora/dfu-programmer.spec.in,
 	  docs/dfu-programmer.1: Apply Zachary Clifford patch to

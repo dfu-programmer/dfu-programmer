@@ -27,12 +27,17 @@ reverse engineering of what is usually proprietary code.
 .SH SUPPORTED MICROCONTROLLERS 
 These chip names are used as the command line "target" parameter.
 .IP "8051 based controllers:"
-at89c51snd1c, at89c5130, at89c5131, and at89c5132.
+at89c51snd1c, at89c51snd2c, at89c5130, at89c5131, and at89c5132.
 .IP "AVR based controllers:"
-at90usb1287, at90usb1286, at90usb162, at90usb647, at90usb646
-and at90usb82.
+at90usb1287, at90usb1286, at90usb647, at90usb646, at90usb162,
+at90usb82, atmega32u6, atmega32u4, and atmega16u4.
 .IP "AVR32 based controllers:"
-at32uc3xx64, at32uc3xx128, at32uc3xx256, at32uc3xx512
+at32uc3a0128, at32uc3a1128, at32uc3a0256, at32uc3a1256,
+at32uc3a0512, at32uc3a1512, at32uc3a0512es, at32uc3a1512es,
+at32uc3a364, at32uc3a364s, at32uc3a3128, at32uc3a3128s,
+at32uc3a3256, at32uc3a3256s, at32uc3b064, at32uc3b164,
+at32uc3b0128, at32uc3b1128, at32uc3b0256, at32uc3b1256,
+at32uc3b0256es, and at32uc3b1256es.
 .SH USAGE
 There are no mechanisms for selecting which single device
 should be programmed, or to implement gang programming.
@@ -154,6 +159,10 @@ command may fail with a less than helpful error message.
 To remove
 .B any
 write or read protection from any chips, a full chip erasure is required.
+.PP
+You may need to be a member of the
+.B uucp
+group in order to have access to the device without needing to be root.
 .SH AUTHOR
 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
 .SH SEE ALSO

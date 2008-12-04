@@ -61,6 +61,7 @@ struct target_mapping_structure {
 /* ----- target specific structures ----------------------------------------- */
 static struct target_mapping_structure target_map[] = {
     { "at89c51snd1c",   tar_at89c51snd1c,   adc_8051,  0x2FFF, 0x03eb, 0x10000, 0x1000, true,  128, false, true,  0,   0      },
+    { "at89c51snd2c",   tar_at89c51snd2c,   adc_8051,  0x2FFF, 0x03eb, 0x10000, 0x1000, true,  128, false, true,  0,   0      },
     { "at89c5130",      tar_at89c5130,      adc_8051,  0x2FFD, 0x03eb, 0x04000, 0x0000, true,  128, false, true,  128, 0x03FF },    /* The bootloader is out of the normal flash. */
     { "at89c5131",      tar_at89c5131,      adc_8051,  0x2FFD, 0x03eb, 0x08000, 0x0000, true,  128, false, true,  128, 0x03FF },    /* The bootloader is out of the normal flash. */
     { "at89c5132",      tar_at89c5132,      adc_8051,  0x2FFF, 0x03eb, 0x10000, 0x0C00, true,  128, false, true,  0,   0      },
@@ -72,10 +73,31 @@ static struct target_mapping_structure target_map[] = {
     { "at90usb646",     tar_at90usb646,     adc_AVR,   0x2FF9, 0x03eb, 0x10000, 0x2000, true,  128, true,  false, 128, 0x07FF },
     { "at90usb162",     tar_at90usb162,     adc_AVR,   0x2FFA, 0x03eb, 0x04000, 0x1000, true,  128, true,  false, 128, 0x01FF },
     { "at90usb82",      tar_at90usb82,      adc_AVR,   0x2FF7, 0x03eb, 0x02000, 0x1000, true,  128, true,  false, 128, 0x01FF },
-    { "at32uc3xx64",    tar_at32uc3_64,     adc_AVR32, 0x2FF8, 0x03eb, 0x10000, 0x2000, false, 128, false, true,  0,   0      },
-    { "at32uc3xx128",   tar_at32uc3_128,    adc_AVR32, 0x2FF8, 0x03eb, 0x20000, 0x2000, false, 128, false, true,  0,   0      },
-    { "at32uc3xx256",   tar_at32uc3_256,    adc_AVR32, 0x2FF8, 0x03eb, 0x40000, 0x2000, false, 128, false, true,  0,   0      },
-    { "at32uc3xx512",   tar_at32uc3_512,    adc_AVR32, 0x2FF8, 0x03eb, 0x80000, 0x2000, false, 128, false, true,  0,   0      },
+    { "atmega32u6",     tar_atmega32u6,     adc_AVR,   0x2FF2, 0x03eb, 0x08000, 0x1000, true,  128, true,  false, 128, 0x03FF },
+    { "atmega32u4",     tar_atmega32u4,     adc_AVR,   0x2FF4, 0x03eb, 0x08000, 0x1000, true,  128, true,  false, 128, 0x03FF },
+    { "atmega16u4",     tar_atmega16u4,     adc_AVR,   0x2FF3, 0x03eb, 0x04000, 0x1000, true,  128, true,  false, 128, 0x01FF },
+    { "at32uc3a0128",   tar_at32uc3a0128,   adc_AVR32, 0x2FF8, 0x03eb, 0x20000, 0x2000, false, 128, false, true,  0,   0      },
+    { "at32uc3a1128",   tar_at32uc3a1128,   adc_AVR32, 0x2FF8, 0x03eb, 0x20000, 0x2000, false, 128, false, true,  0,   0      },
+    { "at32uc3a0256",   tar_at32uc3a0256,   adc_AVR32, 0x2FF8, 0x03eb, 0x40000, 0x2000, false, 128, false, true,  0,   0      },
+    { "at32uc3a1256",   tar_at32uc3a1256,   adc_AVR32, 0x2FF8, 0x03eb, 0x40000, 0x2000, false, 128, false, true,  0,   0      },
+    { "at32uc3a0512",   tar_at32uc3a0512,   adc_AVR32, 0x2FF8, 0x03eb, 0x80000, 0x2000, false, 128, false, true,  0,   0      },
+    { "at32uc3a1512",   tar_at32uc3a1512,   adc_AVR32, 0x2FF8, 0x03eb, 0x80000, 0x2000, false, 128, false, true,  0,   0      },
+    { "at32uc3a0512es", tar_at32uc3a0512es, adc_AVR32, 0x2FF8, 0x03eb, 0x80000, 0x2000, false, 128, false, true,  0,   0      },
+    { "at32uc3a1512es", tar_at32uc3a1512es, adc_AVR32, 0x2FF8, 0x03eb, 0x80000, 0x2000, false, 128, false, true,  0,   0      },
+    { "at32uc3a364",    tar_at32uc3a364,    adc_AVR32, 0x2FF1, 0x03eb, 0x10000, 0x2000, false, 128, false, true,  0,   0      },
+    { "at32uc3a364s",   tar_at32uc3a364s,   adc_AVR32, 0x2FF1, 0x03eb, 0x10000, 0x2000, false, 128, false, true,  0,   0      },
+    { "at32uc3a3128",   tar_at32uc3a3128,   adc_AVR32, 0x2FF1, 0x03eb, 0x20000, 0x2000, false, 128, false, true,  0,   0      },
+    { "at32uc3a3128s",  tar_at32uc3a3128s,  adc_AVR32, 0x2FF1, 0x03eb, 0x20000, 0x2000, false, 128, false, true,  0,   0      },
+    { "at32uc3a3256",   tar_at32uc3a3256,   adc_AVR32, 0x2FF1, 0x03eb, 0x40000, 0x2000, false, 128, false, true,  0,   0      },
+    { "at32uc3a3256s",  tar_at32uc3a3256s,  adc_AVR32, 0x2FF1, 0x03eb, 0x40000, 0x2000, false, 128, false, true,  0,   0      },
+    { "at32uc3b064",    tar_at32uc3b064,    adc_AVR32, 0x2FF6, 0x03eb, 0x10000, 0x2000, false, 128, false, true,  0,   0      },
+    { "at32uc3b164",    tar_at32uc3b164,    adc_AVR32, 0x2FF6, 0x03eb, 0x10000, 0x2000, false, 128, false, true,  0,   0      },
+    { "at32uc3b0128",   tar_at32uc3b0128,   adc_AVR32, 0x2FF6, 0x03eb, 0x20000, 0x2000, false, 128, false, true,  0,   0      },
+    { "at32uc3b1128",   tar_at32uc3b1128,   adc_AVR32, 0x2FF6, 0x03eb, 0x20000, 0x2000, false, 128, false, true,  0,   0      },
+    { "at32uc3b0256",   tar_at32uc3b0256,   adc_AVR32, 0x2FF6, 0x03eb, 0x40000, 0x2000, false, 128, false, true,  0,   0      },
+    { "at32uc3b1256",   tar_at32uc3b1256,   adc_AVR32, 0x2FF6, 0x03eb, 0x40000, 0x2000, false, 128, false, true,  0,   0      },
+    { "at32uc3b0256es", tar_at32uc3b0256es, adc_AVR32, 0x2FF6, 0x03eb, 0x40000, 0x2000, false, 128, false, true,  0,   0      },
+    { "at32uc3b1256es", tar_at32uc3b1256es, adc_AVR32, 0x2FF6, 0x03eb, 0x40000, 0x2000, false, 128, false, true,  0,   0      },
     { NULL }
 };
 
