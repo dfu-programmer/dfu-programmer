@@ -1,3 +1,9 @@
+2008-12-10 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
+	* src/*, AUTHORS, docs/dfu-programmer.1 NEWS,
+	  fedora/dfu-programmer.spec.in, configure.ac: Applied
+	  the patch to add support for ignoring data writes that
+	  could take place in the bootloader region.
+
 2008-12-03 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
 	* src/*, AUTHORS, docs/dfu-programmer.1: Update the
 	  project to support all the devices that FLIP supports.

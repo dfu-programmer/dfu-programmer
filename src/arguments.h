@@ -101,6 +101,8 @@ struct programmer_arguments {
     char device_type_string[DEVICE_TYPE_STRING_MAX_LENGTH];
     uint32_t flash_address_top;
     uint32_t flash_address_bottom;
+    uint32_t bootloader_top;
+    uint32_t bootloader_bottom;
     size_t flash_page_size;
     dfu_bool initial_abort;
     dfu_bool honor_interfaceclass;
@@ -111,6 +113,7 @@ struct programmer_arguments {
     /* command-specific state */
     enum commands_enum command;
     char quiet;
+    char suppressbootloader;
 
     union {
         struct com_configure_struct {

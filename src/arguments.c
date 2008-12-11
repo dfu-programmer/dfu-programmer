@@ -167,7 +167,7 @@ static void usage()
     fprintf( stderr, "        dump-eeprom "
                      "[global-options]\n" );
     fprintf( stderr, "        erase "
-                     "[--suppress-validation] [global-options]\n" );
+                     "[--suppress-validation] [--suppress-bootloader-mem] [global-options]\n" );
     fprintf( stderr, "        flash "
                      "[--suppress-validation] [global-options] file\n" );
     fprintf( stderr, "        flash-eeprom "
@@ -215,10 +215,14 @@ static int32_t assign_target( struct programmer_arguments *args,
             args->honor_interfaceclass = map->honor_interfaceclass;
             args->flash_address_top = map->memory_size;
             args->flash_address_bottom = 0;
+            args->bootloader_bottom = 0;
+            args->bootloader_top = 0;
             if( true == map->bootloader_at_highmem ) {
-                args->flash_address_top -= map->bootloader_size;
+                args->bootloader_bottom = args->flash_address_top - map->bootloader_size;
+                args->bootloader_top = args->flash_address_top;
             } else {
-                args->flash_address_bottom += map->bootloader_size;
+                args->bootloader_bottom = args->flash_address_bottom;
+                args->bootloader_top += map->bootloader_size;
             }
             if( 0 < map->eeprom_memory_size ) {
                 args->top_eeprom_memory_address = map->eeprom_memory_size - 1;
@@ -263,6 +267,16 @@ static int32_t assign_global_options( struct programmer_arguments *args,
             break;
         }
     }
+	
+	/* Find '--suppress-bootloader-mem' if it is here */
+    for( i = 0; i < argc; i++ ) {
+        if( 0 == strcmp("--suppress-bootloader-mem", argv[i]) ) {
+            *argv[i] = '\0';
+            args->suppressbootloader = 1;
+            break;
+        }
+    }
+	
     /* Find '--suppress-validation' if it is here - even though it is not
      * used by all this is easier. */
     for( i = 0; i < argc; i++ ) {
@@ -493,6 +507,7 @@ int32_t parse_arguments( struct programmer_arguments *args,
     args->target  = tar_none;
     args->command = com_none;
     args->quiet   = 0;
+    args->suppressbootloader = 0;
 
     /* Make sure there are the minimum arguments */
     if( argc < 3 ) {

@@ -43,6 +43,8 @@ Atmel chips with USB support.
 
 %changelog
 
+* Wed Dec 10 2008 Weston Schmidt <weston_schmidt at alumni.purdue.edu> - 0.5.1-1
+- add new flag to surpress bootloader memory checking
 * Wed Dec 03 2008 Weston Schmidt <weston_schmidt at alumni.purdue.edu> - 0.5.0-1
 - update the description
 - fix the broken hal rules

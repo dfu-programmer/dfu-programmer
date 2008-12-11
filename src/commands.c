@@ -103,6 +103,19 @@ static int32_t execute_flash( dfu_device_t *device,
             goto error;
         }
     }
+	
+    for( i = args->bootloader_bottom; i < args->bootloader_top; i++) {
+        if( -1 != hex_data[i] ) {
+            if(args->suppressbootloader) {
+                //If we're ignoring the bootloader, don't bother writing to it
+                hex_data[i] = -1;
+            } else {
+                fprintf( stderr, "Bootloader and code overlap.\n" );
+                fprintf( stderr, "Use --suppress-bootloader-mem to ignore\n" );
+                goto error;
+            }
+        }
+    }
 
     DEBUG( "write %d/%d bytes\n", usage, memory_size );
 

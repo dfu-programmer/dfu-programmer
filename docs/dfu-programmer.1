@@ -1,4 +1,4 @@
-.TH DFU\-PROGRAMMER 1 "October 31, 2008" "DFU\-PROGRAMMER" ""
+.TH DFU\-PROGRAMMER 1 "December 10, 2008" "DFU\-PROGRAMMER" ""
 .SH NAME
 dfu\-programmer \- USB firmware upgrading for Atmel microcontrollers
 .nh
@@ -76,10 +76,15 @@ This is required before the bootloader will perform other commands.
 .HP
 .B flash
 [\-\-suppress\-validation]
+[\-\-suppress\-bootloader\-mem]
 file
 .br
 Writes flash memory.  The input file must use the "ihex" file
-format convention for a memory image.
+format convention for a memory image. \-\-suppress\-bootloader\-mem
+ignores any data written to the bootloader memory space when flashing
+the device.  This option is particularly useful for the AVR32 chips
+.B trampoline
+code.
 .HP
 .B eeprom-flash
 [\-\-suppress\-validation]
@@ -168,6 +173,8 @@ Weston Schmidt <weston_schmidt@alumni.purdue.edu>
 .SH SEE ALSO
 .UR dfu-programmer.sourceforge.net
 http://dfu-programmer.sourceforge.net
+.UR AVR32 UC3 USB DFU Bootloader
+http://atmel.com/dyn/resources/prod_documents/doc7745.pdf
 .SH COPYRIGHT
 Copyright (C) 2005-2008 Weston Schmidt
 
