@@ -76,28 +76,28 @@ static struct target_mapping_structure target_map[] = {
     { "atmega32u6",     tar_atmega32u6,     adc_AVR,   0x2FF2, 0x03eb, 0x08000, 0x1000, true,  128, true,  false, 128, 0x03FF },
     { "atmega32u4",     tar_atmega32u4,     adc_AVR,   0x2FF4, 0x03eb, 0x08000, 0x1000, true,  128, true,  false, 128, 0x03FF },
     { "atmega16u4",     tar_atmega16u4,     adc_AVR,   0x2FF3, 0x03eb, 0x04000, 0x1000, true,  128, true,  false, 128, 0x01FF },
-    { "at32uc3a0128",   tar_at32uc3a0128,   adc_AVR32, 0x2FF8, 0x03eb, 0x20000, 0x2000, false, 128, false, true,  0,   0      },
-    { "at32uc3a1128",   tar_at32uc3a1128,   adc_AVR32, 0x2FF8, 0x03eb, 0x20000, 0x2000, false, 128, false, true,  0,   0      },
-    { "at32uc3a0256",   tar_at32uc3a0256,   adc_AVR32, 0x2FF8, 0x03eb, 0x40000, 0x2000, false, 128, false, true,  0,   0      },
-    { "at32uc3a1256",   tar_at32uc3a1256,   adc_AVR32, 0x2FF8, 0x03eb, 0x40000, 0x2000, false, 128, false, true,  0,   0      },
-    { "at32uc3a0512",   tar_at32uc3a0512,   adc_AVR32, 0x2FF8, 0x03eb, 0x80000, 0x2000, false, 128, false, true,  0,   0      },
-    { "at32uc3a1512",   tar_at32uc3a1512,   adc_AVR32, 0x2FF8, 0x03eb, 0x80000, 0x2000, false, 128, false, true,  0,   0      },
-    { "at32uc3a0512es", tar_at32uc3a0512es, adc_AVR32, 0x2FF8, 0x03eb, 0x80000, 0x2000, false, 128, false, true,  0,   0      },
-    { "at32uc3a1512es", tar_at32uc3a1512es, adc_AVR32, 0x2FF8, 0x03eb, 0x80000, 0x2000, false, 128, false, true,  0,   0      },
-    { "at32uc3a364",    tar_at32uc3a364,    adc_AVR32, 0x2FF1, 0x03eb, 0x10000, 0x2000, false, 128, false, true,  0,   0      },
-    { "at32uc3a364s",   tar_at32uc3a364s,   adc_AVR32, 0x2FF1, 0x03eb, 0x10000, 0x2000, false, 128, false, true,  0,   0      },
-    { "at32uc3a3128",   tar_at32uc3a3128,   adc_AVR32, 0x2FF1, 0x03eb, 0x20000, 0x2000, false, 128, false, true,  0,   0      },
-    { "at32uc3a3128s",  tar_at32uc3a3128s,  adc_AVR32, 0x2FF1, 0x03eb, 0x20000, 0x2000, false, 128, false, true,  0,   0      },
-    { "at32uc3a3256",   tar_at32uc3a3256,   adc_AVR32, 0x2FF1, 0x03eb, 0x40000, 0x2000, false, 128, false, true,  0,   0      },
-    { "at32uc3a3256s",  tar_at32uc3a3256s,  adc_AVR32, 0x2FF1, 0x03eb, 0x40000, 0x2000, false, 128, false, true,  0,   0      },
-    { "at32uc3b064",    tar_at32uc3b064,    adc_AVR32, 0x2FF6, 0x03eb, 0x10000, 0x2000, false, 128, false, true,  0,   0      },
-    { "at32uc3b164",    tar_at32uc3b164,    adc_AVR32, 0x2FF6, 0x03eb, 0x10000, 0x2000, false, 128, false, true,  0,   0      },
-    { "at32uc3b0128",   tar_at32uc3b0128,   adc_AVR32, 0x2FF6, 0x03eb, 0x20000, 0x2000, false, 128, false, true,  0,   0      },
-    { "at32uc3b1128",   tar_at32uc3b1128,   adc_AVR32, 0x2FF6, 0x03eb, 0x20000, 0x2000, false, 128, false, true,  0,   0      },
-    { "at32uc3b0256",   tar_at32uc3b0256,   adc_AVR32, 0x2FF6, 0x03eb, 0x40000, 0x2000, false, 128, false, true,  0,   0      },
-    { "at32uc3b1256",   tar_at32uc3b1256,   adc_AVR32, 0x2FF6, 0x03eb, 0x40000, 0x2000, false, 128, false, true,  0,   0      },
-    { "at32uc3b0256es", tar_at32uc3b0256es, adc_AVR32, 0x2FF6, 0x03eb, 0x40000, 0x2000, false, 128, false, true,  0,   0      },
-    { "at32uc3b1256es", tar_at32uc3b1256es, adc_AVR32, 0x2FF6, 0x03eb, 0x40000, 0x2000, false, 128, false, true,  0,   0      },
+    { "at32uc3a0128",   tar_at32uc3a0128,   adc_AVR32, 0x2FF8, 0x03eb, 0x20000, 0x2000, false, 512, false, true,  0,   0      },
+    { "at32uc3a1128",   tar_at32uc3a1128,   adc_AVR32, 0x2FF8, 0x03eb, 0x20000, 0x2000, false, 512, false, true,  0,   0      },
+    { "at32uc3a0256",   tar_at32uc3a0256,   adc_AVR32, 0x2FF8, 0x03eb, 0x40000, 0x2000, false, 512, false, true,  0,   0      },
+    { "at32uc3a1256",   tar_at32uc3a1256,   adc_AVR32, 0x2FF8, 0x03eb, 0x40000, 0x2000, false, 512, false, true,  0,   0      },
+    { "at32uc3a0512",   tar_at32uc3a0512,   adc_AVR32, 0x2FF8, 0x03eb, 0x80000, 0x2000, false, 512, false, true,  0,   0      },
+    { "at32uc3a1512",   tar_at32uc3a1512,   adc_AVR32, 0x2FF8, 0x03eb, 0x80000, 0x2000, false, 512, false, true,  0,   0      },
+    { "at32uc3a0512es", tar_at32uc3a0512es, adc_AVR32, 0x2FF8, 0x03eb, 0x80000, 0x2000, false, 512, false, true,  0,   0      },
+    { "at32uc3a1512es", tar_at32uc3a1512es, adc_AVR32, 0x2FF8, 0x03eb, 0x80000, 0x2000, false, 512, false, true,  0,   0      },
+    { "at32uc3a364",    tar_at32uc3a364,    adc_AVR32, 0x2FF1, 0x03eb, 0x10000, 0x2000, false, 512, false, true,  0,   0      },
+    { "at32uc3a364s",   tar_at32uc3a364s,   adc_AVR32, 0x2FF1, 0x03eb, 0x10000, 0x2000, false, 512, false, true,  0,   0      },
+    { "at32uc3a3128",   tar_at32uc3a3128,   adc_AVR32, 0x2FF1, 0x03eb, 0x20000, 0x2000, false, 512, false, true,  0,   0      },
+    { "at32uc3a3128s",  tar_at32uc3a3128s,  adc_AVR32, 0x2FF1, 0x03eb, 0x20000, 0x2000, false, 512, false, true,  0,   0      },
+    { "at32uc3a3256",   tar_at32uc3a3256,   adc_AVR32, 0x2FF1, 0x03eb, 0x40000, 0x2000, false, 512, false, true,  0,   0      },
+    { "at32uc3a3256s",  tar_at32uc3a3256s,  adc_AVR32, 0x2FF1, 0x03eb, 0x40000, 0x2000, false, 512, false, true,  0,   0      },
+    { "at32uc3b064",    tar_at32uc3b064,    adc_AVR32, 0x2FF6, 0x03eb, 0x10000, 0x2000, false, 512, false, true,  0,   0      },
+    { "at32uc3b164",    tar_at32uc3b164,    adc_AVR32, 0x2FF6, 0x03eb, 0x10000, 0x2000, false, 512, false, true,  0,   0      },
+    { "at32uc3b0128",   tar_at32uc3b0128,   adc_AVR32, 0x2FF6, 0x03eb, 0x20000, 0x2000, false, 512, false, true,  0,   0      },
+    { "at32uc3b1128",   tar_at32uc3b1128,   adc_AVR32, 0x2FF6, 0x03eb, 0x20000, 0x2000, false, 512, false, true,  0,   0      },
+    { "at32uc3b0256",   tar_at32uc3b0256,   adc_AVR32, 0x2FF6, 0x03eb, 0x40000, 0x2000, false, 512, false, true,  0,   0      },
+    { "at32uc3b1256",   tar_at32uc3b1256,   adc_AVR32, 0x2FF6, 0x03eb, 0x40000, 0x2000, false, 512, false, true,  0,   0      },
+    { "at32uc3b0256es", tar_at32uc3b0256es, adc_AVR32, 0x2FF6, 0x03eb, 0x40000, 0x2000, false, 512, false, true,  0,   0      },
+    { "at32uc3b1256es", tar_at32uc3b1256es, adc_AVR32, 0x2FF6, 0x03eb, 0x40000, 0x2000, false, 512, false, true,  0,   0      },
     { NULL }
 };
 
@@ -106,8 +106,10 @@ static struct option_mapping_structure command_map[] = {
     { "configure",    com_configure },
     { "dump",         com_dump      },
     { "dump-eeprom",  com_edump     },
+    { "dump-user",    com_udump     },
     { "erase",        com_erase     },
     { "flash",        com_flash     },
+    { "flash-user",   com_user      },
     { "flash-eeprom", com_eflash    },
     { "get",          com_get       },
     { "reset",        com_reset     },
@@ -166,12 +168,16 @@ static void usage()
                      "[global-options]\n" );
     fprintf( stderr, "        dump-eeprom "
                      "[global-options]\n" );
+    fprintf( stderr, "        dump-user "
+                     "[global-options]\n" );
     fprintf( stderr, "        erase "
-                     "[--suppress-validation] [--suppress-bootloader-mem] [global-options]\n" );
+                     "[--suppress-validation] [global-options]\n" );
     fprintf( stderr, "        flash "
-                     "[--suppress-validation] [global-options] file\n" );
+                     "[--suppress-validation] [--suppress-bootloader-mem] [global-options] {file|STDIN}\n" );
     fprintf( stderr, "        flash-eeprom "
-                     "[--suppress-validation] [global-options] file\n" );
+                     "[--suppress-validation] [global-options] {file|STDIN}\n" );
+    fprintf( stderr, "        flash-user "
+                     "[--suppress-validation] [global-options] {file|STDIN}\n" );
     fprintf( stderr, "        get {bootloader-version|ID1|ID2|BSB|SBV|SSB|EB|\n"
                      "            manufacturer|family|product-name|\n"
                      "            product-revision|HSB} "
@@ -292,6 +298,7 @@ static int32_t assign_global_options( struct programmer_arguments *args,
                     break;
                 case com_flash:
                 case com_eflash:
+                case com_user:
                     args->com_flash_data.suppress_validation = 1;
                     break;
                 default:
@@ -407,6 +414,7 @@ static int32_t assign_command_options( struct programmer_arguments *args,
 
             case com_flash:
             case com_eflash:
+            case com_user:
                 required_params = 1;
                 if( 0 != assign_com_flash_option(args, param, argv[i]) )
                     return -3;
@@ -550,7 +558,7 @@ int32_t parse_arguments( struct programmer_arguments *args,
     }
 
     /* if this is a flash command, restore the filename */
-    if( (com_flash == args->command) || (com_eflash == args->command) ) {
+    if( (com_flash == args->command) || (com_eflash == args->command) || (com_user == args->command) ) {
         if( 0 == args->com_flash_data.file ) {
             fprintf( stderr, "flash filename is missing\n" );
             status = -8;

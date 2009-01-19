@@ -1,4 +1,12 @@
 2008-12-10 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
+	* src/arguments.c, src/arguments.h, src/atmel.c,
+	  src/atmel.h, src/commands.c, src/intel_hex.c,
+	  doc/dfu-programmer.1: Applied the patch from Zachary
+	  Clifford to support programming user flash on the
+	  AVR32 chips and reading flash information from STDIN.
+	  Additionally, updated the man page.
+
+2008-12-10 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
 	* src/*, AUTHORS, docs/dfu-programmer.1 NEWS,
 	  fedora/dfu-programmer.spec.in, configure.ac: Applied
 	  the patch to add support for ignoring data writes that

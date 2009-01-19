@@ -61,6 +61,7 @@ static int32_t atmel_flash_block( dfu_device_t *device,
                                   const size_t length,
                                   const dfu_bool eeprom );
 static int32_t atmel_select_flash( dfu_device_t *device );
+static int32_t atmel_select_user( dfu_device_t *device );
 static int32_t atmel_select_page( dfu_device_t *device,
                                   const uint16_t mem_page );
 
@@ -349,7 +350,8 @@ int32_t atmel_read_flash( dfu_device_t *device,
                           const uint32_t end,
                           uint8_t* buffer,
                           const size_t buffer_len,
-                          const dfu_bool eeprom )
+                          const dfu_bool eeprom,
+                          const dfu_bool user )
 {
     uint16_t page = 0;
     uint32_t current_start;
@@ -370,8 +372,14 @@ int32_t atmel_read_flash( dfu_device_t *device,
 
     /* For the AVR32 chips, select the flash space. */
     if( adc_AVR32 == device->type ) {
-        if( 0 != atmel_select_flash(device) ) {
-            return -3;
+        if( user == true ) {
+            if( 0 != atmel_select_user(device) ) {
+                return -3;
+            }
+        } else {
+            if( 0 != atmel_select_flash(device) ) {
+                return -3;
+            }
         }
     }
 
@@ -386,11 +394,12 @@ int32_t atmel_read_flash( dfu_device_t *device,
         if( size > 0x10000 ) {
             size = 0x10000;
         }
-
-        if( 0 != atmel_select_page(device, page) ) {
-            return -4;
+        if( user == false ) {
+            if( 0 != atmel_select_page(device, page) ) {
+                return -4;
+            }
         }
-
+        
         result = __atmel_read_page( device, current_start, (current_start + size), buffer, eeprom );
         if( size != result ) {
             return -5;
@@ -572,6 +581,23 @@ static int32_t atmel_select_flash( dfu_device_t *device )
     return 0;
 }
 
+static int32_t atmel_select_user( dfu_device_t *device )
+{
+    TRACE( "%s( %p )\n", __FUNCTION__, device );
+
+    if( (NULL != device) && (adc_AVR32 == device->type) ) {
+        uint8_t command[4] = { 0x06, 0x03, 0x00, 0x06 };
+
+        if( 4 != dfu_download(device, 4, command) ) {
+            DEBUG( "dfu_download failed.\n" );
+            return -1;
+        }
+        DEBUG( "flash selected\n" );
+    }
+
+    return 0;
+}
+
 static int32_t atmel_select_page( dfu_device_t *device,
                                   const uint16_t mem_page )
 {
@@ -634,6 +660,37 @@ static void atmel_flash_prepair_buffer( int16_t *buffer, const size_t size,
             }
         }
     }
+}
+
+int32_t atmel_user( dfu_device_t *device,
+                    int16_t *buffer,
+                    const uint32_t end )
+{
+    int32_t result = 0;
+    TRACE( "%s( %p, %p, %u)\n", __FUNCTION__, device, buffer,end);
+
+    if( (NULL == buffer) || (end <= 0) ) {
+        DEBUG( "invalid arguments.\n" );
+        return -1;
+    }
+    
+    /* Select USER page */
+    uint8_t command[4] = { 0x06, 0x03, 0x00, 0x06 };
+    if( 4 != dfu_download(device, 4, command) ) {
+        DEBUG( "dfu_download failed.\n" );
+        return -2;
+    }
+    
+    //The user block is one flash page, so we'll just do it all in a block.
+    result = atmel_flash_block( device, buffer, 0, end, 0 );
+    
+    if( result < 0 ) {
+        DEBUG( "error flashing the block: %d\n", result );
+        return -4;
+    }
+    
+    return 0;
+    
 }
 
 int32_t atmel_flash( dfu_device_t *device,

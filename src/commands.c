@@ -68,12 +68,19 @@ static int32_t execute_flash( dfu_device_t *device,
     uint32_t bottom_memory_address = args->flash_address_bottom;
     uint32_t page_size = args->flash_page_size;
     dfu_bool eeprom = false;
+    dfu_bool user = false;
 
     if( com_eflash == args->command ) {
         top_memory_address = args->top_eeprom_memory_address;
         bottom_memory_address = 0;
         page_size = args->eeprom_page_size;
         eeprom = true;
+    }
+    
+    if( com_user == args->command ) {
+        top_memory_address = page_size;
+        bottom_memory_address = 0;
+        user = true;
     }
 
     memory_size = top_memory_address - bottom_memory_address;
@@ -103,24 +110,29 @@ static int32_t execute_flash( dfu_device_t *device,
             goto error;
         }
     }
-	
-    for( i = args->bootloader_bottom; i < args->bootloader_top; i++) {
-        if( -1 != hex_data[i] ) {
-            if(args->suppressbootloader) {
-                //If we're ignoring the bootloader, don't bother writing to it
-                hex_data[i] = -1;
-            } else {
-                fprintf( stderr, "Bootloader and code overlap.\n" );
-                fprintf( stderr, "Use --suppress-bootloader-mem to ignore\n" );
-                goto error;
+    if( com_flash == args->command) {	
+        for( i = args->bootloader_bottom; i < args->bootloader_top; i++) {
+            if( -1 != hex_data[i] ) {
+                if(args->suppressbootloader) {
+                    //If we're ignoring the bootloader, don't bother writing to it
+                    hex_data[i] = -1;
+                } else {
+                    fprintf( stderr, "Bootloader and code overlap.\n" );
+                    fprintf( stderr, "Use --suppress-bootloader-mem to ignore\n" );
+                    goto error;
+                }
             }
         }
     }
 
     DEBUG( "write %d/%d bytes\n", usage, memory_size );
 
-    result = atmel_flash( device, hex_data, bottom_memory_address,
+    if( com_user == args->command ) {
+        result = atmel_user( device, hex_data, top_memory_address );
+    } else {
+        result = atmel_flash( device, hex_data, bottom_memory_address,
                           top_memory_address, page_size, eeprom );
+    }
 
     if( result < 0 ) {
         DEBUG( "Error while flashing. (%d)\n", result );
@@ -133,7 +145,7 @@ static int32_t execute_flash( dfu_device_t *device,
 
         result = atmel_read_flash( device, bottom_memory_address,
                                    top_memory_address, buffer,
-                                   memory_size, eeprom );
+                                   memory_size, eeprom, user );
 
         if( memory_size != result ) {
             DEBUG( "Error while validating.\n" );
@@ -288,6 +300,7 @@ static int32_t execute_dump( dfu_device_t *device,
     size_t bottom_memory_address = args->flash_address_bottom;
     size_t page_size = args->flash_page_size;
     dfu_bool eeprom = false;
+    dfu_bool user = false;
 
     if( com_eflash == args->command ) {
         memory_size = args->eeprom_memory_size;
@@ -295,6 +308,13 @@ static int32_t execute_dump( dfu_device_t *device,
         bottom_memory_address = 0;
         page_size = args->eeprom_page_size;
         eeprom = true;
+    }
+    
+    if( com_udump == args->command ) {
+        memory_size = page_size;
+        bottom_memory_address = 0;
+        top_memory_address = page_size;
+        user = true;
     }
 
     buffer = (uint8_t *) malloc( memory_size );
@@ -308,7 +328,7 @@ static int32_t execute_dump( dfu_device_t *device,
 
     if( memory_size != atmel_read_flash(device, bottom_memory_address,
                                   top_memory_address, buffer,
-                                  memory_size, eeprom) )
+                                  memory_size, eeprom, user) )
     {
         fprintf( stderr, "Request for %d bytes of memory failed.\n",
                  memory_size );
@@ -372,6 +392,7 @@ int32_t execute_command( dfu_device_t *device,
             return execute_erase( device, args );
         case com_flash:
         case com_eflash:
+        case com_user:
             return execute_flash( device, args );
         case com_reset:
             return atmel_reset( device ); 
@@ -381,6 +402,7 @@ int32_t execute_command( dfu_device_t *device,
             return execute_get( device, args );
         case com_dump:
         case com_edump:
+        case com_udump:
             return execute_dump( device, args );
         case com_configure:
             return execute_configure( device, args );

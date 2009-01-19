@@ -63,9 +63,14 @@ configuration bytes.
 Reads all the available flash memory, and writes it as binary
 data to stdout.
 .HP
-.B eeprom-dump
+.B dump-eeprom
 .br
 Reads all the available eeprom memory, and writes it as binary
+data to stdout.
+.HP
+.B dump-user
+.br
+Reads the user space flash on the AVR32 chips and writes it as binary
 data to stdout.
 .HP
 .B erase
@@ -77,21 +82,30 @@ This is required before the bootloader will perform other commands.
 .B flash
 [\-\-suppress\-validation]
 [\-\-suppress\-bootloader\-mem]
-file
+file or STDIN
 .br
-Writes flash memory.  The input file must use the "ihex" file
+Writes flash memory.  The input file (or stdin) must use the "ihex" file
 format convention for a memory image. \-\-suppress\-bootloader\-mem
 ignores any data written to the bootloader memory space when flashing
 the device.  This option is particularly useful for the AVR32 chips
 .B trampoline
 code.
 .HP
+.B flash-user
+[\-\-suppress\-validation]
+file or STDIN
+.br
+Writes to user space flash on the AVR32 chips.  This block of flash
+is out of the normal range of flash blocks and is designed to contain
+configuration parameters.  The input file (or stdin) mus use the "ihex"
+file format convention for a memory image.
+.HP
 .B eeprom-flash
 [\-\-suppress\-validation]
-file
+file or STDIN
 .br
-Writes to eeprom memory.  The input file must use the "ihex" file
-format convention for a memory image.
+Writes to eeprom memory.  The input file (or stdin) must use the "ihex"
+file format convention for a memory image.
 .HP
 .B get
 register

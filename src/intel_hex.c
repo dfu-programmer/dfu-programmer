@@ -34,6 +34,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "intel_hex.h"
 
@@ -231,10 +232,14 @@ int16_t *intel_hex_to_buffer( char *filename, int max_size, int *usage )
         goto error;
     }
 
-    fp = fopen( filename, "r" );
-    if( NULL == fp ) {
-        fprintf( stderr, "Error opening the file.\n" );
-        goto error;
+    if( 0 == strcmp("STDIN",filename) ) {
+        fp = stdin;
+    } else {
+        fp = fopen( filename, "r" );
+        if( NULL == fp ) {
+            fprintf( stderr, "Error opening the file.\n" );
+            goto error;
+        }
     }
 
     memory = (int16_t *) malloc( max_size * sizeof(int16_t) );
