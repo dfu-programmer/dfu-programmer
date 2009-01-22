@@ -29,5 +29,7 @@ Contributors:
         - identified a number of off-by-one errors waiting to happen
         - identified that AVR32 "User Pages" aren't supported yet
         - patch to allow proper handling of the trampoline code
+        - patch to allow flashing user flash space & STDIN
+        - patch to enable support for windows using mingw32
     - Donald Davis
         - patch with new AVR devices & testing of support for the devices

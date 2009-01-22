@@ -65,6 +65,27 @@ static int32_t dfu_find_interface( const struct usb_device *device,
 static int32_t dfu_make_idle( dfu_device_t *device, const dfu_bool initial_abort );
 static void dfu_msg_response_output( const char *function, const int32_t result );
 
+#if HAVE_CONFIG_H
+# include <config.h>
+#endif
+#undef malloc
+     
+#include <sys/types.h>
+
+void *malloc();
+
+/* Allocate an N-byte block of memory from the heap.
+ *    If N is zero, allocate a 1-byte block.  */
+void* rpl_malloc( size_t n )
+{
+    if( 0 == n ) {
+        n = 1;
+    }
+
+    return malloc( n );
+}
+
+
 /*
  *  DFU_DETACH Request (DFU Spec 1.0, Section 5.1)
  *
@@ -415,22 +436,28 @@ retry:
                         dfu_device->interface = tmp;
                         dfu_device->handle = usb_open( device );
                         if( NULL != dfu_device->handle ) {
-                            if( 0 == usb_claim_interface(dfu_device->handle, dfu_device->interface) ) {
-                                switch( dfu_make_idle(dfu_device, initial_abort) )
-                                {
-                                    case 0:
-                                        return device;
-                                    case 1:
-                                        retries--;
-                                        goto retry;
-                                }
+                            if( 0 == usb_set_configuration(dfu_device->handle, 1) ) {
+                                if( 0 == usb_claim_interface(dfu_device->handle, dfu_device->interface) ) {
+                                    switch( dfu_make_idle(dfu_device, initial_abort) )
+                                    {
+                                        case 0:
+                                            return device;
+                                        case 1:
+                                            retries--;
+                                            goto retry;
+                                    }
 
-                                DEBUG( "Failed to put the device in dfuIDLE mode.\n" );
-                                usb_release_interface( dfu_device->handle, dfu_device->interface );
-                                usb_close( dfu_device->handle );
-                                retries = 4;
+                                    DEBUG( "Failed to put the device in dfuIDLE mode.\n" );
+                                    usb_release_interface( dfu_device->handle, dfu_device->interface );
+                                    usb_close( dfu_device->handle );
+                                    retries = 4;
+                                } else {
+                                    DEBUG( "Failed to claim the DFU interface.\n" );
+                                    usb_close( dfu_device->handle );
+                                }
                             } else {
-                                DEBUG( "Failed to claim the DFU interface.\n" );
+                                DEBUG( "Failed to set configuration.\n");
+
                                 usb_close( dfu_device->handle );
                             }
                         } else {
@@ -699,22 +726,28 @@ static void dfu_msg_response_output( const char *function, const int32_t result 
             case -ENOENT:
                 msg = "-ENOENT: URB was canceled by unlink_urb";
                 break;
+#ifdef EINPROGRESS
             case -EINPROGRESS:
                 msg = "-EINPROGRESS: URB still pending, no results yet "
                       "(actually no error until now)";
                 break;
+#endif
+#ifdef EPROTO
             case -EPROTO:
                 msg = "-EPROTO: a) Bitstuff error or b) Unknown USB error";
                 break;
+#endif
             case -EILSEQ:
                 msg = "-EILSEQ: CRC mismatch";
                 break;
             case -EPIPE:
                 msg = "-EPIPE: a) Babble detect or b) Endpoint stalled";
                 break;
+#ifdef ETIMEDOUT
             case -ETIMEDOUT:
                 msg = "-ETIMEDOUT: Transfer timed out, NAK";
                 break;
+#endif
             case -ENODEV:
                 msg = "-ENODEV: Device was removed";
                 break;

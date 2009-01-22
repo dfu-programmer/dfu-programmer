@@ -1,4 +1,9 @@
-2008-12-10 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
+2009-01-22 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
+	* src/dfu.c: Applied the patch from Zachary Clifford
+	  to support Windows.
+	* AUTHORS: Update the file to reflect Zach's patches.
+
+2009-01-18 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
 	* src/arguments.c, src/arguments.h, src/atmel.c,
 	  src/atmel.h, src/commands.c, src/intel_hex.c,
 	  doc/dfu-programmer.1: Applied the patch from Zachary
