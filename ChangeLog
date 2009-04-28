@@ -1,3 +1,9 @@
+2009-04-28 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
+	* src/arguments.c, src/arguments, src/commands.c: Fix
+	  a memory overlap issue between the bootloader & the
+	  flash memory available for the new firmware.
+	* AUTHORS: Added Brad Schick to the list of contributers.
+
 2009-04-27 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
 	* src/atmel.c: Fix a crash due to larger sized images
 	  not being handled properly in a loop.

@@ -103,6 +103,7 @@ struct programmer_arguments {
     uint32_t flash_address_bottom;
     uint32_t bootloader_top;
     uint32_t bootloader_bottom;
+    dfu_bool bootloader_at_highmem;
     size_t flash_page_size;
     dfu_bool initial_abort;
     dfu_bool honor_interfaceclass;

@@ -223,12 +223,15 @@ static int32_t assign_target( struct programmer_arguments *args,
             args->flash_address_bottom = 0;
             args->bootloader_bottom = 0;
             args->bootloader_top = 0;
+            args->bootloader_at_highmem = map->bootloader_at_highmem;
             if( true == map->bootloader_at_highmem ) {
                 args->bootloader_bottom = args->flash_address_top - map->bootloader_size;
                 args->bootloader_top = args->flash_address_top;
+                args->flash_address_top -= map->bootloader_size;
             } else {
                 args->bootloader_bottom = args->flash_address_bottom;
                 args->bootloader_top += map->bootloader_size;
+                args->flash_address_bottom += map->bootloader_size;
             }
             if( 0 < map->eeprom_memory_size ) {
                 args->top_eeprom_memory_address = map->eeprom_memory_size - 1;

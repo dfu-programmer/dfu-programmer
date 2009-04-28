@@ -312,7 +312,6 @@ static int32_t execute_dump( dfu_device_t *device,
     
     if( com_udump == args->command ) {
         memory_size = page_size;
-        bottom_memory_address = 0;
         top_memory_address = page_size;
         user = true;
     }
@@ -335,8 +334,10 @@ static int32_t execute_dump( dfu_device_t *device,
         return -1;
     }
 
-    for( i = 0; i < bottom_memory_address; i++ ) {
-        fprintf( stdout, "%c", 0xff );
+    if( false == args->bootloader_at_highmem ) {
+        for( i = 0; i < bottom_memory_address; i++ ) {
+            fprintf( stdout, "%c", 0xff );
+        }
     }
     for( i = 0; i < memory_size; i++ ) {
         fprintf( stdout, "%c", buffer[i] );
