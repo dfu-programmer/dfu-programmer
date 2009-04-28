@@ -1,3 +1,7 @@
+2009-04-27 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
+	* src/atmel.c: Fix a crash due to larger sized images
+	  not being handled properly in a loop.
+
 2009-01-22 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
 	* src/dfu.c: Applied the patch from Zachary Clifford
 	  to support Windows.

@@ -782,7 +782,7 @@ recheck_page:
 
         DEBUG( "valid block length: %d, (%d - %d)\n", length, first, last );
 
-        do {
+        while( 0 < length ) {
             int32_t result;
 
             if( ATMEL_MAX_TRANSFER_SIZE < length ) {
@@ -803,7 +803,7 @@ recheck_page:
             DEBUG( "Next first: %d\n", first );
             length = last - first;
             DEBUG( "valid block length: %d\n", length );
-        } while( 0 < length );
+        }
         DEBUG( "sent: %d, first: %u last: %u\n", sent, first, last );
     }
 
