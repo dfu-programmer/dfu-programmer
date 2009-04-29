@@ -459,15 +459,17 @@ int32_t atmel_blank_check( dfu_device_t *device,
 
     rv = -3;
 
-    /* Handle non AVR32 devices. */
-    if( adc_AVR32 != device->type ) {
+    /* Handle small memory (< 64k) devices without a page selection. */
+    if( end < UINT16_MAX ) {
         rv = __atmel_blank_check_internal( device, start, end );
         goto done;
     }
 
     /* Select FLASH memory */
-    if( 0 != atmel_select_flash(device) ) {
-        return -2;
+    if( adc_AVR32 == device->type ) {
+        if( 0 != atmel_select_flash(device) ) {
+            return -2;
+        }
     }
 
     current_start = start;

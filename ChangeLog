@@ -1,5 +1,12 @@
+2009-04-29 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
+	* src/arguments.c, src/atmel.c: Fix the off by one issue
+	  Brad pointed out for blank checking.  Fix a bug in the
+	  blank checking for devices with greater than 65k of
+	  memory that were not AVR32 based, so that all the
+	  memory is checked, not just a portion of the lower bytes.
+
 2009-04-28 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
-	* src/arguments.c, src/arguments, src/commands.c: Fix
+	* src/arguments.c, src/arguments.h, src/commands.c: Fix
 	  a memory overlap issue between the bootloader & the
 	  flash memory available for the new firmware.
 	* AUTHORS: Added Brad Schick to the list of contributers.

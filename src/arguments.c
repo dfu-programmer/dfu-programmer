@@ -227,7 +227,7 @@ static int32_t assign_target( struct programmer_arguments *args,
             if( true == map->bootloader_at_highmem ) {
                 args->bootloader_bottom = args->flash_address_top - map->bootloader_size;
                 args->bootloader_top = args->flash_address_top;
-                args->flash_address_top -= map->bootloader_size;
+                args->flash_address_top -= (map->bootloader_size + 1);
             } else {
                 args->bootloader_bottom = args->flash_address_bottom;
                 args->bootloader_top += map->bootloader_size;

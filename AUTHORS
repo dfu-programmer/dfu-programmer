@@ -35,3 +35,4 @@ Contributors:
         - patch with new AVR devices & testing of support for the devices
     - Brad Schick
         - identified that the flash memory overlaps the bootloader memory
+        - identified the off-by-one issue when the bootloader is in upper memory
