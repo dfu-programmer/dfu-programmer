@@ -54,10 +54,27 @@ typedef struct {
     int16_t hsb;                // Hardware Security Byte
 } atmel_device_info_t;
 
+typedef struct {
+    int32_t lock;               // Locked region
+    int32_t epfl;               // External Privileged fetch lock
+    int32_t bootprot;           // Bootloader protected area
+    int32_t bodlevel;           // Brown-out detector trigger level
+    int32_t bodhyst;            // BOD hysteresis enable
+    int32_t boden;              // BOD enable state
+    int32_t isp_bod_en;         // Tells the ISP to enable BOD
+    int32_t isp_io_cond_en;     // ISP uses User page to launch bootloader
+    int32_t isp_force;          // Start the ISP no matter what
+} atmel_avr32_fuses_t;
+
 int32_t atmel_read_config( dfu_device_t *device,
                            atmel_device_info_t *info );
+int32_t atmel_read_fuses( dfu_device_t *device,
+                          atmel_avr32_fuses_t * info );
 int32_t atmel_erase_flash( dfu_device_t *device,
                            const uint8_t mode );
+int32_t atmel_set_fuse( dfu_device_t *device,
+                          const uint8_t property,
+                          const uint32_t value );
 int32_t atmel_set_config( dfu_device_t *device,
                           const uint8_t property,
                           const uint8_t value );

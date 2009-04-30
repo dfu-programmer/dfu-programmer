@@ -31,6 +31,7 @@ Contributors:
         - patch to allow proper handling of the trampoline code
         - patch to allow flashing user flash space & STDIN
         - patch to enable support for windows using mingw32
+        - patch to enable setting/getting fuses for the AVR32 devices
     - Donald Davis
         - patch with new AVR devices & testing of support for the devices
     - Brad Schick

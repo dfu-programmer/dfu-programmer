@@ -62,14 +62,48 @@ static int32_t atmel_flash_block( dfu_device_t *device,
                                   const dfu_bool eeprom );
 static int32_t atmel_select_flash( dfu_device_t *device );
 static int32_t atmel_select_user( dfu_device_t *device );
+static int32_t atmel_select_fuses( dfu_device_t *device );
 static int32_t atmel_select_page( dfu_device_t *device,
                                   const uint16_t mem_page );
+static int32_t __atmel_read_page( dfu_device_t *device,
+                                  const uint32_t start,
+                                  const uint32_t end,
+                                  uint8_t* buffer,
+                                  const dfu_bool eeprom );
 
 /* returns 0 - 255 on success, < 0 otherwise */
 static int32_t atmel_read_command( dfu_device_t *device,
                                    const uint8_t data0,
                                    const uint8_t data1 )
 {
+    if( adc_AVR32 == device->type ) {
+        //We need to talk to configuration memory.  It comes
+        //in two varieties in this chip.  data0 is the command to
+        //select it
+        //Data1 is the byte of that group we want
+        
+    if( NULL != device ) {
+        uint8_t command[4] = { 0x06, 0x03, 0x00, data0 };
+
+        if( 4 != dfu_download(device, 4, command) ) {
+            DEBUG( "dfu_download failed.\n" );
+            return -1;
+        }
+
+        int32_t result;
+        uint8_t buffer[1];
+        result = __atmel_read_page( device, data1, data1+1, buffer, false );
+        if( 1 != result ) {
+            return -5;
+        }
+
+        return (0xff & buffer[0]);
+
+    } else {
+
+       return -1;
+    }
+    } else {
     uint8_t command[3] = { 0x05, 0x00, 0x00 };
     uint8_t data[1]    = { 0x00 };
     dfu_status_t status;
@@ -101,9 +135,47 @@ static int32_t atmel_read_command( dfu_device_t *device,
     }
 
     return (0xff & data[0]);
+    }
 }
 
+int32_t atmel_read_fuses( dfu_device_t *device,
+                           atmel_avr32_fuses_t *info )
+{
+    if( adc_AVR32 != device->type ) {
+       DEBUG( "target does not support fuse operation.\n" );
+       fprintf( stderr, "target does not support fuse operation.\n" );
+       return -1;
+    } 
+    
+    if( 0 != atmel_select_fuses(device) ) {
+        return -3;
+    }
+    int32_t result;
+    uint8_t buffer[32];
+    int i;
+    result = __atmel_read_page( device, 0, 32, buffer, false );
+    if( 32 != result ) {
+        return -5;
+    }
+    info->lock = 0;
+    for(i = 0; i < 16; i++) {
+        info->lock = info->lock | (buffer[i] << i);
+    }
+    info->epfl = buffer[16];
+    info->bootprot = (buffer[19] << 2) | (buffer[18] << 1) | (buffer[17] << 0);
+    info->bodlevel = 0;
+    for(i = 20; i < 26; i++) {
+        info->bodlevel = info->bodlevel | (buffer[i] << (i-20));
+    }
+    info->bodhyst = buffer[26];
+    info->boden = (buffer[28] << 1) | (buffer[27] << 0);
+    info->isp_bod_en = buffer[29];
+    info->isp_io_cond_en = buffer[30];
+    info->isp_force = buffer[31];
 
+    return 0;
+ }
+ 
 /*
  *  This reads in all of the configuration and Manufacturer Information
  *  into the atmel_device_info data structure for easier use later.
@@ -124,6 +196,7 @@ int32_t atmel_read_config( dfu_device_t *device,
     } atmel_read_config_t;
 #   define DM_8051  0x01
 #   define DM_AVR   0x02
+#   define DM_AVR32 0x04
 
     /* These commands are documented in Appendix A of the
      * "AT89C5131A USB Bootloader Datasheet" or
@@ -131,12 +204,19 @@ int32_t atmel_read_config( dfu_device_t *device,
      */
     static const atmel_read_config_t data[] = {
         { 0x00, 0x00, (DM_8051 | DM_AVR), offsetof(atmel_device_info_t, bootloaderVersion) },
+        { 0x04, 0x00, (DM_AVR32),         offsetof(atmel_device_info_t, bootloaderVersion) },
         { 0x00, 0x01, (DM_8051 | DM_AVR), offsetof(atmel_device_info_t, bootID1)           },
+        { 0x04, 0x01, (DM_AVR32),         offsetof(atmel_device_info_t, bootID1)           },
         { 0x00, 0x02, (DM_8051 | DM_AVR), offsetof(atmel_device_info_t, bootID2)           },
+        { 0x04, 0x02, (DM_AVR32),         offsetof(atmel_device_info_t, bootID2)           },
         { 0x01, 0x30, (DM_8051 | DM_AVR), offsetof(atmel_device_info_t, manufacturerCode)  },
+        { 0x05, 0x00, (DM_AVR32),         offsetof(atmel_device_info_t, manufacturerCode)  },
         { 0x01, 0x31, (DM_8051 | DM_AVR), offsetof(atmel_device_info_t, familyCode)        },
+        { 0x05, 0x01, (DM_AVR32),         offsetof(atmel_device_info_t, familyCode)        },
         { 0x01, 0x60, (DM_8051 | DM_AVR), offsetof(atmel_device_info_t, productName)       },
+        { 0x05, 0x02, (DM_AVR32),         offsetof(atmel_device_info_t, productName)       },
         { 0x01, 0x61, (DM_8051 | DM_AVR), offsetof(atmel_device_info_t, productRevision)   },
+        { 0x05, 0x03, (DM_AVR32),         offsetof(atmel_device_info_t, productRevision)   },
         { 0x01, 0x00, DM_8051,            offsetof(atmel_device_info_t, bsb)               },
         { 0x01, 0x01, DM_8051,            offsetof(atmel_device_info_t, sbv)               },
         { 0x01, 0x05, DM_8051,            offsetof(atmel_device_info_t, ssb)               },
@@ -154,7 +234,8 @@ int32_t atmel_read_config( dfu_device_t *device,
         atmel_read_config_t *row = (atmel_read_config_t*) &data[i];
 
         if( ((DM_8051 & row->device_map) && (adc_8051 == device->type)) ||
-            ((DM_AVR & row->device_map) && (adc_AVR == device->type)) )
+            ((DM_AVR & row->device_map) && (adc_AVR == device->type)) ||
+            ((DM_AVR32 & row->device_map) && (adc_AVR32 == device->type)) )
         {
             int16_t *ptr = row->offset + (void *) info;
 
@@ -229,7 +310,130 @@ int32_t atmel_erase_flash( dfu_device_t *device,
     return -3;
 }
 
+int32_t atmel_set_fuse( dfu_device_t *device,
+                          const uint8_t property,
+                          const uint32_t value )
+{
+    int32_t result;
+    int16_t buffer[16];
+    int32_t address;
+    int8_t numbytes;
+    int8_t i;
 
+    if( adc_AVR32 != device->type ) {
+       DEBUG( "target does not support fuse operation.\n" );
+       fprintf( stderr, "target does not support fuse operation.\n" );
+       return -1;
+    } 
+
+    if( 0 != atmel_select_fuses(device) ) {
+        return -3;
+    }
+
+    switch( property ) {
+        case set_lock:
+            for( i = 0; i < 16; i++ ) {
+                buffer[i] = value & (0x0001 << i);
+            }
+            numbytes = 16;
+            address = 0;
+            break;
+        case set_epfl:
+            buffer[0] = value & 0x0001;
+            numbytes = 1;
+            address = 16;
+            break;
+        case set_bootprot:
+            buffer[0] = value & 0x0001;
+            buffer[1] = value & 0x0002;
+            buffer[2] = value & 0x0004;
+            numbytes = 3;
+            address = 17;
+            break;
+        case set_bodlevel:
+#ifdef SUPPORT_SET_BOD_FUSES
+            /* Enable at your own risk - this has not been tested &
+             * may brick your device. */
+            for(i = 20;i < 26; i++){
+                buffer[i] = value & (0x0001 << (i-20));
+            }
+            numbytes = 6;
+            address = 20;
+            break;
+#else
+            DEBUG( "Setting BODLEVEL can break your chip. Operation not performed\n" );
+            DEBUG( "Rebuild with the SUPPORT_SET_BOD_FUSES #define enabled if you really want to do this.\n" );
+            fprintf( stderr, "Setting BODLEVEL can break your chip. Operation not performed.\n" );
+            return -1;
+#endif
+        case set_bodhyst:
+#ifdef SUPPORT_SET_BOD_FUSES
+            /* Enable at your own risk - this has not been tested &
+             * may brick your device. */
+            buffer[0] = value & 0x0001;
+            numbytes = 1;
+            address = 26;
+            break;
+#else
+            DEBUG("Setting BODHYST can break your chip. Operation not performed\n");
+            DEBUG( "Rebuild with the SUPPORT_SET_BOD_FUSES #define enabled if you really want to do this.\n" );
+            fprintf( stderr, "Setting BODHYST can break your chip. Operation not performed.\n");
+            return -1;
+#endif
+        case set_boden:
+#ifdef SUPPORT_SET_BOD_FUSES
+            /* Enable at your own risk - this has not been tested &
+             * may brick your device. */
+            buffer[0] = value & 0x0001;
+            buffer[1] = value & 0x0002;
+            numbytes = 2;
+            address = 27;
+            break;
+#else
+            DEBUG( "Setting BODEN can break your chip. Operation not performed\n" );
+            DEBUG( "Rebuild with the SUPPORT_SET_BOD_FUSES #define enabled if you really want to do this.\n" );
+            fprintf( stderr, "Setting BODEN can break your chip. Operation not performed.\n" );
+            return -1;
+#endif
+        case set_isp_bod_en:
+#ifdef SUPPORT_SET_BOD_FUSES
+            /* Enable at your own risk - this has not been tested &
+             * may brick your device. */
+            buffer[0] = value & 0x0001;
+            numbytes = 1;
+            address = 29;
+            break;
+#else
+            DEBUG( "Setting ISP_BOD_EN can break your chip. Operation not performed\n" );
+            DEBUG( "Rebuild with the SUPPORT_SET_BOD_FUSES #define enabled if you really want to do this.\n" );
+            fprintf( stderr, "Setting ISP_BOD_EN can break your chip. Operation not performed.\n" );
+            return -1;
+#endif
+        case set_isp_io_cond_en:
+            buffer[0] = value & 0x0001;
+            numbytes = 1;
+            address = 30;
+            break;
+        case set_isp_force:
+            buffer[0] = value & 0x0001;
+            numbytes = 1;
+            address = 31;
+            break;
+        default:
+            DEBUG( "Fuse bits unrecognized\n" );
+            fprintf( stderr, "Fuse bits unrecognized.\n" );
+            return -2;
+            break;
+        }
+    
+    result = atmel_flash_block( device, buffer, address, numbytes, false );
+    if(result < 0) {
+        return -6;
+     }
+    return 0;
+
+}
+ 
 int32_t atmel_set_config( dfu_device_t *device,
                           const uint8_t property,
                           const uint8_t value )
@@ -582,6 +786,24 @@ static int32_t atmel_select_flash( dfu_device_t *device )
 
     return 0;
 }
+
+static int32_t atmel_select_fuses( dfu_device_t *device )
+{
+    TRACE( "%s( %p )\n", __FUNCTION__, device );
+
+    if( (NULL != device) && (adc_AVR32 == device->type) ) {
+        uint8_t command[4] = { 0x06, 0x03, 0x00, 0x03 };
+
+        if( 4 != dfu_download(device, 4, command) ) {
+            DEBUG( "dfu_download failed.\n" );
+            return -1;
+        }
+        DEBUG( "fuses selected\n" );
+    }
+
+    return 0;
+}
+
 
 static int32_t atmel_select_user( dfu_device_t *device )
 {

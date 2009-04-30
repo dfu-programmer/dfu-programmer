@@ -112,6 +112,8 @@ static struct option_mapping_structure command_map[] = {
     { "flash-user",   com_user      },
     { "flash-eeprom", com_eflash    },
     { "get",          com_get       },
+    { "getfuse",      com_getfuse   },
+    { "setfuse",      com_setfuse   },
     { "reset",        com_reset     },
     { "start",        com_start_app },
     { "version",      com_version   },
@@ -142,6 +144,34 @@ static struct option_mapping_structure get_map[] = {
     { "product-name",       get_product_name },
     { "product-revision",   get_product_rev  },
     { "HSB",                get_HSB          },
+    { NULL }
+};
+
+/* ----- getfuse specific structures ---------------------------------- */
+static struct option_mapping_structure getfuse_map[] = {
+    { "LOCK",           get_lock           },
+    { "EPFL",           get_epfl           },
+    { "BOOTPROT",       get_bootprot       },
+    { "BODLEVEL",       get_bodlevel       },
+    { "BODHYST",        get_bodhyst        },
+    { "BODEN",          get_boden          },
+    { "ISP_BOD_EN",     get_isp_bod_en     },
+    { "ISP_IO_COND_EN", get_isp_io_cond_en },
+    { "ISP_FORCE",      get_isp_force      },
+    { NULL }
+};
+
+/* ----- setfuse specific structures ---------------------------------- */
+static struct option_mapping_structure setfuse_map[] = {
+    { "LOCK",           set_lock           },
+    { "EPFL",           set_epfl           },
+    { "BOOTPROT",       set_bootprot       },
+    { "BODLEVEL",       set_bodlevel       },
+    { "BODHYST",        set_bodhyst        },
+    { "BODEN",          set_boden          },
+    { "ISP_BOD_EN",     set_isp_bod_en     },
+    { "ISP_IO_COND_EN", set_isp_io_cond_en },
+    { "ISP_FORCE",      set_isp_force      },
     { NULL }
 };
 
@@ -182,6 +212,14 @@ static void usage()
                      "            manufacturer|family|product-name|\n"
                      "            product-revision|HSB} "
                      "[global-options]\n" );
+    fprintf( stderr, "        getfuse {LOCK|EPFL|BOOTPROT|BODLEVEL|BODHYST|\n"
+                     "                BODEN|ISP_BOD_EN|ISP_IO_COND_EN|\n"
+                     "                ISP_FORCE} "
+                     "[global-options]\n" );
+    fprintf( stderr, "        setfuse {LOCK|EPFL|BOOTPROT|BODLEVEL|BODHYST|\n"
+                     "                BODEN|ISP_BOD_EN|ISP_IO_COND_EN|\n"
+                     "                ISP_FORCE} "
+                     "[global-options] data\n" );
     fprintf( stderr, "        reset [global-options]\n" );
     fprintf( stderr, "        start [global-options]\n" );
     fprintf( stderr, "        version [global-options]\n" );
@@ -338,6 +376,35 @@ static int32_t assign_global_options( struct programmer_arguments *args,
     return 0;
 }
 
+static int32_t assign_com_setfuse_option( struct programmer_arguments *args,
+                                            const int32_t parameter,
+                                            char *value )
+{
+    /* name & value */
+    if( 0 == parameter ) {
+        /* name */
+        if( 0 != assign_option((int32_t *) &(args->com_setfuse_data.name),
+                               value, setfuse_map) )
+        {
+            return -1;
+        }
+    } else {
+        int32_t temp = 0;
+        /* value */
+        if( 1 != sscanf(value, "%i", &(temp)) )
+            return -2;
+
+        /* ensure the range is greater than 0 */
+        if( temp < 0 )
+            return -3;
+
+        args->com_setfuse_data.value = temp;
+    }
+
+    return 0;
+}
+
+
 
 static int32_t assign_com_configure_option( struct programmer_arguments *args,
                                             const int32_t parameter,
@@ -379,6 +446,21 @@ static int32_t assign_com_flash_option( struct programmer_arguments *args,
     return 0;
 }
 
+static int32_t assign_com_getfuse_option( struct programmer_arguments *args,
+                                      const int32_t parameter,
+                                      char *value )
+{
+    /* name */
+    if( 0 != assign_option((int32_t *) &(args->com_getfuse_data.name),
+                           value, getfuse_map) )
+    {
+        return -1;
+    }
+
+    return 0;
+}
+
+
 
 static int32_t assign_com_get_option( struct programmer_arguments *args,
                                       const int32_t parameter,
@@ -415,6 +497,12 @@ static int32_t assign_command_options( struct programmer_arguments *args,
                     return -1;
                 break;
 
+            case com_setfuse:
+                required_params = 2;
+                if( 0 != assign_com_setfuse_option(args, param, argv[i]) )
+                    return -1;
+                break;
+
             case com_flash:
             case com_eflash:
             case com_user:
@@ -423,6 +511,11 @@ static int32_t assign_command_options( struct programmer_arguments *args,
                     return -3;
                 break;
 
+            case com_getfuse:
+                required_params = 1;
+                if( 0 != assign_com_getfuse_option(args, param, argv[i]) )
+                    return -4;
+                break;
             case com_get:
                 required_params = 1;
                 if( 0 != assign_com_get_option(args, param, argv[i]) )

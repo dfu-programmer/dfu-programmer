@@ -1,3 +1,11 @@
+2009-04-30 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
+	* src/arguments.c, src/arguments.h, src/atmel.c,
+	  src/atmel.h, src/commands.c, AUTHORS: Applied the
+	  patch from Zachary Clifford to enable all the AVR32
+	  fuses to be set or gotten (all BOD fuse setting is
+	  disabled for device safety since they can brick your
+	  device.)
+
 2009-04-29 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
 	* src/arguments.c, src/atmel.c: Fix the off by one issue
 	  Brad pointed out for blank checking.  Fix a bug in the

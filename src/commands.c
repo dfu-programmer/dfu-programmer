@@ -187,6 +187,70 @@ error:
     return retval;
 }
 
+static int32_t execute_getfuse( dfu_device_t *device,
+                            struct programmer_arguments *args )
+{
+    atmel_avr32_fuses_t info;
+    char *message = NULL;
+    int32_t value = 0;
+    int32_t status;
+
+    status = atmel_read_fuses( device, &info );
+
+    if( 0 != status ) {
+        DEBUG( "Error reading %s config information.\n",
+               args->device_type_string );
+        fprintf( stderr, "Error reading %s config information.\n",
+                         args->device_type_string );
+        return status;
+    }
+
+    switch( args->com_getfuse_data.name ) {
+        case get_lock:
+            value = info.lock;
+            message = "Locked regions";
+            break;
+        case get_epfl:
+            value = info.epfl;
+            message = "External Privileged Fetch Lock";
+            break;
+        case get_bootprot:
+            value = info.bootprot;
+            message = "Bootloader protected area";
+            break;
+        case get_bodlevel:
+            value = info.bodlevel;
+            message = "Brown-out detector trigger level";
+            break;
+        case get_bodhyst:
+            value = info.bodhyst;
+            message = "BOD Hysteresis enable";
+            break;
+        case get_boden:
+            value = info.boden;
+            message = "BOD Enable";
+            break;
+        case get_isp_bod_en:
+            value = info.isp_bod_en;
+            message = "ISP BOD enable";
+            break;
+        case get_isp_io_cond_en:
+            value = info.isp_io_cond_en;
+            message = "ISP IO condition enable";
+            break;
+        case get_isp_force:
+            value = info.isp_force;
+            message = "ISP Force";
+            break;
+    }
+    fprintf( stdout, "%s%s0x%02x (%d)\n", 
+             ((0 == args->quiet) ? message : ""),
+             ((0 == args->quiet) ? ": " : ""),
+             value, value );
+    return 0;
+}
+
+
 
 static int32_t execute_get( dfu_device_t *device,
                             struct programmer_arguments *args )
@@ -267,6 +331,9 @@ static int32_t execute_get( dfu_device_t *device,
         case get_HSB:
             value = info.hsb;
             message = "Hardware Security Byte";
+            if( adc_8051 != args->device_type ) {
+                controller_error = 1;
+            }
             break;
     }
 
@@ -355,6 +422,29 @@ error:
 }
 
 
+static int32_t execute_setfuse( dfu_device_t *device,
+                                  struct programmer_arguments *args )
+{
+    int32_t value = args->com_setfuse_data.value;
+    int32_t name = args->com_setfuse_data.name;
+
+    if( adc_AVR32 != args->device_type ) {
+        DEBUG( "target doesn't support fuse set operation.\n" );
+        fprintf( stderr, "target doesn't support fuse set operation.\n" );
+        return -1;
+    }
+
+    if( 0 != atmel_set_fuse(device, name, value) )
+    {
+        DEBUG( "Fuse set failed.\n" );
+        fprintf( stderr, "Fuse set failed.\n" );
+        return -1;
+    }
+
+    return 0;
+}
+
+
 static int32_t execute_configure( dfu_device_t *device,
                                   struct programmer_arguments *args )
 {
@@ -401,12 +491,16 @@ int32_t execute_command( dfu_device_t *device,
             return atmel_start_app( device );
         case com_get:
             return execute_get( device, args );
+        case com_getfuse:
+            return execute_getfuse( device, args );
         case com_dump:
         case com_edump:
         case com_udump:
             return execute_dump( device, args );
         case com_configure:
             return execute_configure( device, args );
+        case com_setfuse:
+            return execute_setfuse( device, args );
         default:
             fprintf( stderr, "Not supported at this time.\n" );
     }

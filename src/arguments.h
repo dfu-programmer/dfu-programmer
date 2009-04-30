@@ -79,7 +79,8 @@ enum targets_enum { tar_at89c51snd1c,
                     tar_none };
 
 enum commands_enum { com_none, com_erase, com_flash, com_user, com_eflash,
-                     com_configure, com_get, com_dump, com_edump, com_udump,
+                     com_configure, com_get, com_getfuse, com_dump, com_edump,
+                     com_udump, com_setfuse,
                      com_start_app, com_version, com_reset };
 
 enum configure_enum { conf_BSB = ATMEL_SET_CONFIG_BSB,
@@ -88,9 +89,17 @@ enum configure_enum { conf_BSB = ATMEL_SET_CONFIG_BSB,
                       conf_EB  = ATMEL_SET_CONFIG_EB,
                       conf_HSB = ATMEL_SET_CONFIG_HSB };
 
+enum setfuse_enum { set_lock, set_epfl, set_bootprot, set_bodlevel,
+                    set_bodhyst, set_boden, set_isp_bod_en,
+                    set_isp_io_cond_en, set_isp_force };
+
 enum get_enum { get_bootloader, get_ID1, get_ID2, get_BSB, get_SBV, get_SSB,
                 get_EB, get_manufacturer, get_family, get_product_name,
                 get_product_rev, get_HSB };
+
+enum getfuse_enum { get_lock, get_epfl, get_bootprot, get_bodlevel,
+                    get_bodhyst, get_boden, get_isp_bod_en,
+                    get_isp_io_cond_en, get_isp_force };
 
 struct programmer_arguments {
     /* target-specific inputs */
@@ -123,6 +132,11 @@ struct programmer_arguments {
             int32_t value;
         } com_configure_data;
 
+        struct com_setfuse_struct {
+            enum setfuse_enum name;
+            int32_t value;
+        } com_setfuse_data;
+
         /* No special data needed for 'dump' */
 
         struct com_erase_struct {
@@ -138,6 +152,10 @@ struct programmer_arguments {
         struct com_get_struct {
             enum get_enum name;
         } com_get_data;
+
+        struct com_getfuse_struct {
+            enum getfuse_enum name;
+        } com_getfuse_data;
     };
 };
 
