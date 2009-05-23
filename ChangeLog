@@ -1,3 +1,7 @@
+2009-05-23 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
+	* src/atmel.c: Fix a buffer overrun error that would
+	  cause a core dump sometimes.
+
 2009-04-30 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
 	* src/arguments.c, src/arguments.h, src/atmel.c,
 	  src/atmel.h, src/commands.c, AUTHORS: Applied the

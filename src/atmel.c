@@ -41,7 +41,10 @@
  */
 
 #define ATMEL_MAX_TRANSFER_SIZE     0x0400
-#define ATMEL_MAX_FLASH_BUFFER_SIZE (ATMEL_MAX_TRANSFER_SIZE + 0x80)
+#define ATMEL_MAX_FLASH_BUFFER_SIZE (ATMEL_MAX_TRANSFER_SIZE +              \
+                                        ATMEL_AVR32_CONTROL_BLOCK_SIZE +    \
+                                        ATMEL_AVR32_CONTROL_BLOCK_SIZE +    \
+                                        ATMEL_FOOTER_SIZE)
 
 #define ATMEL_FOOTER_SIZE               16
 #define ATMEL_CONTROL_BLOCK_SIZE        32
