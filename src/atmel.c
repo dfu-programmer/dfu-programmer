@@ -870,7 +870,7 @@ static void atmel_flash_prepair_buffer( int16_t *buffer, const size_t size,
         int32_t i;
 
         for( i = 0; i < page_size; i++ ) {
-            if( (0 <= page[i]) && (page[i] < UINT8_MAX) ) {
+            if( (0 <= page[i]) && (page[i] <= UINT8_MAX) ) {
                 /* We found a valid value. */
                 break;
             }
@@ -969,7 +969,7 @@ int32_t atmel_flash( dfu_device_t *device,
 
         /* Find the next valid character to start sending from */
         for( ; first < end; first++ ) {
-            if( (0 <= buffer[first]) && (buffer[first] < UINT8_MAX) ) {
+            if( (0 <= buffer[first]) && (buffer[first] <= UINT8_MAX) ) {
                 /* We found a valid value. */
                 break;
             }

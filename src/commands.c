@@ -378,6 +378,7 @@ static int32_t execute_dump( dfu_device_t *device,
     }
     
     if( com_udump == args->command ) {
+        bottom_memory_address = 0;
         memory_size = page_size;
         top_memory_address = page_size;
         user = true;

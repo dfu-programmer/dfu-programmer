@@ -1,3 +1,10 @@
+2009-05-31 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
+	* src/atmel.c: Fix a memory address identification bug
+	  that would cause the value 0xff to not be recognized.
+	* src/commands.c, AUTHORS: Applied the patch that Xavier
+	  Leprevost created to allow dumping avr32 user flash
+	  properly.
+
 2009-05-23 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
 	* src/atmel.c: Fix a buffer overrun error that would
 	  cause a core dump sometimes.

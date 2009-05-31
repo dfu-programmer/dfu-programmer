@@ -37,3 +37,5 @@ Contributors:
     - Brad Schick
         - identified that the flash memory overlaps the bootloader memory
         - identified the off-by-one issue when the bootloader is in upper memory
+    - Xavier Leprevost
+        - patch to fix an error in the avr32 user flash dump command
