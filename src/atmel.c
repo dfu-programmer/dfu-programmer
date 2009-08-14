@@ -941,12 +941,14 @@ int32_t atmel_flash( dfu_device_t *device,
         return -1;
     }
 
-    if( adc_AVR32 == device->type ) {
-        /* Select FLASH memory */
-        uint8_t command[4] = { 0x06, 0x03, 0x00, 0x00 };
-        if( 4 != dfu_download(device, 4, command) ) {
-            DEBUG( "dfu_download failed.\n" );
-            return -2;
+    if( (adc_AVR32 == device->type) || (adc_AVR == device->type) ) {
+        if( adc_AVR32 == device->type ) {
+            /* Select FLASH memory */
+            uint8_t command[4] = { 0x06, 0x03, 0x00, 0x00 };
+            if( 4 != dfu_download(device, 4, command) ) {
+                DEBUG( "dfu_download failed.\n" );
+                return -2;
+            }
         }
 
         /* Select Page 0 */

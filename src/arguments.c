@@ -62,20 +62,20 @@ struct target_mapping_structure {
 static struct target_mapping_structure target_map[] = {
     { "at89c51snd1c",   tar_at89c51snd1c,   adc_8051,  0x2FFF, 0x03eb, 0x10000, 0x1000, true,  128, false, true,  0,   0      },
     { "at89c51snd2c",   tar_at89c51snd2c,   adc_8051,  0x2FFF, 0x03eb, 0x10000, 0x1000, true,  128, false, true,  0,   0      },
-    { "at89c5130",      tar_at89c5130,      adc_8051,  0x2FFD, 0x03eb, 0x04000, 0x0000, true,  128, false, true,  128, 0x03FF },    /* The bootloader is out of the normal flash. */
-    { "at89c5131",      tar_at89c5131,      adc_8051,  0x2FFD, 0x03eb, 0x08000, 0x0000, true,  128, false, true,  128, 0x03FF },    /* The bootloader is out of the normal flash. */
+    { "at89c5130",      tar_at89c5130,      adc_8051,  0x2FFD, 0x03eb, 0x04000, 0x0000, true,  128, false, true,  128, 0x0400 },    /* The bootloader is out of the normal flash. */
+    { "at89c5131",      tar_at89c5131,      adc_8051,  0x2FFD, 0x03eb, 0x08000, 0x0000, true,  128, false, true,  128, 0x0400 },    /* The bootloader is out of the normal flash. */
     { "at89c5132",      tar_at89c5132,      adc_8051,  0x2FFF, 0x03eb, 0x10000, 0x0C00, true,  128, false, true,  0,   0      },
-    { "at90usb1287",    tar_at90usb1287,    adc_AVR,   0x2FFB, 0x03eb, 0x20000, 0x2000, true,  128, true,  false, 128, 0x0FFF },
-    { "at90usb1286",    tar_at90usb1286,    adc_AVR,   0x2FFB, 0x03eb, 0x20000, 0x2000, true,  128, true,  false, 128, 0x0FFF },
-    { "at90usb1287-4k", tar_at90usb1287_4k, adc_AVR,   0x2FFB, 0x03eb, 0x20000, 0x1000, true,  128, true,  false, 128, 0x0FFF },
-    { "at90usb1286-4k", tar_at90usb1286_4k, adc_AVR,   0x2FFB, 0x03eb, 0x20000, 0x1000, true,  128, true,  false, 128, 0x0FFF },
-    { "at90usb647",     tar_at90usb647,     adc_AVR,   0x2FF9, 0x03eb, 0x10000, 0x2000, true,  128, true,  false, 128, 0x07FF },
-    { "at90usb646",     tar_at90usb646,     adc_AVR,   0x2FF9, 0x03eb, 0x10000, 0x2000, true,  128, true,  false, 128, 0x07FF },
-    { "at90usb162",     tar_at90usb162,     adc_AVR,   0x2FFA, 0x03eb, 0x04000, 0x1000, true,  128, true,  false, 128, 0x01FF },
-    { "at90usb82",      tar_at90usb82,      adc_AVR,   0x2FF7, 0x03eb, 0x02000, 0x1000, true,  128, true,  false, 128, 0x01FF },
-    { "atmega32u6",     tar_atmega32u6,     adc_AVR,   0x2FF2, 0x03eb, 0x08000, 0x1000, true,  128, true,  false, 128, 0x03FF },
-    { "atmega32u4",     tar_atmega32u4,     adc_AVR,   0x2FF4, 0x03eb, 0x08000, 0x1000, true,  128, true,  false, 128, 0x03FF },
-    { "atmega16u4",     tar_atmega16u4,     adc_AVR,   0x2FF3, 0x03eb, 0x04000, 0x1000, true,  128, true,  false, 128, 0x01FF },
+    { "at90usb1287",    tar_at90usb1287,    adc_AVR,   0x2FFB, 0x03eb, 0x20000, 0x2000, true,  128, true,  false, 128, 0x1000 },
+    { "at90usb1286",    tar_at90usb1286,    adc_AVR,   0x2FFB, 0x03eb, 0x20000, 0x2000, true,  128, true,  false, 128, 0x1000 },
+    { "at90usb1287-4k", tar_at90usb1287_4k, adc_AVR,   0x2FFB, 0x03eb, 0x20000, 0x1000, true,  128, true,  false, 128, 0x1000 },
+    { "at90usb1286-4k", tar_at90usb1286_4k, adc_AVR,   0x2FFB, 0x03eb, 0x20000, 0x1000, true,  128, true,  false, 128, 0x1000 },
+    { "at90usb647",     tar_at90usb647,     adc_AVR,   0x2FF9, 0x03eb, 0x10000, 0x2000, true,  128, true,  false, 128, 0x0800 },
+    { "at90usb646",     tar_at90usb646,     adc_AVR,   0x2FF9, 0x03eb, 0x10000, 0x2000, true,  128, true,  false, 128, 0x0800 },
+    { "at90usb162",     tar_at90usb162,     adc_AVR,   0x2FFA, 0x03eb, 0x04000, 0x1000, true,  128, true,  false, 128, 0x0200 },
+    { "at90usb82",      tar_at90usb82,      adc_AVR,   0x2FF7, 0x03eb, 0x02000, 0x1000, true,  128, true,  false, 128, 0x0200 },
+    { "atmega32u6",     tar_atmega32u6,     adc_AVR,   0x2FF2, 0x03eb, 0x08000, 0x1000, true,  128, true,  false, 128, 0x0400 },
+    { "atmega32u4",     tar_atmega32u4,     adc_AVR,   0x2FF4, 0x03eb, 0x08000, 0x1000, true,  128, true,  false, 128, 0x0400 },
+    { "atmega16u4",     tar_atmega16u4,     adc_AVR,   0x2FF3, 0x03eb, 0x04000, 0x1000, true,  128, true,  false, 128, 0x0200 },
     { "at32uc3a0128",   tar_at32uc3a0128,   adc_AVR32, 0x2FF8, 0x03eb, 0x20000, 0x2000, false, 512, false, true,  0,   0      },
     { "at32uc3a1128",   tar_at32uc3a1128,   adc_AVR32, 0x2FF8, 0x03eb, 0x20000, 0x2000, false, 512, false, true,  0,   0      },
     { "at32uc3a0256",   tar_at32uc3a0256,   adc_AVR32, 0x2FF8, 0x03eb, 0x40000, 0x2000, false, 512, false, true,  0,   0      },
@@ -257,24 +257,21 @@ static int32_t assign_target( struct programmer_arguments *args,
             args->eeprom_page_size = map->eeprom_page_size;
             args->initial_abort = map->initial_abort;
             args->honor_interfaceclass = map->honor_interfaceclass;
-            args->flash_address_top = map->memory_size;
-            args->flash_address_bottom = 0;
+            args->memory_address_top = map->memory_size - 1;
+            args->memory_address_bottom = 0;
+            args->flash_address_top = args->memory_address_top;
+            args->flash_address_bottom = args->memory_address_bottom;
             args->bootloader_bottom = 0;
             args->bootloader_top = 0;
             args->bootloader_at_highmem = map->bootloader_at_highmem;
             if( true == map->bootloader_at_highmem ) {
-                args->bootloader_bottom = args->flash_address_top - map->bootloader_size;
+                args->bootloader_bottom = map->memory_size - map->bootloader_size;
                 args->bootloader_top = args->flash_address_top;
-                args->flash_address_top -= (map->bootloader_size + 1);
+                args->flash_address_top -= map->bootloader_size;
             } else {
                 args->bootloader_bottom = args->flash_address_bottom;
-                args->bootloader_top += map->bootloader_size;
+                args->bootloader_top += map->bootloader_size - 1;
                 args->flash_address_bottom += map->bootloader_size;
-            }
-            if( 0 < map->eeprom_memory_size ) {
-                args->top_eeprom_memory_address = map->eeprom_memory_size - 1;
-            } else {
-                args->top_eeprom_memory_address = 0;
             }
             switch( args->device_type ) {
                 case adc_8051:
@@ -557,42 +554,42 @@ static void print_args( struct programmer_arguments *args )
         }
     }
 
-    printf( "     target: %s\n", target );
-    printf( "    chip_id: 0x%04x\n", args->chip_id );
-    printf( "  vendor_id: 0x%04x\n", args->vendor_id );
-    printf( "    command: %s\n", command );
-    printf( "      quiet: %s\n", (0 == args->quiet) ? "false" : "true" );
-    printf( "      debug: %d\n", debug );
-    printf( "device_type: %s\n", args->device_type_string );
-    printf( "------ command specific below ------\n" );
+    fprintf( stderr, "     target: %s\n", target );
+    fprintf( stderr, "    chip_id: 0x%04x\n", args->chip_id );
+    fprintf( stderr, "  vendor_id: 0x%04x\n", args->vendor_id );
+    fprintf( stderr, "    command: %s\n", command );
+    fprintf( stderr, "      quiet: %s\n", (0 == args->quiet) ? "false" : "true" );
+    fprintf( stderr, "      debug: %d\n", debug );
+    fprintf( stderr, "device_type: %s\n", args->device_type_string );
+    fprintf( stderr, "------ command specific below ------\n" );
 
     switch( args->command ) {
         case com_configure:
-            printf( "       name: %d\n", args->com_configure_data.name );
-            printf( "   validate: %s\n",
-                    (args->com_configure_data.suppress_validation) ?
+            fprintf( stderr, "       name: %d\n", args->com_configure_data.name );
+            fprintf( stderr, "   validate: %s\n",
+                     (args->com_configure_data.suppress_validation) ?
                         "false" : "true" );
-            printf( "      value: %d\n", args->com_configure_data.value );
+            fprintf( stderr, "      value: %d\n", args->com_configure_data.value );
             break;
         case com_erase:
-            printf( "   validate: %s\n",
-                    (args->com_erase_data.suppress_validation) ?
+            fprintf( stderr, "   validate: %s\n",
+                     (args->com_erase_data.suppress_validation) ?
                         "false" : "true" );
             break;
         case com_flash:
         case com_eflash:
-            printf( "   validate: %s\n",
-                    (args->com_flash_data.suppress_validation) ?
+            fprintf( stderr, "   validate: %s\n",
+                     (args->com_flash_data.suppress_validation) ?
                         "false" : "true" );
-            printf( "   hex file: %s\n", args->com_flash_data.file );
+            fprintf( stderr, "   hex file: %s\n", args->com_flash_data.file );
             break;
         case com_get:
-            printf( "       name: %d\n", args->com_get_data.name );
+            fprintf( stderr, "       name: %d\n", args->com_get_data.name );
             break;
         default:
             break;
     }
-    printf( "\n" );
+    fprintf( stderr, "\n" );
     fflush( stdout );
 }
 

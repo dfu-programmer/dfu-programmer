@@ -1,3 +1,17 @@
+2009-08-13 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
+	* src/arguments.c, src/arguments.h, src/atmel.c,
+	  src/commands.c: Fixed the broken state that the AVR
+	  devices were in due to not selecting the correct memory
+	  page prior to flashing.  Broke apart the
+	  eeprom/flash/user page flashing/dumping into separate
+	  functions so the maintenance will be easier.  Cleaned
+	  up the address ranges so they are consistent across
+	  memory types.  Fixed some debug statements that should
+	  have been going to stderr instead of stdout that made
+	  the output of a dump garbled.  Cleaned up some more
+	  off by 1 errors that were in the dump functionality.
+	  Verified my changes on my AVR32 and AVR boards.
+
 2009-05-31 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
 	* src/atmel.c: Fix a memory address identification bug
 	  that would cause the value 0xff to not be recognized.
