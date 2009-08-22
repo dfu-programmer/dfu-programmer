@@ -43,6 +43,11 @@ Atmel chips with USB support.
 
 %changelog
 
+* Sat Aug 22 2009 Weston Schmidt <weston_schmidt at alumni.purdue.edu> - 0.5.2-1
+- added ability to read from STDIN
+- added ability to configure AVR32 fuses
+- Applied a number of bug fixes
+- Fixed AVR device support
 * Wed Dec 10 2008 Weston Schmidt <weston_schmidt at alumni.purdue.edu> - 0.5.1-1
 - add new flag to surpress bootloader memory checking
 * Wed Dec 03 2008 Weston Schmidt <weston_schmidt at alumni.purdue.edu> - 0.5.0-1

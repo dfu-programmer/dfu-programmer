@@ -1,5 +1,6 @@
 2009-08-22 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
-	* configure.ac, NEWS: Updated to the new 0.5.2 release.
+	* fedora/dfu-programmer.spec.in, configure.ac, NEWS:
+	  Updated to the new 0.5.2 release.
 
 2009-08-13 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
 	* src/arguments.c, src/arguments.h, src/atmel.c,
