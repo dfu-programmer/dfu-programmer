@@ -1,3 +1,8 @@
+Release 0.5.2
+* Added ability to read from STDIN.
+* Added ability to configure AVR32 fuses.
+* Applied a number of bug fixes.
+* Fixed AVR device support.
 Release 0.5.1
 * Applied patch that fixes AVR32 support so that the trampoline code
   can be used.
