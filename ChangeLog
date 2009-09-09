@@ -1,3 +1,9 @@
+2009-09-09 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
+	* src/commands.c: Fix a bug due to the order of the
+	  bootloader suppression and the lower boundary
+	  verification.  Additionally, fixed an off by 1 error
+	  in the flash address verification.
+
 2009-08-22 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
 	* fedora/dfu-programmer.spec.in, configure.ac, NEWS:
 	  Updated to the new 0.5.2 release.

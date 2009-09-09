@@ -260,13 +260,7 @@ static int32_t execute_flash_normal( dfu_device_t *device,
         goto error;
     }
 
-    for( i = 0; i < args->flash_address_bottom; i++ ) {
-        if( -1 != hex_data[i] ) {
-            fprintf( stderr, "Attempted to write to illegal memory address.\n" );
-            goto error;
-        }
-    }
-    for( i = args->bootloader_bottom; i < args->bootloader_top; i++) {
+    for( i = args->bootloader_bottom; i <= args->bootloader_top; i++) {
         if( -1 != hex_data[i] ) {
             if( true == args->suppressbootloader ) {
                 //If we're ignoring the bootloader, don't write to it
@@ -276,6 +270,13 @@ static int32_t execute_flash_normal( dfu_device_t *device,
                 fprintf( stderr, "Use --suppress-bootloader-mem to ignore\n" );
                 goto error;
             }
+        }
+    }
+
+    for( i = 0; i < args->flash_address_bottom; i++ ) {
+        if( -1 != hex_data[i] ) {
+            fprintf( stderr, "Attempted to write to illegal memory address.\n" );
+            goto error;
         }
     }
 
