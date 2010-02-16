@@ -39,3 +39,5 @@ Contributors:
         - identified the off-by-one issue when the bootloader is in upper memory
     - Xavier Leprevost
         - patch to fix an error in the avr32 user flash dump command
+    - Dave Fletcher
+        - patch to enable atmega32u2 chips

@@ -1,3 +1,8 @@
+2010-02-15 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
+	* src/arguments.c, src/arguments.h, dfu-programmer.1,
+	  AUTHORS: Added the patch Dave Fletcher sent to
+	  enable atmega32u2 support.
+
 2009-09-09 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
 	* src/commands.c: Fix a bug due to the order of the
 	  bootloader suppression and the lower boundary
