@@ -18,9 +18,16 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
+#if HAVE_CONFIG_H
+# include <config.h>
+#endif
 #include <stdio.h>
 #include <string.h>
+#ifdef HAVE_LIBUSB_1_0
+#include <libusb.h>
+#else
 #include <usb.h>
+#endif
 
 #include "config.h"
 #include "dfu-device.h"
@@ -31,14 +38,29 @@
 
 
 int debug;
+#ifdef HAVE_LIBUSB_1_0
+libusb_context *usbcontext;
+#endif
 
 int main( int argc, char **argv )
 {
     static const char *progname = PACKAGE;
     int retval = 0;
     dfu_device_t dfu_device;
-    struct usb_device *device = NULL;
     struct programmer_arguments args;
+#ifdef HAVE_LIBUSB_1_0
+    struct libusb_device *device = NULL;
+#else
+    struct usb_device *device = NULL;
+#endif
+
+#ifdef HAVE_LIBUSB_1_0
+    if (libusb_init(&usbcontext)) {
+        fprintf( stderr, "%s: can't init libusb.\n", progname );
+    }
+#else
+    usb_init();
+#endif
 
     memset( &args, 0, sizeof(args) );
     memset( &dfu_device, 0, sizeof(dfu_device) );
@@ -53,10 +75,12 @@ int main( int argc, char **argv )
     }
 
     if( debug >= 200 ) {
+#ifdef HAVE_LIBUSB_1_0
+        libusb_set_debug(usbcontext, debug );
+#else
         usb_set_debug( debug );
+#endif
     }
-
-    usb_init();
 
     device = dfu_device_init( args.vendor_id, args.chip_id, &dfu_device,
                               args.initial_abort,
@@ -78,7 +102,14 @@ int main( int argc, char **argv )
 
 error:
     if( NULL != dfu_device.handle ) {
-        if( 0 != usb_release_interface(dfu_device.handle, dfu_device.interface) ) {
+        int rv;
+
+#ifdef HAVE_LIBUSB_1_0
+        rv = libusb_release_interface( dfu_device.handle, dfu_device.interface );
+#else
+        rv = usb_release_interface( dfu_device.handle, dfu_device.interface );
+#endif
+        if( 0 != rv ) {
             fprintf( stderr, "%s: failed to release interface %d.\n",
                              progname, dfu_device.interface );
             retval = 1;
@@ -86,11 +117,19 @@ error:
     }
 
     if( NULL != dfu_device.handle ) {
+#ifdef HAVE_LIBUSB_1_0
+        libusb_close(dfu_device.handle);
+#else
         if( 0 != usb_close(dfu_device.handle) ) {
             fprintf( stderr, "%s: failed to close the handle.\n", progname );
             retval = 1;
         }
+#endif
     }
+    
+#ifdef HAVE_LIBUSB_1_0
+    libusb_exit(usbcontext);
+#endif
 
     return retval;
 }

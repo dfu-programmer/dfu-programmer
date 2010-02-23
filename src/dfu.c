@@ -18,11 +18,19 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
+#if HAVE_CONFIG_H
+# include <config.h>
+#endif
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <stddef.h>
+#ifdef HAVE_LIBUSB_1_0
+#include <libusb.h>
+#else
 #include <usb.h>
+#endif
 #include <errno.h>
 #include "dfu.h"
 #include "util.h"
@@ -60,19 +68,26 @@
 
 static uint16_t transaction = 0;
 
+#ifdef HAVE_LIBUSB_1_0
+static int32_t dfu_find_interface( struct libusb_device *device,
+                                   const dfu_bool honor_interfaceclass,
+                                   const uint8_t bNumConfigurations);
+#else
 static int32_t dfu_find_interface( const struct usb_device *device,
                                    const dfu_bool honor_interfaceclass );
-static int32_t dfu_make_idle( dfu_device_t *device, const dfu_bool initial_abort );
-static void dfu_msg_response_output( const char *function, const int32_t result );
-
-#if HAVE_CONFIG_H
-# include <config.h>
 #endif
-#undef malloc
-     
-#include <sys/types.h>
-
-void *malloc();
+static int32_t dfu_make_idle( dfu_device_t *device, const dfu_bool initial_abort );
+static int32_t dfu_transfer_out( dfu_device_t *device,
+                                 uint8_t request,
+                                 const int32_t value,
+                                 uint8_t* data,
+                                 const size_t length );
+static int32_t dfu_transfer_in( dfu_device_t *device,
+                                uint8_t request,
+                                const int32_t value,
+                                uint8_t* data,
+                                const size_t length );
+static void dfu_msg_response_output( const char *function, const int32_t result );
 
 /* Allocate an N-byte block of memory from the heap.
  *    If N is zero, allocate a 1-byte block.  */
@@ -106,14 +121,7 @@ int32_t dfu_detach( dfu_device_t *device, const int32_t timeout )
         return -1;
     }
 
-    result = usb_control_msg( device->handle,
-          /* bmRequestType */ USB_ENDPOINT_OUT | USB_TYPE_CLASS | USB_RECIP_INTERFACE,
-          /* bRequest      */ DFU_DETACH,
-          /* wValue        */ timeout,
-          /* wIndex        */ device->interface,
-          /* Data          */ NULL,
-          /* wLength       */ 0,
-                              DFU_TIMEOUT );
+    result = dfu_transfer_out( device, DFU_DETACH, timeout, NULL, 0 );
 
     dfu_msg_response_output( __FUNCTION__, result );
 
@@ -161,14 +169,7 @@ int32_t dfu_download( dfu_device_t *device, const size_t length, uint8_t* data )
         }
     }
 
-    result = usb_control_msg( device->handle,
-          /* bmRequestType */ USB_ENDPOINT_OUT | USB_TYPE_CLASS | USB_RECIP_INTERFACE,
-          /* bRequest      */ DFU_DNLOAD,
-          /* wValue        */ transaction++,
-          /* wIndex        */ device->interface,
-          /* Data          */ (char *) data,
-          /* wLength       */ length,
-                              DFU_TIMEOUT );
+    result = dfu_transfer_out( device, DFU_DNLOAD, transaction++, data, length );
 
     dfu_msg_response_output( __FUNCTION__, result );
 
@@ -203,14 +204,7 @@ int32_t dfu_upload( dfu_device_t *device, const size_t length, uint8_t* data )
         return -2;
     }
 
-    result = usb_control_msg( device->handle,
-          /* bmRequestType */ USB_ENDPOINT_IN | USB_TYPE_CLASS | USB_RECIP_INTERFACE,
-          /* bRequest      */ DFU_UPLOAD,
-          /* wValue        */ transaction++,
-          /* wIndex        */ device->interface,
-          /* Data          */ (char *) data,
-          /* wLength       */ length,
-                              DFU_TIMEOUT );
+    result = dfu_transfer_in( device, DFU_UPLOAD, transaction++, data, length );
 
     dfu_msg_response_output( __FUNCTION__, result );
 
@@ -228,7 +222,7 @@ int32_t dfu_upload( dfu_device_t *device, const size_t length, uint8_t* data )
  */
 int32_t dfu_get_status( dfu_device_t *device, dfu_status_t *status )
 {
-    char buffer[6];
+    uint8_t buffer[6];
     int32_t result;
 
     TRACE( "%s( %p, %p )\n", __FUNCTION__, device, status );
@@ -244,14 +238,7 @@ int32_t dfu_get_status( dfu_device_t *device, dfu_status_t *status )
     status->bState        = STATE_DFU_ERROR;
     status->iString       = 0;
 
-    result = usb_control_msg( device->handle,
-          /* bmRequestType */ USB_ENDPOINT_IN | USB_TYPE_CLASS | USB_RECIP_INTERFACE,
-          /* bRequest      */ DFU_GETSTATUS,
-          /* wValue        */ 0,
-          /* wIndex        */ device->interface,
-          /* Data          */ buffer,
-          /* wLength       */ 6,
-                              DFU_TIMEOUT );
+    result = dfu_transfer_in( device, DFU_GETSTATUS, 0, buffer, sizeof(buffer) );
 
     dfu_msg_response_output( __FUNCTION__, result );
 
@@ -302,14 +289,7 @@ int32_t dfu_clear_status( dfu_device_t *device )
         return -1;
     }
 
-    result = usb_control_msg( device->handle,
-          /* bmRequestType */ USB_ENDPOINT_OUT| USB_TYPE_CLASS | USB_RECIP_INTERFACE,
-          /* bRequest      */ DFU_CLRSTATUS,
-          /* wValue        */ 0,
-          /* wIndex        */ device->interface,
-          /* Data          */ NULL,
-          /* wLength       */ 0,
-                              DFU_TIMEOUT );
+    result = dfu_transfer_out( device, DFU_CLRSTATUS, 0, NULL, 0 );
 
     dfu_msg_response_output( __FUNCTION__, result );
 
@@ -327,7 +307,7 @@ int32_t dfu_clear_status( dfu_device_t *device )
 int32_t dfu_get_state( dfu_device_t *device )
 {
     int32_t result;
-    char buffer[1];
+    uint8_t buffer[1];
 
     TRACE( "%s( %p )\n", __FUNCTION__, device );
 
@@ -336,14 +316,7 @@ int32_t dfu_get_state( dfu_device_t *device )
         return -1;
     }
 
-    result = usb_control_msg( device->handle,
-          /* bmRequestType */ USB_ENDPOINT_IN | USB_TYPE_CLASS | USB_RECIP_INTERFACE,
-          /* bRequest      */ DFU_GETSTATE,
-          /* wValue        */ 0,
-          /* wIndex        */ device->interface,
-          /* Data          */ buffer,
-          /* wLength       */ 1,
-                              DFU_TIMEOUT );
+    result = dfu_transfer_in( device, DFU_GETSTATE, 0, buffer, sizeof(buffer) );
 
     dfu_msg_response_output( __FUNCTION__, result );
 
@@ -375,14 +348,7 @@ int32_t dfu_abort( dfu_device_t *device )
         return -1;
     }
 
-    result = usb_control_msg( device->handle,
-          /* bmRequestType */ USB_ENDPOINT_OUT | USB_TYPE_CLASS | USB_RECIP_INTERFACE,
-          /* bRequest      */ DFU_ABORT,
-          /* wValue        */ 0,
-          /* wIndex        */ device->interface,
-          /* Data          */ NULL,
-          /* wLength       */ 0,
-                              DFU_TIMEOUT );
+    result = dfu_transfer_out( device, DFU_ABORT, 0, NULL, 0 );
 
     dfu_msg_response_output( __FUNCTION__, result );
 
@@ -400,6 +366,95 @@ int32_t dfu_abort( dfu_device_t *device )
  *
  *  return a pointer to the usb_device if found, or NULL otherwise
  */
+#ifdef HAVE_LIBUSB_1_0
+struct libusb_device *dfu_device_init( const uint32_t vendor,
+                                       const uint32_t product,
+                                       dfu_device_t *dfu_device,
+                                       const dfu_bool initial_abort,
+                                       const dfu_bool honor_interfaceclass )
+{
+    libusb_device **list;
+    size_t i,devicecount;
+    extern libusb_context *usbcontext;
+    int32_t retries = 4;
+    
+    TRACE( "%s( %u, %u, %p, %s, %s )\n", __FUNCTION__, vendor, product,
+           dfu_device, ((true == initial_abort) ? "true" : "false"),
+           ((true == honor_interfaceclass) ? "true" : "false") );
+
+    DEBUG( "%s(%08x, %08x)\n",__FUNCTION__, vendor, product );
+
+retry:
+    devicecount = libusb_get_device_list( usbcontext, &list );
+    
+    for( i = 0; i < devicecount; i++ ) {
+        libusb_device *device = list[i];
+        struct libusb_device_descriptor descriptor;
+
+        if( libusb_get_device_descriptor(device, &descriptor) ) {
+             DEBUG( "Failed in libusb_get_device_descriptor\n" );
+             break;
+        }
+        
+        DEBUG( "%2d: 0x%04x, 0x%04x\n", (int) i,
+                descriptor.idVendor, descriptor.idProduct );
+
+        if( (vendor  == descriptor.idVendor) &&
+            (product == descriptor.idProduct) )
+        {
+            int32_t tmp;
+            /* We found a device that looks like it matches...
+             * let's try to find the DFU interface, open the device
+             * and claim it. */
+            tmp = dfu_find_interface( device, honor_interfaceclass,
+                                      descriptor.bNumConfigurations );
+            
+            if( 0 <= tmp ) {    /* The interface is valid. */
+                dfu_device->interface = tmp;
+
+                if( 0 == libusb_open(device, &dfu_device->handle) ) {
+                    DEBUG( "opened interface %d...\n", tmp );
+                    if( 0 == libusb_set_configuration(dfu_device->handle, 1) ) {
+                        DEBUG( "set configuration %d...\n", 1 );
+                        if( 0 == libusb_claim_interface(dfu_device->handle, dfu_device->interface) )
+                        {
+                            DEBUG( "claimed interface %d...\n", dfu_device->interface );
+
+                            switch( dfu_make_idle(dfu_device, initial_abort) )
+                            {
+                                case 0:
+                                    libusb_free_device_list( list, 1 );
+                                    return device;
+
+                                case 1:
+                                    retries--;
+                                    libusb_free_device_list( list, 1 );
+                                    goto retry;
+                            }
+
+                            DEBUG( "Failed to put the device in dfuIDLE mode.\n" );
+                            libusb_release_interface( dfu_device->handle, dfu_device->interface );
+                            retries = 4;
+                        } else {
+                            DEBUG( "Failed to claim the DFU interface.\n" );
+                        }
+                    } else {
+                        DEBUG( "Failed to set configuration.\n" );
+                    }
+
+                    libusb_close(dfu_device->handle);
+                }
+            }
+        }
+    }
+
+    libusb_free_device_list( list, 1 );
+    dfu_device->handle = NULL;
+    dfu_device->interface = 0;
+
+    return NULL;
+}
+#else
 struct usb_device *dfu_device_init( const uint32_t vendor,
                                     const uint32_t product,
                                     dfu_device_t *dfu_device,
@@ -476,6 +531,7 @@ retry:
 
     return NULL;
 }
+#endif
 
 
 /*
@@ -605,13 +661,71 @@ char* dfu_status_to_string( const int32_t status )
  *
  *  returns the interface number if found, < 0 otherwise
  */
+#ifdef HAVE_LIBUSB_1_0
+static int32_t dfu_find_interface( struct libusb_device *device,
+                                   const dfu_bool honor_interfaceclass,
+                                   const uint8_t bNumConfigurations)
+{
+    int32_t c,i,s;
+    
+    TRACE( "%s()\n", __FUNCTION__ );
+
+    /* Loop through all of the configurations */
+    for( c = 0; c < bNumConfigurations; c++ ) {
+        struct libusb_config_descriptor *config;
+
+        if( libusb_get_config_descriptor(device, c, &config) ) {
+            DEBUG( "can't get_config_descriptor: %d\n", c );
+            return -1;
+        }
+        DEBUG( "config %d: maxpower=%d*2 mA\n", c, config->MaxPower );
+
+        /* Loop through all of the interfaces */
+        for( i = 0; i < config->bNumInterfaces; i++ ) {
+            struct libusb_interface interface;
+
+            interface = config->interface[i];
+            DEBUG( "interface %d\n", i );
+
+            /* Loop through all of the settings */
+            for( s = 0; s < interface.num_altsetting; s++ ) {
+                struct libusb_interface_descriptor setting;
+
+                setting = interface.altsetting[s];
+                DEBUG( "setting %d: class:%d, subclass %d, protocol:%d\n", s,
+                                setting.bInterfaceClass, setting.bInterfaceSubClass,
+                                setting.bInterfaceProtocol );
+
+                if( honor_interfaceclass ) {
+                    /* Check if the interface is a DFU interface */
+                    if(    (USB_CLASS_APP_SPECIFIC == setting.bInterfaceClass)
+                        && (DFU_SUBCLASS == setting.bInterfaceSubClass) )
+                    {
+                        DEBUG( "Found DFU Interface: %d\n", setting.bInterfaceNumber );
+                        return setting.bInterfaceNumber;
+                    }
+                } else {
+                    /* If there is a bug in the DFU firmware, return the first
+                     * found interface. */
+                    DEBUG( "Found DFU Interface: %d\n", setting.bInterfaceNumber );
+                    return setting.bInterfaceNumber;
+                }
+            }
+        }
+
+        libusb_free_config_descriptor( config );
+    }
+
+    return -1;
+}
+#else
 static int32_t dfu_find_interface( const struct usb_device *device,
                                    const dfu_bool honor_interfaceclass )
 {
     int32_t c, i;
     struct usb_config_descriptor *config;
     struct usb_interface_descriptor *interface;
-
+    
     /* Loop through all of the configurations */
     for( c = 0; c < device->descriptor.bNumConfigurations; c++ ) {
         config = &(device->config[c]);
@@ -639,7 +753,7 @@ static int32_t dfu_find_interface( const struct usb_device *device,
 
     return -1;
 }
-
+#endif
 
 /*
  *  Gets the device into the dfuIDLE state if possible.
@@ -696,7 +810,11 @@ static int32_t dfu_make_idle( dfu_device_t *device,
             case STATE_APP_DETACH:
             case STATE_DFU_MANIFEST_WAIT_RESET:
                 DEBUG( "Resetting the device\n" );
+#ifdef HAVE_LIBUSB_1_0
+                libusb_reset_device( device->handle );
+#else
                 usb_reset( device->handle );
+#endif
                 return 1;
         }
 
@@ -705,6 +823,61 @@ static int32_t dfu_make_idle( dfu_device_t *device,
 
     DEBUG( "Not able to transition the device into the dfuIDLE state.\n" );
     return -2;
+}
+
+
+static int32_t dfu_transfer_out( dfu_device_t *device,
+                                 uint8_t request,
+                                 const int32_t value,
+                                 uint8_t* data,
+                                 const size_t length )
+{
+#ifdef HAVE_LIBUSB_1_0
+    return libusb_control_transfer( device->handle,
+                /* bmRequestType */ LIBUSB_ENDPOINT_OUT | LIBUSB_REQUEST_TYPE_CLASS | LIBUSB_RECIPIENT_INTERFACE,
+                /* bRequest      */ request,
+                /* wValue        */ value,
+                /* wIndex        */ device->interface,
+                /* Data          */ data,
+                /* wLength       */ length,
+                                    DFU_TIMEOUT );
+#else
+    return usb_control_msg( device->handle,
+                /* bmRequestType */ USB_ENDPOINT_OUT | USB_TYPE_CLASS | USB_RECIP_INTERFACE,
+                /* bRequest      */ request,
+                /* wValue        */ value,
+                /* wIndex        */ device->interface,
+                /* Data          */ (char*) data,
+                /* wLength       */ length,
+                                    DFU_TIMEOUT );
+#endif
+}
+
+static int32_t dfu_transfer_in( dfu_device_t *device,
+                                uint8_t request,
+                                const int32_t value,
+                                uint8_t* data,
+                                const size_t length )
+{
+#ifdef HAVE_LIBUSB_1_0
+    return libusb_control_transfer( device->handle,
+                /* bmRequestType */ LIBUSB_ENDPOINT_IN | LIBUSB_REQUEST_TYPE_CLASS | LIBUSB_RECIPIENT_INTERFACE,
+                /* bRequest      */ request,
+                /* wValue        */ value,
+                /* wIndex        */ device->interface,
+                /* Data          */ data,
+                /* wLength       */ length,
+                                    DFU_TIMEOUT );
+#else
+    return usb_control_msg( device->handle,
+                /* bmRequestType */ USB_ENDPOINT_IN | USB_TYPE_CLASS | USB_RECIP_INTERFACE,
+                /* bRequest      */ request,
+                /* wValue        */ value,
+                /* wIndex        */ device->interface,
+                /* Data          */ (char*) data,
+                /* wLength       */ length,
+                                    DFU_TIMEOUT );
+#endif
 }
 
 

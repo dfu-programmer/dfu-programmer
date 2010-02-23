@@ -1,4 +1,11 @@
 2010-02-15 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
+	* config.h.in, configure.ac, AUTHORS, src/commands.c,
+	  src/dfu.c, src/dfu-device.h, src/dfu.h, src/main.c:
+	  Added the patch Torsten Rottmann sent to enable
+	  libusb 1.0 support, plus I some changes to allow for
+	  switching via a configure file flag.
+
+2010-02-15 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
 	* src/arguments.c, src/arguments.h, dfu-programmer.1,
 	  AUTHORS: Added the patch Dave Fletcher sent to
 	  enable atmega32u2 support.

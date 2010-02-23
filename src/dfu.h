@@ -21,7 +21,14 @@
 #ifndef __DFU_H__
 #define __DFU_H__
 
+#if HAVE_CONFIG_H
+# include <config.h>
+#endif
+#ifdef HAVE_LIBUSB_1_0
+#include <libusb.h>
+#else
 #include <usb.h>
+#endif
 #include <stdint.h>
 #include <stddef.h>
 
@@ -84,11 +91,16 @@ int32_t dfu_clear_status( dfu_device_t *device );
 int32_t dfu_get_state( dfu_device_t *device );
 int32_t dfu_abort( dfu_device_t *device );
 
-struct usb_device *dfu_device_init( const uint32_t vendor,
-                                    const uint32_t product,
-                                    dfu_device_t *device,
-                                    const dfu_bool initial_abort,
-                                    const dfu_bool honor_interfaceclass );
+#ifdef HAVE_LIBUSB_1_0
+struct libusb_device
+#else
+struct usb_device
+#endif
+                     *dfu_device_init( const uint32_t vendor,
+                                       const uint32_t product,
+                                       dfu_device_t *device,
+                                       const dfu_bool initial_abort,
+                                       const dfu_bool honor_interfaceclass );
 
 char* dfu_status_to_string( const int32_t status );
 char* dfu_state_to_string( const int32_t state );
