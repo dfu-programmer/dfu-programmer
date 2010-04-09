@@ -1,3 +1,8 @@
+2010-04-08 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
+	* AUTHORS, src/arguments.c, src/arguments.h
+	  doc/dfu-programmer.1: Added the patch Mitko sent
+	  to enable at32uc3b1512 and at32uc3b0512 chips.
+
 2010-02-15 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
 	* config.h.in, configure.ac, AUTHORS, src/commands.c,
 	  src/dfu.c, src/dfu-device.h, src/dfu.h, src/main.c:

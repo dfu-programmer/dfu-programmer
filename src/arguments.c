@@ -99,6 +99,8 @@ static struct target_mapping_structure target_map[] = {
     { "at32uc3b1256",   tar_at32uc3b1256,   adc_AVR32, 0x2FF6, 0x03eb, 0x40000, 0x2000, false, 512, false, true,  0,   0      },
     { "at32uc3b0256es", tar_at32uc3b0256es, adc_AVR32, 0x2FF6, 0x03eb, 0x40000, 0x2000, false, 512, false, true,  0,   0      },
     { "at32uc3b1256es", tar_at32uc3b1256es, adc_AVR32, 0x2FF6, 0x03eb, 0x40000, 0x2000, false, 512, false, true,  0,   0      },
+    { "at32uc3b0512",   tar_at32uc3b0512,   adc_AVR32, 0x2FF6, 0x03eb, 0x80000, 0x2000, false, 512, false, true,  0,   0      },
+    { "at32uc3b1512",   tar_at32uc3b1512,   adc_AVR32, 0x2FF6, 0x03eb, 0x80000, 0x2000, false, 512, false, true,  0,   0      },
     { NULL }
 };
 
@@ -312,8 +314,8 @@ static int32_t assign_global_options( struct programmer_arguments *args,
             break;
         }
     }
-	
-	/* Find '--suppress-bootloader-mem' if it is here */
+
+    /* Find '--suppress-bootloader-mem' if it is here */
     for( i = 0; i < argc; i++ ) {
         if( 0 == strcmp("--suppress-bootloader-mem", argv[i]) ) {
             *argv[i] = '\0';
@@ -321,7 +323,7 @@ static int32_t assign_global_options( struct programmer_arguments *args,
             break;
         }
     }
-	
+
     /* Find '--suppress-validation' if it is here - even though it is not
      * used by all this is easier. */
     for( i = 0; i < argc; i++ ) {
