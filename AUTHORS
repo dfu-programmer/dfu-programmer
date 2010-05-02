@@ -45,3 +45,5 @@ Contributors:
         - patch to enable libusb 1.0 support
     - Mitko
         - patch to enable at32uc3b1512 and at32uc3b0512 chips
+    - Darren Gibbs
+        - identified dead/bad code around the bootloader overlap checking

@@ -1,3 +1,7 @@
+2010-05-02 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
+	* AUTHORS, src/commands.c: Removed confusing & useless code
+	  that Darren Gibbs found.
+
 2010-04-08 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
 	* AUTHORS, src/arguments.c, src/arguments.h
 	  doc/dfu-programmer.1: Added the patch Mitko sent
