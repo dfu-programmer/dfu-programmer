@@ -42,7 +42,9 @@ Atmel chips with USB support.
 %{_datadir}/hal/fdi/information/20thirdparty/10-dfu-programmer.fdi
 
 %changelog
-
+* Sun Jan 16 2011 Weston Schmidt <weston_schmidt at alumni.purdue.edu> - 0.5.3-1
+- added at32uc3c* support
+- fixed a number of defects
 * Sat Aug 22 2009 Weston Schmidt <weston_schmidt at alumni.purdue.edu> - 0.5.2-1
 - added ability to read from STDIN
 - added ability to configure AVR32 fuses
