@@ -1,3 +1,7 @@
+2009-08-22 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
+	* fedora/dfu-programmer.spec.in, configure.ac, NEWS:
+	  Updated to the new 0.5.3 release.
+
 2011-01-16 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
 	* src/arguments.c, src/arguments.h,
 	  fedora/10-dfu-programmer.fdi,

@@ -3,7 +3,7 @@
 
 AC_PREREQ(2.59)
 #AC_INIT(dfu-programmer, VERSION, BUG-REPORT-ADDRESS)
-AC_INIT([dfu-programmer],[0.5.2])
+AC_INIT([dfu-programmer],[0.5.3])
 AC_CONFIG_AUX_DIR(m4)
 AM_INIT_AUTOMAKE(AC_PACKAGE_NAME, AC_PACKAGE_VERSION)
 AC_CONFIG_SRCDIR([src/atmel.c])
@@ -68,7 +68,7 @@ AC_TYPE_SIZE_T
 # Checks for library functions.
 AC_FUNC_MALLOC
 AC_FUNC_MEMCMP
-AC_CHECK_FUNCS([memset])
+#AC_CHECK_FUNC([memset], :, [AC_CHECK_LIB([libc], [libc])])
 
 AC_CONFIG_FILES(fedora/dfu-programmer.spec Makefile docs/Makefile src/Makefile)
 AC_OUTPUT
