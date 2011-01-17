@@ -1,4 +1,9 @@
 2011-01-16 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
+	* src/arguments.c, src/arguments.h,
+	  fedora/10-dfu-programmer.fdi,
+	  doc/dfu-programmer.1: Added support for at32uc3c chips.
+
+2011-01-16 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
 	* src/commands.c: Apply fix suggested by bug 3017901.  Fix
 	  an off by 1 error for the bootloader size.
 
