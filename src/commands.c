@@ -537,7 +537,7 @@ static int32_t execute_dump_normal( dfu_device_t *device,
     }
 
     if( false == args->bootloader_at_highmem ) {
-        for( i = 0; i < args->bootloader_top; i++ ) {
+        for( i = 0; i <= args->bootloader_top; i++ ) {
             fprintf( stdout, "%c", 0xff );
         }
     }

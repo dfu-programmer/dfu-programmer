@@ -1,5 +1,11 @@
 2011-01-16 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
-	* src/intel_hex.c: Apply fix suggested by bug 3016469.
+	* src/commands.c: Apply fix suggested by bug 3017901.  Fix
+	  an off by 1 error for the bootloader size.
+
+2011-01-16 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
+	* src/intel_hex.c: Apply fix suggested by bug 3016469.  Fix
+	  a sign extension problem during reading in the data to
+	  flash.
 
 2010-05-02 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
 	* AUTHORS, src/commands.c: Removed confusing & useless code
