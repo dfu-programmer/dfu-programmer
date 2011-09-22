@@ -77,6 +77,7 @@ static struct target_mapping_structure target_map[] = {
     { "atmega32u4",     tar_atmega32u4,     adc_AVR,   0x2FF4, 0x03eb, 0x08000, 0x1000, true,  128, true,  false, 128, 0x0400 },
     { "atmega32u2",     tar_atmega32u2,     adc_AVR,   0x2FF0, 0x03eb, 0x08000, 0x1000, true,  128, true, false,  128, 0x0400 },
     { "atmega16u4",     tar_atmega16u4,     adc_AVR,   0x2FF3, 0x03eb, 0x04000, 0x1000, true,  128, true,  false, 128, 0x0200 },
+    { "atmega8u2",      tar_atmega8u2,      adc_AVR,   0x2FEE, 0x03eb, 0x02000, 0x1000, true,  128, true,  false, 128, 0x0200 },
     { "at32uc3a0128",   tar_at32uc3a0128,   adc_AVR32, 0x2FF8, 0x03eb, 0x20000, 0x2000, false, 512, false, true,  0,   0      },
     { "at32uc3a1128",   tar_at32uc3a1128,   adc_AVR32, 0x2FF8, 0x03eb, 0x20000, 0x2000, false, 512, false, true,  0,   0      },
     { "at32uc3a0256",   tar_at32uc3a0256,   adc_AVR32, 0x2FF8, 0x03eb, 0x40000, 0x2000, false, 512, false, true,  0,   0      },
