@@ -49,3 +49,5 @@ Contributors:
         - identified dead/bad code around the bootloader overlap checking
     - Holger Steinhaus
         - patch to enable atmega8u2
+    - Martin Guy
+        - patch to enable automotive AVR32 flashing without a timeout

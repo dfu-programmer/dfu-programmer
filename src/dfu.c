@@ -48,8 +48,10 @@
 #define USB_CLASS_APP_SPECIFIC  0xfe
 #define DFU_SUBCLASS            0x01
 
-/* Wait for 10 seconds before a timeout since erasing/flashing can take some time. */
-#define DFU_TIMEOUT 10000
+/* Wait for 20 seconds before a timeout since erasing/flashing can take some time.
+ * The longest erase cycle is for the AT32UC3A0512-TA automotive part,
+ * which needs a timeout of at least 19 seconds to erase the whole flash. */
+#define DFU_TIMEOUT 20000
 
 /* Time (in ms) for the device to wait for the usb reset after being told to detach
  * before the giving up going into dfu mode. */
