@@ -79,13 +79,17 @@ static int32_t atmel_read_command( dfu_device_t *device,
                                    const uint8_t data0,
                                    const uint8_t data1 )
 {
+    if( NULL == device ) {
+        DEBUG( "invalid arguments.\n" );
+        return -1;
+    }
+
     if( adc_AVR32 == device->type ) {
         //We need to talk to configuration memory.  It comes
         //in two varieties in this chip.  data0 is the command to
         //select it
         //Data1 is the byte of that group we want
         
-    if( NULL != device ) {
         uint8_t command[4] = { 0x06, 0x03, 0x00, data0 };
 
         if( 4 != dfu_download(device, 4, command) ) {
@@ -103,47 +107,48 @@ static int32_t atmel_read_command( dfu_device_t *device,
         return (0xff & buffer[0]);
 
     } else {
+        uint8_t command[3] = { 0x05, 0x00, 0x00 };
+        uint8_t data[1]    = { 0x00 };
+        dfu_status_t status;
 
-       return -1;
-    }
-    } else {
-    uint8_t command[3] = { 0x05, 0x00, 0x00 };
-    uint8_t data[1]    = { 0x00 };
-    dfu_status_t status;
+        command[1] = data0;
+        command[2] = data1;
 
-    command[1] = data0;
-    command[2] = data1;
+        TRACE( "%s( %p, 0x%02x, 0x%02x )\n", __FUNCTION__, device, data0, data1 );
 
-    TRACE( "%s( %p, 0x%02x, 0x%02x )\n", __FUNCTION__, device, data0, data1 );
+        if( 3 != dfu_download(device, 3, command) ) {
+            DEBUG( "dfu_download failed\n" );
+            return -1;
+        }
 
-    if( 3 != dfu_download(device, 3, command) ) {
-        DEBUG( "dfu_download failed\n" );
-        return -1;
-    }
+        if( 0 != dfu_get_status(device, &status) ) {
+            DEBUG( "dfu_get_status failed\n" );
+            return -2;
+        }
 
-    if( 0 != dfu_get_status(device, &status) ) {
-        DEBUG( "dfu_get_status failed\n" );
-        return -2;
-    }
+        if( DFU_STATUS_OK != status.bStatus ) {
+            DEBUG( "status(%s) was not OK.\n",
+                   dfu_status_to_string(status.bStatus) );
+            return -3;
+        }
 
-    if( DFU_STATUS_OK != status.bStatus ) {
-        DEBUG( "status(%s) was not OK.\n",
-               dfu_status_to_string(status.bStatus) );
-        return -3;
-    }
+        if( 1 != dfu_upload(device, 1, data) ) {
+            DEBUG( "dfu_upload failed\n" );
+            return -4;
+        }
 
-    if( 1 != dfu_upload(device, 1, data) ) {
-        DEBUG( "dfu_upload failed\n" );
-        return -4;
-    }
-
-    return (0xff & data[0]);
+        return (0xff & data[0]);
     }
 }
 
 int32_t atmel_read_fuses( dfu_device_t *device,
                            atmel_avr32_fuses_t *info )
 {
+    if( NULL == device ) {
+        DEBUG( "invalid arguments.\n" );
+        return -1;
+    }
+
     if( adc_AVR32 != device->type ) {
        DEBUG( "target does not support fuse operation.\n" );
        fprintf( stderr, "target does not support fuse operation.\n" );
@@ -232,6 +237,11 @@ int32_t atmel_read_config( dfu_device_t *device,
     int32_t i = 0;
 
     TRACE( "%s( %p, %p )\n", __FUNCTION__, device, info );
+
+    if( NULL == device ) {
+        DEBUG( "invalid arguments.\n" );
+        return -1;
+    }
 
     for( i = 0; i < sizeof(data)/sizeof(atmel_read_config_t); i++ ) {
         atmel_read_config_t *row = (atmel_read_config_t*) &data[i];
@@ -322,6 +332,11 @@ int32_t atmel_set_fuse( dfu_device_t *device,
     int32_t address;
     int8_t numbytes;
     int8_t i;
+
+    if( NULL == device ) {
+        DEBUG( "invalid arguments.\n" );
+        return -1;
+    }
 
     if( adc_AVR32 != device->type ) {
        DEBUG( "target does not support fuse operation.\n" );
@@ -941,7 +956,7 @@ int32_t atmel_flash( dfu_device_t *device,
     TRACE( "%s( %p, %p, %u, %u, %u, %s )\n", __FUNCTION__, device, buffer,
            start, end, page_size, ((true == eeprom) ? "true" : "false") );
 
-    if( (NULL == buffer) || ((end - start) <= 0) ) {
+    if( (NULL == device) || (NULL == buffer) || ((end - start) <= 0) ) {
         DEBUG( "invalid arguments.\n" );
         return -1;
     }
@@ -1153,7 +1168,7 @@ static int32_t atmel_flash_block( dfu_device_t *device,
     TRACE( "%s( %p, %p, %u, %u, %s )\n", __FUNCTION__, device, buffer,
            base_address, length, ((true == eeprom) ? "true" : "false") );
 
-    if( (NULL == buffer) || (ATMEL_MAX_TRANSFER_SIZE < length) ) {
+    if( (NULL == device) || (NULL == buffer) || (ATMEL_MAX_TRANSFER_SIZE < length) ) {
         DEBUG( "invalid arguments.\n" );
         return -1;
     }
