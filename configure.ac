@@ -27,7 +27,7 @@ if test "$disable_libusb_1_0" = "no"; then
   PKG_CHECK_MODULES(LIBUSB_1_0, [ libusb-1.0 >= 1.0.0 ], have_libusb_1_0=yes, have_libusb_1_0=no)
   if test "$have_libusb_1_0" = "yes"; then
     CFLAGS="$CFLAGS $LIBUSB_1_0_CFLAGS"
-    LDFLAGS="$LDFLAGS $LIBUSB_1_0_LIBS"
+    LIBS="$LIBS $LIBUSB_1_0_LIBS"
     HAVE_USB=yes
   fi
 fi
@@ -37,7 +37,7 @@ if test "$have_libusb_1_0" = "no"; then
   dnl libusb >= 0.1.8 is required, as we need usb_interrupt_read()
   AC_CHECK_HEADER(usb.h,
                   AC_CHECK_LIB(usb, usb_interrupt_read, 
-                               [LDFLAGS="$LDFLAGS -lusb"
+                               [LIBS="$LIBS -lusb"
                                 HAVE_USB=yes]))
 fi
 
