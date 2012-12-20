@@ -70,7 +70,7 @@ static int32_t execute_flash_eeprom( dfu_device_t *device,
     buffer = (uint8_t *) malloc( args->eeprom_memory_size );
     if( NULL == buffer ) {
         fprintf( stderr, "Request for %lu bytes of memory failed.\n",
-                 args->eeprom_memory_size );
+                 (unsigned long) args->eeprom_memory_size );
         goto error;
     }
     memset( buffer, 0, args->eeprom_memory_size );
@@ -154,7 +154,7 @@ static int32_t execute_flash_user_page( dfu_device_t *device,
     buffer = (uint8_t *) malloc( args->flash_page_size );
     if( NULL == buffer ) {
         fprintf( stderr, "Request for %lu bytes of memory failed.\n",
-                 args->flash_page_size );
+                 (unsigned long) args->flash_page_size );
         goto error;
     }
     memset( buffer, 0, args->flash_page_size );
@@ -521,7 +521,7 @@ static int32_t execute_dump_normal( dfu_device_t *device,
     buffer = (uint8_t *) malloc( memory_size );
     if( NULL == buffer ) {
         fprintf( stderr, "Request for %lu bytes of memory failed.\n",
-                 memory_size );
+                 (unsigned long) memory_size );
         goto error;
     }
 
@@ -532,7 +532,7 @@ static int32_t execute_dump_normal( dfu_device_t *device,
                                   memory_size, false, false) )
     {
         fprintf( stderr, "Request for %lu bytes of memory failed.\n",
-                 memory_size );
+                 (unsigned long) memory_size );
         return -1;
     }
 
@@ -568,7 +568,7 @@ static int32_t execute_dump_eeprom( dfu_device_t *device,
     buffer = (uint8_t *) malloc( args->eeprom_memory_size );
     if( NULL == buffer ) {
         fprintf( stderr, "Request for %lu bytes of memory failed.\n",
-                 memory_size );
+                 (unsigned long) memory_size );
         goto error;
     }
 
@@ -579,7 +579,7 @@ static int32_t execute_dump_eeprom( dfu_device_t *device,
                                   memory_size, true, false) )
     {
         fprintf( stderr, "Request for %lu bytes of memory failed.\n",
-                 memory_size );
+                 (unsigned long) memory_size );
         return -1;
     }
 
@@ -608,7 +608,7 @@ static int32_t execute_dump_user_page( dfu_device_t *device,
     buffer = (uint8_t *) malloc( page_size );
     if( NULL == buffer ) {
         fprintf( stderr, "Request for %lu bytes of memory failed.\n",
-                 page_size );
+                 (unsigned long) page_size );
         goto error;
     }
 
@@ -619,7 +619,7 @@ static int32_t execute_dump_user_page( dfu_device_t *device,
                                   page_size, false, true) )
     {
         fprintf( stderr, "Request for %lu bytes of memory failed.\n",
-                 page_size );
+                 (unsigned long) page_size );
         return -1;
     }
 
