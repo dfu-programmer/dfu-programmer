@@ -51,3 +51,10 @@ Contributors:
         - patch to enable atmega8u2
     - Martin Guy
         - patch to enable automotive AVR32 flashing without a timeout
+    - Simon Large
+        - Fix atmel_reset function
+        - Get rid of compiler warnings around fprintf statements
+    - Johannes Carlsson
+        - patch to fix use of libusb in configure.ac
+    - Grégory S.
+        - identified too-late check for null pointer
