@@ -731,7 +731,10 @@ done:
 
 
 
-/* Not really sure how to test this one. */
+/* Reset the processor.
+ * This is done internally by forcing a watchdog reset.
+ * Depending on fuse settings this may go straight back into the bootloader.
+ */
 int32_t atmel_reset( dfu_device_t *device )
 {
     uint8_t command[3] = { 0x04, 0x03, 0x00 };
@@ -743,16 +746,18 @@ int32_t atmel_reset( dfu_device_t *device )
         return -1;
     }
 
-    /*
     if( 0 != dfu_download(device, 0, NULL) ) {
+        DEBUG( "dfu_download failed.\n" );
         return -2;
     }
-    */
 
     return 0;
 }
 
 
+/* Start the app by jumping to the start of the app area.
+ * This does not do a true device reset.
+ */
 int32_t atmel_start_app( dfu_device_t *device )
 {
     uint8_t command[5] = { 0x04, 0x03, 0x01, 0x00, 0x00 };
