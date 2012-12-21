@@ -17,15 +17,19 @@ AC_PROG_CC
 # Checks for libusb - from sane-backends configuration
 
 dnl Enable libusb-1.0, if available
+disable_libusb_1_0=no
 AC_ARG_ENABLE(libusb_1_0,
-	AC_HELP_STRING([--disable-libusb_1_0], [disable libusb-1.0 support if available]),
-	[disable_libusb_1_0=$enableval], [disable_libusb_1_0=no])
+    AC_HELP_STRING([--disable-libusb_1_0], [disable libusb-1.0 support even if available]),
+    [ if test "x$enableval" = "xno"; then disable_libusb_1_0=yes; fi ], [])
 
 dnl If libusb-1.0 is enabled and available, prefer that to the old libusb
 have_libusb_1_0=no
 if test "$disable_libusb_1_0" = "no"; then
-  PKG_CHECK_MODULES(LIBUSB_1_0, [ libusb-1.0 >= 1.0.0 ], have_libusb_1_0=yes, have_libusb_1_0=no)
+  ifdef([PKG_CHECK_MODULES],
+        [PKG_CHECK_MODULES(LIBUSB_1_0, [ libusb-1.0 >= 1.0.0 ], have_libusb_1_0=yes, have_libusb_1_0=no)],
+        [have_libusb_1_0=yes])
   if test "$have_libusb_1_0" = "yes"; then
+    AS_ECHO("using libusb_1.0");
     CFLAGS="$CFLAGS $LIBUSB_1_0_CFLAGS"
     LIBS="$LIBS $LIBUSB_1_0_LIBS"
     HAVE_USB=yes
@@ -35,6 +39,7 @@ fi
 if test "$have_libusb_1_0" = "no"; then
   dnl Fallback to the old libusb
   dnl libusb >= 0.1.8 is required, as we need usb_interrupt_read()
+  AS_ECHO("using libusb");
   AC_CHECK_HEADER(usb.h,
                   AC_CHECK_LIB(usb, usb_interrupt_read, 
                                [LIBS="$LIBS -lusb"

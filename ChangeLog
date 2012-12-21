@@ -1,3 +1,8 @@
+2012-12-21 Simon Large <simon@skirridsystems.co.uk>
+	* configure.ac: Correct the sense of the --disable-libusb_1_0
+      switch. If PKG_CHECK_MODULES is not defined, assume libusb 1.0
+      is available. Bug 3597941.
+
 2012-12-20 Simon Large <simon@skirridsystems.co.uk>
 	* src/atmel.c: Test a pointer for NULL before using it.
 	  One instance was suggested in bug 3464910 and several
