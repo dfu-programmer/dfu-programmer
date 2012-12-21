@@ -14,15 +14,63 @@ Currently Supported Chips
 =========================
 8051 based:
   at89c51snd1c
+  at89c51snd2c
   at89c5130
   at89c5131
   at89c5132
 
-AVR based:
+AVR8 based:
   at90usb1287
   at90usb1286
   at90usb647
   at90usb646
+  at90usb162
+  at90usb82
+  atmega32u6
+  atmega32u4
+  atmega32u2
+  atmega16u4
+
+AVR32 based:
+  at32uc3a0128
+  at32uc3a1128
+  at32uc3a0256
+  at32uc3a1256
+  at32uc3a0512
+  at32uc3a1512
+  at32uc3a0512es
+  at32uc3a1512es
+  at32uc3a364
+  at32uc3a364s
+  at32uc3a3128
+  at32uc3a3128s
+  at32uc3a3256
+  at32uc3a3256s
+
+  at32uc3b064
+  at32uc3b164
+  at32uc3b0128
+  at32uc3b1128
+  at32uc3b0256
+  at32uc3b1256
+  at32uc3b0256es
+  at32uc3b1256es
+  at32uc3b0512
+  at32uc3b1512
+
+  at32uc3c064
+  at32uc3c0128
+  at32uc3c0256
+  at32uc3c0512
+  at32uc3c164
+  at32uc3c1128
+  at32uc3c1256
+  at32uc3c1512
+  at32uc3c264
+  at32uc3c2128
+  at32uc3c2256
+  at32uc3c2512
+
 
 Simple install procedure
 ========================
