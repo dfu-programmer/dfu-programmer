@@ -57,5 +57,5 @@ Contributors:
         - Fix build system for selecting libusb-1.0
     - Johannes Carlsson
         - patch to fix use of libusb in configure.ac
-    - Grégory S.
+    - GrÃ©gory S.
         - identified too-late check for null pointer
