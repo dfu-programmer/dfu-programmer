@@ -1,4 +1,7 @@
 2012-12-21 Simon Large
+	* src/arguments.c arguments.h: Add support for atmega16u2
+
+2012-12-21 Simon Large
 	* configure.ac: Correct the sense of the --disable-libusb_1_0
       switch. If PKG_CHECK_MODULES is not defined, assume libusb 1.0
       is available. Bug 3597941.

@@ -56,15 +56,26 @@ struct target_mapping_structure {
  * space needed by the bootloader.  The size of the bootloader is set
  * by BOOTSZ0/BOOTSZ1 fuse bits; here we assume the bootloader is 4kb or 8kb.
  * The window used for the bootloader is at the top of the of memory.
+ *
+ * For at89c5130/1 the bootloader is outside the normal flash area.
+ * Which is why the boot size is marked as 0 bytes.
+ *
+ * VID and PID are the USB identifiers returned by the DFU bootloader.
+ * They are defined by Atmel's bootloader code, and are not in the chip datasheet.
+ * An incomplete list can be found the the various DFU bootloader docs.
+ * If you plug the device in, lsusb or the Windows device manager can tell you
+ * the VID and PID values.
  */
 
 /* ----- target specific structures ----------------------------------------- */
 static struct target_mapping_structure target_map[] = {
+    // Name             ID (arguments.h)    DevType    PID     VID     MemSize  BootSz  BootHi FPage Abort IF     EPage ESize
     { "at89c51snd1c",   tar_at89c51snd1c,   adc_8051,  0x2FFF, 0x03eb, 0x10000, 0x1000, true,  128, false, true,  0,   0      },
     { "at89c51snd2c",   tar_at89c51snd2c,   adc_8051,  0x2FFF, 0x03eb, 0x10000, 0x1000, true,  128, false, true,  0,   0      },
-    { "at89c5130",      tar_at89c5130,      adc_8051,  0x2FFD, 0x03eb, 0x04000, 0x0000, true,  128, false, true,  128, 0x0400 },    /* The bootloader is out of the normal flash. */
-    { "at89c5131",      tar_at89c5131,      adc_8051,  0x2FFD, 0x03eb, 0x08000, 0x0000, true,  128, false, true,  128, 0x0400 },    /* The bootloader is out of the normal flash. */
+    { "at89c5130",      tar_at89c5130,      adc_8051,  0x2FFD, 0x03eb, 0x04000, 0x0000, true,  128, false, true,  128, 0x0400 },
+    { "at89c5131",      tar_at89c5131,      adc_8051,  0x2FFD, 0x03eb, 0x08000, 0x0000, true,  128, false, true,  128, 0x0400 },
     { "at89c5132",      tar_at89c5132,      adc_8051,  0x2FFF, 0x03eb, 0x10000, 0x0C00, true,  128, false, true,  0,   0      },
+    // Name             ID (arguments.h)    DevType    PID     VID     MemSize  BootSz  BootHi FPage Abort IF     EPage ESize
     { "at90usb1287",    tar_at90usb1287,    adc_AVR,   0x2FFB, 0x03eb, 0x20000, 0x2000, true,  128, true,  false, 128, 0x1000 },
     { "at90usb1286",    tar_at90usb1286,    adc_AVR,   0x2FFB, 0x03eb, 0x20000, 0x2000, true,  128, true,  false, 128, 0x1000 },
     { "at90usb1287-4k", tar_at90usb1287_4k, adc_AVR,   0x2FFB, 0x03eb, 0x20000, 0x1000, true,  128, true,  false, 128, 0x1000 },
@@ -75,9 +86,11 @@ static struct target_mapping_structure target_map[] = {
     { "at90usb82",      tar_at90usb82,      adc_AVR,   0x2FF7, 0x03eb, 0x02000, 0x1000, true,  128, true,  false, 128, 0x0200 },
     { "atmega32u6",     tar_atmega32u6,     adc_AVR,   0x2FF2, 0x03eb, 0x08000, 0x1000, true,  128, true,  false, 128, 0x0400 },
     { "atmega32u4",     tar_atmega32u4,     adc_AVR,   0x2FF4, 0x03eb, 0x08000, 0x1000, true,  128, true,  false, 128, 0x0400 },
-    { "atmega32u2",     tar_atmega32u2,     adc_AVR,   0x2FF0, 0x03eb, 0x08000, 0x1000, true,  128, true, false,  128, 0x0400 },
+    { "atmega32u2",     tar_atmega32u2,     adc_AVR,   0x2FF0, 0x03eb, 0x08000, 0x1000, true,  128, true,  false, 128, 0x0400 },
     { "atmega16u4",     tar_atmega16u4,     adc_AVR,   0x2FF3, 0x03eb, 0x04000, 0x1000, true,  128, true,  false, 128, 0x0200 },
+    { "atmega16u2",     tar_atmega16u2,     adc_AVR,   0x2FEF, 0x03eb, 0x04000, 0x1000, true,  128, true,  false, 128, 0x0200 },
     { "atmega8u2",      tar_atmega8u2,      adc_AVR,   0x2FEE, 0x03eb, 0x02000, 0x1000, true,  128, true,  false, 128, 0x0200 },
+    // Name             ID (arguments.h)    DevType    PID     VID     MemSize  BootSz  BootHi FPage Abort IF     EPage ESize
     { "at32uc3a0128",   tar_at32uc3a0128,   adc_AVR32, 0x2FF8, 0x03eb, 0x20000, 0x2000, false, 512, false, true,  0,   0      },
     { "at32uc3a1128",   tar_at32uc3a1128,   adc_AVR32, 0x2FF8, 0x03eb, 0x20000, 0x2000, false, 512, false, true,  0,   0      },
     { "at32uc3a0256",   tar_at32uc3a0256,   adc_AVR32, 0x2FF8, 0x03eb, 0x40000, 0x2000, false, 512, false, true,  0,   0      },
@@ -92,6 +105,7 @@ static struct target_mapping_structure target_map[] = {
     { "at32uc3a3128s",  tar_at32uc3a3128s,  adc_AVR32, 0x2FF1, 0x03eb, 0x20000, 0x2000, false, 512, false, true,  0,   0      },
     { "at32uc3a3256",   tar_at32uc3a3256,   adc_AVR32, 0x2FF1, 0x03eb, 0x40000, 0x2000, false, 512, false, true,  0,   0      },
     { "at32uc3a3256s",  tar_at32uc3a3256s,  adc_AVR32, 0x2FF1, 0x03eb, 0x40000, 0x2000, false, 512, false, true,  0,   0      },
+    // Name             ID (arguments.h)    DevType    PID     VID     MemSize  BootSz  BootHi FPage Abort IF     EPage ESize
     { "at32uc3b064",    tar_at32uc3b064,    adc_AVR32, 0x2FF6, 0x03eb, 0x10000, 0x2000, false, 512, false, true,  0,   0      },
     { "at32uc3b164",    tar_at32uc3b164,    adc_AVR32, 0x2FF6, 0x03eb, 0x10000, 0x2000, false, 512, false, true,  0,   0      },
     { "at32uc3b0128",   tar_at32uc3b0128,   adc_AVR32, 0x2FF6, 0x03eb, 0x20000, 0x2000, false, 512, false, true,  0,   0      },
@@ -102,6 +116,7 @@ static struct target_mapping_structure target_map[] = {
     { "at32uc3b1256es", tar_at32uc3b1256es, adc_AVR32, 0x2FF6, 0x03eb, 0x40000, 0x2000, false, 512, false, true,  0,   0      },
     { "at32uc3b0512",   tar_at32uc3b0512,   adc_AVR32, 0x2FF6, 0x03eb, 0x80000, 0x2000, false, 512, false, true,  0,   0      },
     { "at32uc3b1512",   tar_at32uc3b1512,   adc_AVR32, 0x2FF6, 0x03eb, 0x80000, 0x2000, false, 512, false, true,  0,   0      },
+    // Name             ID (arguments.h)    DevType    PID     VID     MemSize  BootSz  BootHi FPage Abort IF     EPage ESize
     { "at32uc3c064",    tar_at32uc3c064,    adc_AVR32, 0x2FEB, 0x03eb, 0x10000, 0x2000, false, 512, false, true,  0,   0      },
     { "at32uc3c0128",   tar_at32uc3c0128,   adc_AVR32, 0x2FEB, 0x03eb, 0x20000, 0x2000, false, 512, false, true,  0,   0      },
     { "at32uc3c0256",   tar_at32uc3c0256,   adc_AVR32, 0x2FEB, 0x03eb, 0x40000, 0x2000, false, 512, false, true,  0,   0      },

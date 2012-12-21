@@ -30,6 +30,7 @@ AVR8 based:
   atmega32u4
   atmega32u2
   atmega16u4
+  atmega16u2
 
 AVR32 based:
   at32uc3a0128
