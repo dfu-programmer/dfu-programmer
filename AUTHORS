@@ -56,6 +56,7 @@ Contributors:
         - Get rid of compiler warnings around fprintf statements
         - Fix build system for selecting libusb-1.0
         - atmega16u2 support
+        - better support for Windows users
     - Johannes Carlsson
         - patch to fix use of libusb in configure.ac
     - Grégory S.

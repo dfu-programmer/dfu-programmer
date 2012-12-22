@@ -1,3 +1,8 @@
+Release 0.5.5
+* Added support for atmega16u2
+* Fixed operation of reset command
+* More reliable autoconf operation
+* Better support for Windows users
 Release 0.5.4
 * Added support for a number of chips (at32uc3c series, atmega32u2,
   at32uc3b1512, at32uc3b0512 and atmega8u2).
