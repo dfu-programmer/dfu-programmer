@@ -111,15 +111,18 @@ Build procedure for Windows
   The windows build uses the libusb-win32 library, which is a
   port of libusb 0.1. For convenience these files are included
   with this distribution, located in the windows sub-directory.
-  A windows-specific configure script passes the appropriate
-  flags to the auto-generated ./configure.
+  You need to copy these files to your MinGW install directory
+  if they are not already there:
+
+    windows/usb.h -> {path-to-mingw}/include/usb.h
+    windows/libusb.a -> {path-to-mingw}/lib/libusb.a
 
   Open the MinGW shell window and change to the dfu-programmer folder.
   Note that C:\dir is accessed in MinGW using the path /c/dir
 
   $ ./bootstrap.sh
 
-  $ ./configwin.sh
+  $ ./configure --disable-libusb_1_0
 
   $ make
 
