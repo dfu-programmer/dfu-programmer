@@ -1,3 +1,8 @@
+2012-12-22 Simon Large
+    * windows configwin.sh README:
+      Include the libusb-win32 1.2.2 lib and header files
+      which go with the Atmel-compiled 1.2.2 driver.
+
 2012-12-21 Simon Large
     * src/arguments.c arguments.h: Add support for atmega16u2
 
