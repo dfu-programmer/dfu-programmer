@@ -73,8 +73,8 @@ AVR32 based:
   at32uc3c2512
 
 
-Simple install procedure
-========================
+Simple install procedure for Unix/Linux/MAC
+===========================================
 
   % tar -xzf dfu-programmer-<version>.tar.gz    # unpack the sources
   % cd dfu-programmer                           # change to the top-level
@@ -91,9 +91,43 @@ Simple install procedure
     using the --prefix= option to the ./configure command.  See
     % ./configure --help for more details. ]
 
-  % make                                        # build dfu-programmer
+  [ By default the build process will use libusb-1.0 if available.
+    It tries to auto-discover the library, falling back to the older
+    libusb if libusb-1.0 is not available. This process is not entirely
+    reliable and may decide that libusb-1.0 is available when in fact
+    it is not. You can select libusb using --disable-libusb_1_0. ]
+
+    % make                                        # build dfu-programmer
   [ Become root if necessary ]
   % make install                                # install dfu-programmer
+
+Build procedure for Windows
+===========================
+
+  Building Windows apps from source is never quite as simple ...
+  Firstly you need to have MinGW and MSys with developer tools.
+  Get them from http://sourceforge.net/projects/mingw/files/
+
+  Secondly you need libusb-win32 which is a windows port of libusb 0.1
+  Get it from http://sourceforge.net/projects/libusb-win32/files/
+
+  You need to copy 2 files from libusb-win32 into your MinGW installation,
+  noting that the include file is renamed:
+
+  > copy {path-to-libusb-win32}/include/lusb0_usb.h {path-to-mingw}/include/usb.h
+  > copy {path-to-libusb-win32}/lib/libusb.a {path-to-mingw}/lib/libusb.a
+
+  Open the MinGW shell window and change to the dfu-programmer folder.
+  Note that C:\dir is accessed in MinGW using the path /c/dir
+
+  $ ./bootstrap.sh
+
+  $ ./configure --disable-libusb_1_0
+
+  $ make
+
+  The executable will be built in the dfu-programmer/src folder.
+
 
 Building RPM Binary Packages
 ============================
