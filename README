@@ -80,7 +80,7 @@ Simple install procedure for Unix/Linux/MAC
   % cd dfu-programmer                           # change to the top-level
                                                 # directory
 
-  [ If the source was checked-out from  CVS, run the following command ]
+  [ If the source was checked-out from SVN, run the following command ]
   % ./bootstrap.sh                              # regenerate base config
                                                 # files
   
@@ -120,6 +120,7 @@ Build procedure for Windows
   Open the MinGW shell window and change to the dfu-programmer folder.
   Note that C:\dir is accessed in MinGW using the path /c/dir
 
+  [ If the source was checked-out from SVN, run the following command ]
   $ ./bootstrap.sh
 
   $ ./configure --disable-libusb_1_0
