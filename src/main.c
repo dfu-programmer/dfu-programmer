@@ -109,7 +109,12 @@ error:
 #else
         rv = usb_release_interface( dfu_device.handle, dfu_device.interface );
 #endif
-        if( 0 != rv ) {
+        /* The RESET command sometimes causes the usb_release_interface command to fail.
+           It is not obvious why this happens but it may be a glitch due to the hardware
+           reset in the attached device. In any event, since reset causes a USB detach
+           this should not matter, so there is no point in raising an alarm.
+        */
+        if( 0 != rv && com_reset != args.command ) {
             fprintf( stderr, "%s: failed to release interface %d.\n",
                              progname, dfu_device.interface );
             retval = 1;
