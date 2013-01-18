@@ -237,8 +237,8 @@ static void usage()
     map = target_map;
 
     fprintf( stderr, PACKAGE_STRING "\n");
-    fprintf( stderr, "Usage: dfu-programmer target command [command-options] "
-                     "[global-options] [file|data]\n" );
+    fprintf( stderr, "Usage: dfu-programmer target command [options] "
+                     "[global-options] [file|data]\n\n" );
     fprintf( stderr, "targets:\n" );
     while( 0 != *((int32_t *) map) ) {
         if( 0 == col ) {
@@ -251,43 +251,38 @@ static void usage()
         }
         map++;
     }
-    if( 0 != col ) {
-        fprintf( stderr, "\n" );
-    }
+    fprintf( stderr, (0 == col) ? "\n" : "\n\n" );
 
-    fprintf( stderr, "global-options: --quiet, --debug level\n" );
+    fprintf( stderr, "global-options:\n"
+                     "        --quiet\n"
+                     "        --debug level    (level is an integer specifying level of detail)\n"
+                     "        Global options can be used with any command and must come\n"
+                     "        after the command and before any file or data value\n\n" );
     fprintf( stderr, "commands:\n" );
     fprintf( stderr, "        configure {BSB|SBV|SSB|EB|HSB} "
-                     "[--suppress-validation] [global-options] data\n" );
-    fprintf( stderr, "        dump "
-                     "[global-options]\n" );
-    fprintf( stderr, "        dump-eeprom "
-                     "[global-options]\n" );
-    fprintf( stderr, "        dump-user "
-                     "[global-options]\n" );
-    fprintf( stderr, "        erase "
-                     "[--suppress-validation] [global-options]\n" );
+                     "[--suppress-validation] data\n" );
+    fprintf( stderr, "        dump\n" );
+    fprintf( stderr, "        dump-eeprom\n" );
+    fprintf( stderr, "        dump-user\n" );
+    fprintf( stderr, "        erase [--suppress-validation]\n" );
     fprintf( stderr, "        flash "
-                     "[--suppress-validation] [--suppress-bootloader-mem] [global-options] {file|STDIN}\n" );
+                     "[--suppress-validation] [--suppress-bootloader-mem] {file|STDIN}\n" );
     fprintf( stderr, "        flash-eeprom "
-                     "[--suppress-validation] [global-options] {file|STDIN}\n" );
-    fprintf( stderr, "        flash-user "
-                     "[--suppress-validation] [global-options] {file|STDIN}\n" );
-    fprintf( stderr, "        get {bootloader-version|ID1|ID2|BSB|SBV|SSB|EB|\n"
-                     "            manufacturer|family|product-name|\n"
-                     "            product-revision|HSB} "
-                     "[global-options]\n" );
+                     "[--suppress-validation] {file|STDIN}\n" );
+    fprintf( stderr, "        flash-user   "
+                     "[--suppress-validation] {file|STDIN}\n" );
+    fprintf( stderr, "        get     {bootloader-version|ID1|ID2|BSB|SBV|SSB|EB|\n"
+                     "                 manufacturer|family|product-name|\n"
+                     "                 product-revision|HSB}\n" );
     fprintf( stderr, "        getfuse {LOCK|EPFL|BOOTPROT|BODLEVEL|BODHYST|\n"
-                     "                BODEN|ISP_BOD_EN|ISP_IO_COND_EN|\n"
-                     "                ISP_FORCE} "
-                     "[global-options]\n" );
+                     "                 BODEN|ISP_BOD_EN|ISP_IO_COND_EN|\n"
+                     "                 ISP_FORCE}\n" );
     fprintf( stderr, "        setfuse {LOCK|EPFL|BOOTPROT|BODLEVEL|BODHYST|\n"
-                     "                BODEN|ISP_BOD_EN|ISP_IO_COND_EN|\n"
-                     "                ISP_FORCE} "
-                     "[global-options] data\n" );
-    fprintf( stderr, "        reset [global-options]\n" );
-    fprintf( stderr, "        start [global-options]\n" );
-    fprintf( stderr, "        version [global-options]\n" );
+                     "                 BODEN|ISP_BOD_EN|ISP_IO_COND_EN|\n"
+                     "                 ISP_FORCE} data\n" );
+    fprintf( stderr, "        reset\n" );
+    fprintf( stderr, "        start\n" );
+    fprintf( stderr, "        version\n" );
 }
 
 static int32_t assign_option( int32_t *arg,
