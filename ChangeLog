@@ -1,3 +1,8 @@
+2013-01-18 Simon Large
+    * src/arguments.c
+      Better presentation of help text.
+      Do not require device in order to query program version.
+
 2013-01-18 Simon Large, Kees Bakker
     * src/atmel.c
       Correct eeprom selection in dump-eeprom. The protcol

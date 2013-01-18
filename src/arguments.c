@@ -674,6 +674,13 @@ int32_t parse_arguments( struct programmer_arguments *args,
     args->quiet   = 0;
     args->suppressbootloader = 0;
 
+    /* Special case - check for the version command which does not require a device type */
+    if( argc == 2 &&
+        (0 == strcasecmp(argv[1], "version") || 0 == strcasecmp(argv[1], "--version")) ) {
+        args->command = com_version;
+        goto done;
+    }
+
     /* Make sure there are the minimum arguments */
     if( argc < 3 ) {
         status = -2;
