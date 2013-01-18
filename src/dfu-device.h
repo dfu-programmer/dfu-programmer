@@ -11,11 +11,18 @@
 #include <usb.h>
 #endif
 
-typedef enum {
-    adc_8051,
-    adc_AVR,
-    adc_AVR32
-} atmel_device_class_t;
+// Atmel device classes are now defined with one bit per class.
+// This simplifies checking in functions which handle more than one class.
+#define ADC_8051    (1<<0)
+#define ADC_AVR     (1<<1)
+#define ADC_AVR32   (1<<2)
+#define ADC_XMEGA   (1<<3)
+
+// Most commands fall into one of 2 groups.
+#define GRP_AVR32   (ADC_AVR32 | ADC_XMEGA)
+#define GRP_AVR     (ADC_AVR | ADC_8051)
+
+typedef unsigned atmel_device_class_t;
 
 typedef struct {
 #ifdef HAVE_LIBUSB_1_0

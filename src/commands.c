@@ -434,28 +434,28 @@ static int32_t execute_get( dfu_device_t *device,
         case get_BSB:
             value = info.bsb;
             message = "Boot Status Byte";
-            if( adc_8051 != args->device_type ) {
+            if( ADC_8051 != args->device_type ) {
                 controller_error = 1;
             }
             break;
         case get_SBV:
             value = info.sbv;
             message = "Software Boot Vector";
-            if( adc_8051 != args->device_type ) {
+            if( ADC_8051 != args->device_type ) {
                 controller_error = 1;
             }
             break;
         case get_SSB:
             value = info.ssb;
             message = "Software Security Byte";
-            if( adc_8051 != args->device_type ) {
+            if( ADC_8051 != args->device_type ) {
                 controller_error = 1;
             }
             break;
         case get_EB:
             value = info.eb;
             message = "Extra Byte";
-            if( adc_8051 != args->device_type ) {
+            if( ADC_8051 != args->device_type ) {
                 controller_error = 1;
             }
             break;
@@ -478,7 +478,7 @@ static int32_t execute_get( dfu_device_t *device,
         case get_HSB:
             value = info.hsb;
             message = "Hardware Security Byte";
-            if( adc_8051 != args->device_type ) {
+            if( ADC_8051 != args->device_type ) {
                 controller_error = 1;
             }
             break;
@@ -644,7 +644,7 @@ static int32_t execute_setfuse( dfu_device_t *device,
     int32_t value = args->com_setfuse_data.value;
     int32_t name = args->com_setfuse_data.name;
 
-    if( adc_AVR32 != args->device_type ) {
+    if( GRP_AVR & args->device_type ) {
         DEBUG( "target doesn't support fuse set operation.\n" );
         fprintf( stderr, "target doesn't support fuse set operation.\n" );
         return -1;
@@ -667,7 +667,7 @@ static int32_t execute_configure( dfu_device_t *device,
     int32_t value = args->com_configure_data.value;
     int32_t name = args->com_configure_data.name;
 
-    if( adc_8051 != args->device_type ) {
+    if( ADC_8051 != args->device_type ) {
         DEBUG( "target doesn't support configure operation.\n" );
         fprintf( stderr, "target doesn't support configure operation.\n" );
         return -1;
