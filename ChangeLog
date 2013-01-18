@@ -1,3 +1,11 @@
+2013-01-18 Simon Large, Dmitry Nedospasov, Kees Bakker
+    * src/arguments.c arguments.h
+      Add definitions for atxmega devices
+
+2013-01-18 Simon Large
+    * windows/atmel_usb_dfu.inf
+      Correct label for atxmega64a3u
+
 2012-12-22 Simon Large
     * windows configwin.sh README:
       Include the libusb-win32 1.2.2 lib and header files
