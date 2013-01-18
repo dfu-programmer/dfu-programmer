@@ -232,6 +232,7 @@ static struct option_mapping_structure setfuse_map[] = {
 static void usage()
 {
     struct target_mapping_structure *map = NULL;
+    int col = 0;
 
     map = target_map;
 
@@ -240,9 +241,20 @@ static void usage()
                      "[global-options] [file|data]\n" );
     fprintf( stderr, "targets:\n" );
     while( 0 != *((int32_t *) map) ) {
-        fprintf( stderr, "        %s\n", map->name );
+        if( 0 == col ) {
+            fprintf( stderr, " " );
+        }
+        fprintf( stderr, "   %-16s", map->name );
+        if( 4 == ++col ) {
+            fprintf( stderr, "\n" );
+            col = 0;
+        }
         map++;
     }
+    if( 0 != col ) {
+        fprintf( stderr, "\n" );
+    }
+
     fprintf( stderr, "global-options: --quiet, --debug level\n" );
     fprintf( stderr, "commands:\n" );
     fprintf( stderr, "        configure {BSB|SBV|SSB|EB|HSB} "

@@ -1,3 +1,7 @@
+2013-01-18 Simon Large
+    * src/arguments.c
+      Show target list in 4 columns
+
 2013-01-18 Simon Large, Dmitry Nedospasov, Kees Bakker
     * src/arguments.c arguments.h
       Add definitions for atxmega devices
