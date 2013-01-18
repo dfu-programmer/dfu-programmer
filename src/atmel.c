@@ -509,7 +509,8 @@ static int32_t __atmel_read_page( dfu_device_t *device,
     TRACE( "%s( %p, %u, %u, %p, %s )\n", __FUNCTION__, device, start, end,
            buffer, ((true == eeprom) ? "true" : "false") );
 
-    if( true == eeprom ) {
+    // AVR/8051 requires 0x02 here to read eeprom, AVR32/XMEGA requires 0x00.
+    if( true == eeprom && (GRP_AVR & device->type) ) {
         command[1] = 0x02;
     }
 

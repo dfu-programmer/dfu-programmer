@@ -1,9 +1,19 @@
+2013-01-18 Simon Large, Kees Bakker
+    * src/atmel.c
+      Correct eeprom selection in dump-eeprom. The protcol
+      differs between AVR and AVR32 families.
+
+2013-01-18 Simon Large
+    * src/arguments.c src/atmel.c src/commands.c src/dfu-device.h
+      Better handling of device->type to make it easier to
+      cover additional device classes (e.g. XMega)
+
 2013-01-18 Simon Large
     * src/arguments.c
       Show target list in 4 columns
 
 2013-01-18 Simon Large, Dmitry Nedospasov, Kees Bakker
-    * src/arguments.c arguments.h
+    * src/arguments.c src/arguments.h
       Add definitions for atxmega devices
 
 2013-01-18 Simon Large
