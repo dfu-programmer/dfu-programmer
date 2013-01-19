@@ -531,7 +531,7 @@ static int32_t execute_dump_normal( dfu_device_t *device,
                                   adjusted_flash_top_address, buffer,
                                   memory_size, false, false) )
     {
-        fprintf( stderr, "Request for %lu bytes of memory failed.\n",
+        fprintf( stderr, "Failed to read %lu bytes from device.\n",
                  (unsigned long) memory_size );
         return -1;
     }
@@ -578,7 +578,7 @@ static int32_t execute_dump_eeprom( dfu_device_t *device,
                                   args->eeprom_memory_size, buffer,
                                   memory_size, true, false) )
     {
-        fprintf( stderr, "Request for %lu bytes of memory failed.\n",
+        fprintf( stderr, "Failed to read %lu bytes from device.\n",
                  (unsigned long) memory_size );
         return -1;
     }
@@ -618,7 +618,7 @@ static int32_t execute_dump_user_page( dfu_device_t *device,
                                   page_size, buffer,
                                   page_size, false, true) )
     {
-        fprintf( stderr, "Request for %lu bytes of memory failed.\n",
+        fprintf( stderr, "Failed to read %lu bytes from device.\n",
                  (unsigned long) page_size );
         return -1;
     }

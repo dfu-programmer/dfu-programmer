@@ -926,6 +926,9 @@ static void dfu_msg_response_output( const char *function, const int32_t result 
             case -ENODEV:
                 msg = "-ENODEV: Device was removed";
                 break;
+            case -EIO:
+                msg = "-EIO: USB I/O error";
+                break;
 #ifdef EREMOTEIO
             case -EREMOTEIO:
                 msg = "-EREMOTEIO: Short packet detected";
