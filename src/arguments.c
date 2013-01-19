@@ -169,7 +169,6 @@ static struct option_mapping_structure command_map[] = {
     { "setfuse",      com_setfuse   },
     { "reset",        com_reset     },
     { "start",        com_start_app },
-    { "version",      com_version   },
     { NULL }
 };
 
@@ -228,17 +227,13 @@ static struct option_mapping_structure setfuse_map[] = {
     { NULL }
 };
 
-
-static void usage()
+static void list_targets()
 {
     struct target_mapping_structure *map = NULL;
     int col = 0;
 
     map = target_map;
 
-    fprintf( stderr, PACKAGE_STRING "\n");
-    fprintf( stderr, "Usage: dfu-programmer target command [options] "
-                     "[global-options] [file|data]\n\n" );
     fprintf( stderr, "targets:\n" );
     while( 0 != *((int32_t *) map) ) {
         if( 0 == col ) {
@@ -251,7 +246,21 @@ static void usage()
         }
         map++;
     }
-    fprintf( stderr, (0 == col) ? "\n" : "\n\n" );
+    if( 0 != col )
+        fprintf( stderr, "\n" );
+}
+
+static void basic_help()
+{
+    fprintf( stderr, "Type 'dfu-programmer --help'    for a list of commands\n" );
+    fprintf( stderr, "     'dfu-programmer --targets' to list supported target devices\n" );
+    fprintf( stderr, "     'dfu-programmer --version' to show version information\n" );
+}
+
+static void usage()
+{
+    fprintf( stderr, "Usage: dfu-programmer target command [options] "
+                     "[global-options] [file|data]\n\n" );
 
     fprintf( stderr, "global-options:\n"
                      "        --quiet\n"
@@ -282,7 +291,6 @@ static void usage()
                      "                 ISP_FORCE} data\n" );
     fprintf( stderr, "        reset\n" );
     fprintf( stderr, "        start\n" );
-    fprintf( stderr, "        version\n" );
 }
 
 static int32_t assign_option( int32_t *arg,
@@ -674,17 +682,26 @@ int32_t parse_arguments( struct programmer_arguments *args,
     args->quiet   = 0;
     args->suppressbootloader = 0;
 
-    /* Special case - check for the version command which does not require a device type */
-    if( argc == 2 &&
-        (0 == strcasecmp(argv[1], "version") || 0 == strcasecmp(argv[1], "--version")) ) {
-        args->command = com_version;
-        goto done;
+    /* Special case - check for the help commands which do not require a device type */
+    if( argc == 2 ) {
+        if( 0 == strcasecmp(argv[1], "--version") ) {
+            fprintf( stderr, PACKAGE_STRING "\n");
+            return -1;
+        }
+        if( 0 == strcasecmp(argv[1], "--targets") ) {
+            list_targets();
+            return -1;
+        }
+        if( 0 == strcasecmp(argv[1], "--help") ) {
+            usage();
+            return -1;
+        }
     }
 
     /* Make sure there are the minimum arguments */
     if( argc < 3 ) {
-        status = -2;
-        goto done;
+        basic_help();
+        return -1;
     }
 
     if( 0 != assign_target(args, argv[1], target_map) ) {
