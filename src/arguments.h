@@ -116,7 +116,7 @@ enum targets_enum { tar_at89c51snd1c,
 
 enum commands_enum { com_none, com_erase, com_flash, com_user, com_eflash,
                      com_configure, com_get, com_getfuse, com_dump, com_edump,
-                     com_udump, com_setfuse,
+                     com_udump, com_setfuse, com_setsecure,
                      com_start_app, com_version, com_reset };
 
 enum configure_enum { conf_BSB = ATMEL_SET_CONFIG_BSB,

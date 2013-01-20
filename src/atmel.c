@@ -936,6 +936,31 @@ int32_t atmel_user( dfu_device_t *device,
     
 }
 
+int32_t atmel_secure( dfu_device_t *device )
+{
+    int32_t result = 0;
+    int16_t buffer[1];
+    TRACE( "%s( %p )\n", __FUNCTION__, device );
+
+    /* Select SECURITY page */
+    uint8_t command[4] = { 0x06, 0x03, 0x00, 0x02 };
+    if( 4 != dfu_download(device, 4, command) ) {
+        DEBUG( "dfu_download failed.\n" );
+        return -2;
+    }
+    
+    // The security block is a single byte, so we'll just do it all in a block.
+    buffer[0] = 0x01;   // Non-zero to set security fuse.
+    result = atmel_flash_block( device, buffer, 0, 1, false );
+    
+    if( result < 0 ) {
+        DEBUG( "error flashing security fuse: %d\n", result );
+        return -4;
+    }
+    
+    return 0;
+}
+
 int32_t atmel_flash( dfu_device_t *device,
                      int16_t *buffer,
                      const uint32_t start,

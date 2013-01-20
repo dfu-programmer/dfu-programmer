@@ -1,5 +1,10 @@
+2013-01-20 Simon Large
+    * src/commands.c src/arguments.c src/arguments.h
+      src/atmel.c src/atmel.h
+      Add a new command to set the security fuse in AVR32 devices.
+
 2013-01-19 Simon Large
-    * src/command.c src/dfu.c
+    * src/commands.c src/dfu.c
       Improve some error messages.
 
 2013-01-19 Simon Large

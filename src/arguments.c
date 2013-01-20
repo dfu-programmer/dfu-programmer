@@ -167,6 +167,7 @@ static struct option_mapping_structure command_map[] = {
     { "get",          com_get       },
     { "getfuse",      com_getfuse   },
     { "setfuse",      com_setfuse   },
+    { "setsecure",    com_setsecure },
     { "reset",        com_reset     },
     { "start",        com_start_app },
     { NULL }
@@ -289,6 +290,7 @@ static void usage()
     fprintf( stderr, "        setfuse {LOCK|EPFL|BOOTPROT|BODLEVEL|BODHYST|\n"
                      "                 BODEN|ISP_BOD_EN|ISP_IO_COND_EN|\n"
                      "                 ISP_FORCE} data\n" );
+    fprintf( stderr, "        setsecure\n" );
     fprintf( stderr, "        reset\n" );
     fprintf( stderr, "        start\n" );
 }

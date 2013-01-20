@@ -89,6 +89,7 @@ int32_t atmel_blank_check( dfu_device_t *device,
                            const uint32_t start,
                            const uint32_t end );
 int32_t atmel_reset( dfu_device_t *device );
+int32_t atmel_secure( dfu_device_t *device );
 int32_t atmel_flash( dfu_device_t *device,
                      int16_t *buffer,
                      const uint32_t start,

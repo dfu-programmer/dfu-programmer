@@ -1,4 +1,4 @@
-.TH DFU\-PROGRAMMER 1 "December 22, 2012" "DFU\-PROGRAMMER" ""
+.TH DFU\-PROGRAMMER 1 "January 20, 2013" "DFU\-PROGRAMMER" ""
 .SH NAME
 dfu\-programmer \- USB firmware upgrading for Atmel microcontrollers
 .nh
@@ -8,7 +8,7 @@ target command [options] [parameters]
 .SH DESCRIPTION
 .B dfu\-programmer
 is a Linux command line Device Firmware Upgrade (DFU) based programmer
-for the flash memory on Atmel AVR, AVR32 and 8051 based microcontrollers
+for the flash memory on Atmel AVR, AVR32, XMEGA and 8051 based microcontrollers
 which ship with a USB boot loader. 
 It supports In System Programming (ISP) for developers and potentially
 product updates in the field.
@@ -42,12 +42,18 @@ at32uc3b0256es, at32uc3b1256es, at32uc3b1512, at32uc3b0512,
 at32uc3c064, at32uc3c0128, at32uc3c0256, at32uc3c0512, 
 at32uc3c164, at32uc3c1128, at32uc3c1256, at32uc3c1512, 
 at32uc3c264, at32uc3c2128, at32uc3c2256 and at32uc3c2512.
+.IP "XMEGA based controllers:"
+atxmega64a1u, atxmega128a1u, atxmega64a3u, atxmega128a3u,
+atxmega192a3u, atxmega256a3u, atxmega16a4u, atxmega32a4u,
+atxmega64a4u, atxmega128a4u, atxmega256a3bu, atxmega64b1,
+atxmega128b1, atxmega64b3, atxmega128b3, atxmega64c3,
+atxmega128c3, atxmega256c3, atxmega384c3
 
 .SH USAGE
 There are no mechanisms for selecting which single device
 should be programmed, or to implement gang programming.
 Accordingly, you will usually avoid connecting more than one
-device of a given family (AVR, AVR32 or 8051) at a time.
+device of a given family (AVR, XMEGA, AVR32 or 8051) at a time.
 .PP
 All of these commands support the "global options".
 Unless you override it,
@@ -104,6 +110,15 @@ Writes to user space flash on the AVR32 chips.  This block of flash
 is out of the normal range of flash blocks and is designed to contain
 configuration parameters.  The input file (or stdin) mus use the "ihex"
 file format convention for a memory image.
+.HP
+.B setsecure
+.br
+Sets the security on the AVR32 chips.  This prevents the content being
+read back from the chip, except in the same session in which it was
+programmed.  When the security fuse is set, almost nothing will work
+without first executing the erase command.  The only way to clear the
+security fuse once set is to use a JTAG chip erase, which will also
+erase the bootloader.
 .HP
 .B eeprom-flash
 [\-\-suppress\-validation]
@@ -195,7 +210,7 @@ http://dfu-programmer.sourceforge.net
 .UR AVR32 UC3 USB DFU Bootloader
 http://atmel.com/dyn/resources/prod_documents/doc7745.pdf
 .SH COPYRIGHT
-Copyright (C) 2005-2012 Weston Schmidt
+Copyright (C) 2005-2013 Weston Schmidt
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

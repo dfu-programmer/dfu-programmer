@@ -55,6 +55,28 @@ static int32_t execute_erase( dfu_device_t *device,
 }
 
 
+static int32_t execute_setsecure( dfu_device_t *device,
+                                  struct programmer_arguments *args )
+{
+    int32_t result;
+
+    if( ADC_AVR32 != args->device_type ) {
+        DEBUG( "target doesn't support security bit set.\n" );
+        fprintf( stderr, "target doesn't support security bit set.\n" );
+        return -1;
+    }
+
+    result = atmel_secure( device );
+
+    if( result < 0 ) {
+        DEBUG( "Error while setting security bit. (%d)\n", result );
+        fprintf( stderr, "Error while setting security bit.\n" );
+        return -1;
+    }
+
+    return 0;
+}
+
 static int32_t execute_flash_eeprom( dfu_device_t *device,
                                      struct programmer_arguments *args )
 {
@@ -721,6 +743,8 @@ int32_t execute_command( dfu_device_t *device,
             return execute_configure( device, args );
         case com_setfuse:
             return execute_setfuse( device, args );
+        case com_setsecure:
+            return execute_setsecure( device, args );
         default:
             fprintf( stderr, "Not supported at this time.\n" );
     }
