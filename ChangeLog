@@ -1,3 +1,7 @@
+2013-01-22 Simon Large
+    * doc/dfu-programmer.html
+      Add an html version of the man page.
+
 2013-01-20 Simon Large
     * src/commands.c src/arguments.c src/arguments.h
       src/atmel.c src/atmel.h
