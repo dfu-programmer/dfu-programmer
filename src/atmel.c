@@ -961,6 +961,38 @@ int32_t atmel_secure( dfu_device_t *device )
     return 0;
 }
 
+int32_t atmel_getsecure( dfu_device_t *device )
+{
+    int32_t result = 0;
+    uint8_t buffer[1];
+    TRACE( "%s( %p )\n", __FUNCTION__, device );
+
+    dfu_clear_status( device );
+    /* Select SECURITY page */
+    uint8_t command[4] = { 0x06, 0x03, 0x00, 0x02 };
+    result = dfu_download(device, 4, command);
+    if( 4 != result ) {
+        if( -EIO == result ) {
+            /* This also happens on most access attempts
+             * when the security bit is set. It may be a bug
+             * in the bootloader itself.
+             */
+            return ATMEL_SECURE_MAYBE;
+        } else {
+            DEBUG( "dfu_download failed.\n" );
+            return -1;
+        }
+    }
+    
+    // The security block is a single byte, so we'll just do it all in a block.
+    result = __atmel_read_page( device, 0, 1, buffer, false );
+    if( 1 != result ) {
+        return -2;
+    }
+
+    return( (0 == buffer[0]) ? ATMEL_SECURE_OFF : ATMEL_SECURE_ON );
+}
+
 int32_t atmel_flash( dfu_device_t *device,
                      int16_t *buffer,
                      const uint32_t start,

@@ -1,3 +1,7 @@
+2013-01-23 Simon Large
+    * src/commands.c src/atmel.c src/atmel.h
+      Check the security fuse state for AVR32 to give a better error message.
+
 2013-01-22 Simon Large
     * doc/dfu-programmer.html
       Add an html version of the man page.
