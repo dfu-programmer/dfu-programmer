@@ -707,6 +707,7 @@ int32_t parse_arguments( struct programmer_arguments *args,
     }
 
     if( 0 != assign_target(args, argv[1], target_map) ) {
+        fprintf( stderr, "Unsupported target '%s'.\n", argv[1]);
         status = -3;
         goto done;
     }
@@ -755,7 +756,9 @@ done:
         print_args( args );
     }
 
-    if( 0 != status ) {
+    if(-3 == status ) {
+        list_targets();
+    } else if( 0 != status ) {
         usage();
     }
 

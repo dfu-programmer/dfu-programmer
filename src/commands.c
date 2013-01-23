@@ -112,6 +112,11 @@ static int32_t execute_flash_eeprom( dfu_device_t *device,
 
     retval = -1;
 
+    if( 0 == args->eeprom_memory_size ) {
+        fprintf( stderr, "This device has no eeprom.\n" );
+        return -1;
+    }
+
     buffer = (uint8_t *) malloc( args->eeprom_memory_size );
     if( NULL == buffer ) {
         fprintf( stderr, "Request for %lu bytes of memory failed.\n",
@@ -619,6 +624,11 @@ static int32_t execute_dump_eeprom( dfu_device_t *device,
     int32_t i = 0;
     uint8_t *buffer = NULL;
     size_t memory_size;
+
+    if( 0 == args->eeprom_memory_size ) {
+        fprintf( stderr, "This device has no eeprom.\n" );
+        return -1;
+    }
 
     memory_size = args->eeprom_memory_size;
 
