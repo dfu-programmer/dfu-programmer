@@ -28,11 +28,17 @@ p {margin:0 0 1.4em;}
 <h2>SYNOPSIS</h2>
 <p>
 <b>dfu-programmer</b> target command [options] [parameters]
+<br />
+<b>dfu-programmer</b> --help
+<br />
+<b>dfu-programmer</b> --targets
+<br />
+<b>dfu-programmer</b> --version
 </p>
 <h2>DESCRIPTION</h2>
 <p>
 <b>dfu-programmer</b>
-is a Linux command line Device Firmware Upgrade (DFU) based programmer
+is a multi-platform command line Device Firmware Upgrade (DFU) based programmer
 for the flash memory on Atmel AVR, AVR32, XMEGA and 8051 based microcontrollers
 which ship with a USB boot loader. 
 It supports In System Programming (ISP) for developers and potentially
@@ -142,7 +148,7 @@ file format convention for a memory image.
 </p>
 <h4><b>setsecure</b></h4>
 <p>
-Sets the security on the AVR32 chips.  This prevents the content being
+Sets the security bit on AVR32 chips.  This prevents the content being
 read back from the chip, except in the same session in which it was
 programmed.  When the security fuse is set, almost nothing will work
 without first executing the erase command.  The only way to clear the
@@ -165,10 +171,6 @@ Resets microcontroller using watchdog timer
 <p>
 Starts the application firmware by having the microcontroller
 jump to address zero.
-</p>
-<h4><b>version</b></h4>
-<p>
-This prints a string identifying the version of this utility.
 </p>
 <h3>Global Options</h3>
 <h4><b>--quiet</b></h4>
@@ -240,6 +242,9 @@ command may fail with a less than helpful error message.
 To remove
 <b>any</b>
 write or read protection from any chips, a full chip erasure is required.
+For AVR32 chips an erase operation over USB will remove protection until the
+device is rebooted. To remove the protection more permanently requires a
+JTAG erase (which will also erase the bootloader).
 </p>
 <p>
 You may need to be a member of the
@@ -254,8 +259,11 @@ Weston Schmidt &lt;weston_schmidt@alumni.purdue.edu&gt;
 
 <h2>SEE ALSO</h2>
 <p>
-<a href="http://dfu-programmer.sourceforge.net">dfu-programmer.sourceforge.net</a>,
-<a href="http://atmel.com/dyn/resources/prod_documents/doc7745.pdf">AVR32 UC3 USB DFU Bootloader</a>
+<a href="http://dfu-programmer.sourceforge.net">dfu-programmer.sourceforge.net</a>,<br />
+<a href="http://www.atmel.com/Images/doc7618.pdf">USB DFU Bootloader Datasheet (8051, AVR)</a>,<br />
+<a href="http://www.atmel.com/Images/doc32131.pdf">AVR32 UC3 USB DFU Bootloader Protocol</a>,<br />
+<a href="http://www.atmel.com/Images/doc8457.pdf">FLIP USB DFU Protocol</a>,<br />
+<a href="http://www.atmel.com/Images/doc7745.pdf">AVR32 UC3 USB DFU Bootloader</a>
 </p>
 
 <h2>COPYRIGHT</h2>

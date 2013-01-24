@@ -1,3 +1,7 @@
+2013-01-24 Simon Large
+    * doc/dfu-programmer.1 doc/dfu-programmer.html
+      Update the documentation.
+
 2013-01-23 Simon Large
     * src/commands.c src/arguments.c
       Do not attempt eeprom operations on devices without.
