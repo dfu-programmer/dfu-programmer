@@ -1,3 +1,11 @@
+Release 0.6.0
+* Added support for xmega chips currently supported by FLIP
+* Do not attempt eeprom operations on devices without eeprom
+* Allow setting the security bit on AVR32
+* Add HTML help file for Windows users
+* Added new commands --version, --help, --targets
+* Improved built in help text
+* Improved several error messages
 Release 0.5.5
 * Added support for atmega16u2
 * Fixed operation of reset command
