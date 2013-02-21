@@ -105,6 +105,7 @@ static struct target_mapping_structure target_map[] = {
     { "at32uc3a3128s",  tar_at32uc3a3128s,  ADC_AVR32, 0x2FF1, 0x03eb, 0x20000, 0x2000, false, 512, false, true,  0,   0      },
     { "at32uc3a3256",   tar_at32uc3a3256,   ADC_AVR32, 0x2FF1, 0x03eb, 0x40000, 0x2000, false, 512, false, true,  0,   0      },
     { "at32uc3a3256s",  tar_at32uc3a3256s,  ADC_AVR32, 0x2FF1, 0x03eb, 0x40000, 0x2000, false, 512, false, true,  0,   0      },
+    { "at32uc3a4256s",  tar_at32uc3a4256s,  ADC_AVR32, 0x2FF1, 0x03eb, 0x40000, 0x2000, false, 512, false, true,  0,   0      },
     // Name             ID (arguments.h)    DevType    PID     VID     MemSize  BootSz  BootHi FPage Abort IF     EPage ESize
     { "at32uc3b064",    tar_at32uc3b064,    ADC_AVR32, 0x2FF6, 0x03eb, 0x10000, 0x2000, false, 512, false, true,  0,   0      },
     { "at32uc3b164",    tar_at32uc3b164,    ADC_AVR32, 0x2FF6, 0x03eb, 0x10000, 0x2000, false, 512, false, true,  0,   0      },
