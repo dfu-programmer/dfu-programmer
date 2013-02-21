@@ -27,7 +27,7 @@ p {margin:0 0 1.4em;}
 <hr />
 <h2>SYNOPSIS</h2>
 <p>
-<b>dfu-programmer</b> target command [options] [parameters]
+<b>dfu-programmer</b> target[:usb-bus,usb-addr] command [options] [parameters]
 <br />
 <b>dfu-programmer</b> --help
 <br />
@@ -76,7 +76,7 @@ atmega16u2 and atmega8u2.
 at32uc3a0128, at32uc3a1128, at32uc3a0256, at32uc3a1256,
 at32uc3a0512, at32uc3a1512, at32uc3a0512es, at32uc3a1512es,
 at32uc3a364, at32uc3a364s, at32uc3a3128, at32uc3a3128s,
-at32uc3a3256, at32uc3a3256s, at32uc3b064, at32uc3b164,
+at32uc3a3256, at32uc3a3256s, at32uc3a4256s, at32uc3b064, at32uc3b164,
 at32uc3b0128, at32uc3b1128, at32uc3b0256, at32uc3b1256,
 at32uc3b0256es, at32uc3b1256es, at32uc3b1512, at32uc3b0512,
 at32uc3c064, at32uc3c0128, at32uc3c0256, at32uc3c0512, 
@@ -94,10 +94,16 @@ atxmega128c3, atxmega256c3, atxmega384c3
 
 <h2>USAGE</h2>
 <p>
-There are no mechanisms for selecting which single device
-should be programmed, or to implement gang programming.
+There are no mechanisms to implement gang programming.
+By default, the first device that matches the id codes for the 
+given target is selected. Many targets share the same id codes.
 Accordingly, you will usually avoid connecting more than one
 device of a given family (AVR, XMEGA, AVR32 or 8051) at a time.
+</p>
+<p>
+The target may be qualified with the USB bus and address number 
+of the device you wish to program. This allows programming multiple 
+devices of the same family at the same time.
 </p>
 <p>
 All of these commands support the "global options".
@@ -130,20 +136,37 @@ data to stdout.
 Erases all the flash memory.
 This is required before the bootloader will perform other commands.
 </p>
-<h4><b>flash</b> [--suppress-validation] [--suppress-bootloader-mem] file or STDIN</h4>
+<h4><b>flash</b> [--suppress-validation] [--suppress-bootloader-mem] [--serial=hexbytes:offset] file or STDIN</h4>
 <p>
 Writes flash memory.  The input file (or stdin) must use the "ihex" file
 format convention for a memory image. --suppress-bootloader-mem
 ignores any data written to the bootloader memory space when flashing
 the device.  This option is particularly useful for the AVR32 chips
-<b>trampoline</b>
+<i>trampoline</i>
 code.
 </p>
-<h4><b>flash-user</b> [--suppress-validation] file or STDIN</h4>
+<p>
+--serial provides a way to inject a serial number or other unique
+sequence of bytes into the memory image programmed into the
+device. This allows using a single .ihex file to program multiple
+devices, and still give each device its own unique serial number. For
+example, --serial=ABCDEF01:0x6000 would program the byte at 0x6000
+with the hex value AB, the byte at 0x6001 with the value CD, and so
+on. There must be an even number of hex digits, but the sequence can
+be any length. The offset is assumed to be given in hex if it starts
+with a "0x" prefix, octal if it begins with a "0", otherwise is it
+assumed to be decimal.
+</p>
+<h4><b>flash-user</b> [--suppress-validation] [--serial=hexbytes:offset] file or STDIN</h4>
 <p>
 Writes to user space flash on the AVR32 chips.  This block of flash
 is out of the normal range of flash blocks and is designed to contain
-configuration parameters.  The input file (or stdin) mus use the "ihex"
+configuration parameters.  The input file (or stdin) must use the "ihex"
+file format convention for a memory image.
+</p>
+<h4><b>flash-eeprom</b> [--suppress-validation] [--serial=hexbytes:offset] file or STDIN</h4>
+<p>
+Writes to eeprom memory.  The input file (or stdin) must use the "ihex"
 file format convention for a memory image.
 </p>
 <h4><b>setsecure</b></h4>
@@ -154,11 +177,6 @@ programmed.  When the security fuse is set, almost nothing will work
 without first executing the erase command.  The only way to clear the
 security fuse once set is to use a JTAG chip erase, which will also
 erase the bootloader.
-</p>
-<h4><b>eeprom-flash</b> [--suppress-validation] file or STDIN</h4>
-<p>
-Writes to eeprom memory.  The input file (or stdin) must use the "ihex"
-file format convention for a memory image.
 </p>
 <h4><b>get</b> register</h4>
 <p>
