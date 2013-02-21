@@ -82,7 +82,9 @@ int main( int argc, char **argv )
 #endif
     }
 
-    device = dfu_device_init( args.vendor_id, args.chip_id, &dfu_device,
+    device = dfu_device_init( args.vendor_id, args.chip_id,
+                              args.bus_id, args.device_address,
+                              &dfu_device,
                               args.initial_abort,
                               args.honor_interfaceclass );
 

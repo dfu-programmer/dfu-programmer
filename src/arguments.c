@@ -261,7 +261,7 @@ static void basic_help()
 
 static void usage()
 {
-    fprintf( stderr, "Usage: dfu-programmer target command [options] "
+    fprintf( stderr, "Usage: dfu-programmer target[:usb-bus,usb-addr] command [options] "
                      "[global-options] [file|data]\n\n" );
 
     fprintf( stderr, "global-options:\n"
@@ -318,10 +318,31 @@ static int32_t assign_target( struct programmer_arguments *args,
                               struct target_mapping_structure *map )
 {
     while( 0 != *((int32_t *) map) ) {
-        if( 0 == strcasecmp(value, map->name) ) {
+        size_t name_len = strlen(map->name);
+        if( 0 == strncasecmp(value, map->name, name_len)
+            && (value[name_len] == '\0'
+                || value[name_len] == ':')) {
             args->target  = map->value;
             args->chip_id = map->chip_id;
             args->vendor_id = map->vendor_id;
+            args->bus_id = 0;
+            args->device_address = 0;
+            if (value[name_len] == ':') {
+              /* The target name includes USB bus and address info.
+               * This is used to differentiate between multiple dfu 
+               * devices with the same vendor/chip ID numbers. By
+               * specifying the bus and address, mltiple units can
+               * be programmed at one time.
+               */
+              int bus = 0;
+              int address = 0;
+              if( 2 != sscanf(&value[name_len+1], "%i,%i", &bus, &address) )
+                return -1;
+              if (bus <= 0) return -1;
+              if (address <= 0) return -1;
+              args->bus_id = bus;
+              args->device_address = address;
+            }
             args->device_type = map->device_type;
             args->eeprom_memory_size = map->eeprom_memory_size;
             args->flash_page_size = map->flash_page_size;

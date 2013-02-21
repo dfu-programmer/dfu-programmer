@@ -98,6 +98,8 @@ struct usb_device
 #endif
                      *dfu_device_init( const uint32_t vendor,
                                        const uint32_t product,
+                                       const uint32_t bus,
+                                       const uint32_t dev_addr,
                                        dfu_device_t *device,
                                        const dfu_bool initial_abort,
                                        const dfu_bool honor_interfaceclass );

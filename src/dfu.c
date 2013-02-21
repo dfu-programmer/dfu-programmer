@@ -371,6 +371,8 @@ int32_t dfu_abort( dfu_device_t *device )
 #ifdef HAVE_LIBUSB_1_0
 struct libusb_device *dfu_device_init( const uint32_t vendor,
                                        const uint32_t product,
+                                       const uint32_t bus_number,
+                                       const uint32_t device_address,
                                        dfu_device_t *dfu_device,
                                        const dfu_bool initial_abort,
                                        const dfu_bool honor_interfaceclass )
@@ -402,9 +404,13 @@ retry:
                 descriptor.idVendor, descriptor.idProduct );
 
         if( (vendor  == descriptor.idVendor) &&
-            (product == descriptor.idProduct) )
+            (product == descriptor.idProduct) &&
+            ((bus_number == 0)
+             || ((libusb_get_bus_number(device) == bus_number) &&
+                 (libusb_get_device_address(device) == device_address))) )
         {
             int32_t tmp;
+            DEBUG( "found device at USB:%d,%d\n", libusb_get_bus_number(device), libusb_get_device_address(device) );
             /* We found a device that looks like it matches...
              * let's try to find the DFU interface, open the device
              * and claim it. */
@@ -459,6 +465,8 @@ retry:
 #else
 struct usb_device *dfu_device_init( const uint32_t vendor,
                                     const uint32_t product,
+                                    const uint32_t bus_number,
+                                    const uint32_t device_address,
                                     dfu_device_t *dfu_device,
                                     const dfu_bool initial_abort,
                                     const dfu_bool honor_interfaceclass )
@@ -481,9 +489,13 @@ retry:
         for( usb_bus = usb_get_busses(); NULL != usb_bus; usb_bus = usb_bus->next ) {
             for( device = usb_bus->devices; NULL != device; device = device->next) {
                 if(    (vendor  == device->descriptor.idVendor)
-                    && (product == device->descriptor.idProduct) )
+                    && (product == device->descriptor.idProduct)
+                    && ((bus_number == 0)
+                        || (device->devnum == device_address
+                            && (usb_bus->location >> 24) == bus_number)))
                 {
                     int32_t tmp;
+                    DEBUG( "found device at USB:%d,%d\n", device->devnum, (usb_bus->location >> 24) );
                     /* We found a device that looks like it matches...
                      * let's try to find the DFU interface, open the device
                      * and claim it. */
