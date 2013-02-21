@@ -144,7 +144,9 @@ static int32_t execute_flash_eeprom( dfu_device_t *device,
     }
 
     if( 0 == args->com_flash_data.suppress_validation ) {
-        fprintf( stderr, "Validating...\n" );
+        if( 0 == args->quiet ) {
+            fprintf( stderr, "Validating...\n" );
+        }
 
         result = atmel_read_flash( device, 0, args->eeprom_memory_size,
                                    buffer, args->eeprom_memory_size, true, false );
@@ -227,7 +229,9 @@ static int32_t execute_flash_user_page( dfu_device_t *device,
     }
 
     if( 0 == args->com_flash_data.suppress_validation ) {
-        fprintf( stderr, "Validating...\n" );
+        if( 0 == args->quiet ) {
+            fprintf( stderr, "Validating...\n" );
+        }
 
         result = atmel_read_flash( device, 0, args->flash_page_size,
                                    buffer, args->flash_page_size, false, true );
@@ -336,7 +340,9 @@ static int32_t execute_flash_normal( dfu_device_t *device,
     }
 
     if( 0 == args->com_flash_data.suppress_validation ) {
-        fprintf( stderr, "Validating...\n" );
+        if( 0 == args->quiet ) {
+            fprintf( stderr, "Validating...\n" );
+        }
 
         result = atmel_read_flash( device, args->flash_address_bottom,
                                    adjusted_flash_top_address, buffer,

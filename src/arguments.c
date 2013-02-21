@@ -652,6 +652,7 @@ static void print_args( struct programmer_arguments *args )
             break;
         case com_flash:
         case com_eflash:
+        case com_user:
             fprintf( stderr, "   validate: %s\n",
                      (args->com_flash_data.suppress_validation) ?
                         "false" : "true" );
