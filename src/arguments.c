@@ -276,12 +276,12 @@ static void usage()
     fprintf( stderr, "        dump-eeprom\n" );
     fprintf( stderr, "        dump-user\n" );
     fprintf( stderr, "        erase [--suppress-validation]\n" );
-    fprintf( stderr, "        flash "
-                     "[--suppress-validation] [--suppress-bootloader-mem] {file|STDIN}\n" );
-    fprintf( stderr, "        flash-eeprom "
-                     "[--suppress-validation] {file|STDIN}\n" );
-    fprintf( stderr, "        flash-user   "
-                     "[--suppress-validation] {file|STDIN}\n" );
+    fprintf( stderr, "        flash [--suppress-validation] [--suppress-bootloader-mem]\n"
+                     "                     [--serial=hexdigits:offset] {file|STDIN}\n" );
+    fprintf( stderr, "        flash-eeprom [--suppress-validation]\n"
+                     "                     [--serial=hexdigits:offset] {file|STDIN}\n" );
+    fprintf( stderr, "        flash-user   [--suppress-validation]\n"
+                     "                     [--serial=hexdigits:offset] {file|STDIN}\n" );
     fprintf( stderr, "        get     {bootloader-version|ID1|ID2|BSB|SBV|SSB|EB|\n"
                      "                 manufacturer|family|product-name|\n"
                      "                 product-revision|HSB}\n" );
@@ -462,6 +462,72 @@ static int32_t assign_global_options( struct programmer_arguments *args,
                 *argv[i+1] = '\0';
             }
             *argv[i] = '\0';
+            break;
+        }
+    }
+
+    /* Find '--serial=<hexdigit+>:<offset>' */
+    for( i = 0; i < argc; i++ ) {
+      if( 0 == strncmp("--serial=", argv[i], 9) ) {
+            *argv[i] = '\0';
+
+            switch( args->command ) {
+                case com_flash:
+                case com_eflash:
+                case com_user: {
+                    char *hexdigits = &argv[i][9];
+                    char *offset_start = hexdigits;
+                    size_t num_digits = 0;
+                    int16_t *serial_data = NULL;
+                    long serial_offset = 0;
+                    size_t j = 0;
+                    char buffer[3] = {0,0,0};
+                    while (*offset_start != ':') {
+                        char c = *offset_start;
+                        if ('\0' == c) {
+                            return -1;
+                        } else if (('0' <= c && c <= '9')
+                            || ('a' <= c && c <= 'f')
+                            || ('A' <= c && c <= 'F')) {
+                            ++offset_start;
+                        } else {
+                          fprintf(stderr, "other character: '%c'\n", *offset_start);
+                            return -1;
+                        }
+                    }
+                    num_digits = offset_start - hexdigits;
+                    if (num_digits & 1) {
+                        fprintf(stderr,"There must be an even number of hexdigits in the serial data\n");
+                        return -1;
+                    }
+                    *offset_start++ = '\0';
+                    if( 1 != sscanf(offset_start, "%ld", &serial_offset) ) {
+                      fprintf(stderr, "sscanf failed\n");
+                      return -1;
+                    }
+                    serial_data = (int16_t *) malloc( (num_digits/2) * sizeof(int16_t) );
+                    for (j=0; j < num_digits; j+=2) {
+                      int data;
+                      buffer[0] = hexdigits[j];
+                      buffer[1] = hexdigits[j+1];
+                      buffer[2] = 0;
+                      if( 1 != sscanf(buffer, "%02x", &data) ) {
+                        fprintf(stderr, "sscanf failed with buffer: %s\n", buffer);
+                        return -1;
+                      }
+                      serial_data[j/2] = (int16_t)data;
+                    }
+                    args->com_flash_data.serial_data = serial_data;
+                    args->com_flash_data.serial_offset = serial_offset;
+                    args->com_flash_data.serial_length = num_digits/2;
+                    break;
+                }
+                default:
+                    /* not supported. */
+                  fprintf(stderr,"command did not match: %d    flash: %d\n", args->command, com_flash);
+                    return -1;
+            }
+            fprintf(stderr, "Success getting serial number\n");
             break;
         }
     }

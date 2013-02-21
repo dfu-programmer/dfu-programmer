@@ -100,6 +100,27 @@ static int32_t execute_setsecure( dfu_device_t *device,
     return 0;
 }
 
+static int32_t serialize_memory_image(int16_t *hex_data,
+                                     struct programmer_arguments *args )
+{
+    if ( NULL != args->com_flash_data.serial_data ) {
+        int16_t *serial_data = args->com_flash_data.serial_data;
+        uint32_t length = args->com_flash_data.serial_length;
+        uint32_t offset = args->com_flash_data.serial_offset;
+        uint32_t i;
+        /* The Atmel flash page starts at address 0x80000000, we need to ignore that bit */
+        offset &= 0x7fffffff;
+        if ((offset + length) > args->memory_address_top) {
+            fprintf(stderr,"The serial data falls outside of the memory region.\n");
+            return -1;
+        }
+        for (i=0; i<length; ++i) {
+            hex_data[offset + i] = serial_data[i];
+        }
+    }
+    return 0;
+}
+
 static int32_t execute_flash_eeprom( dfu_device_t *device,
                                      struct programmer_arguments *args )
 {
@@ -133,6 +154,9 @@ static int32_t execute_flash_eeprom( dfu_device_t *device,
                  "Something went wrong with creating the memory image.\n" );
         goto error;
     }
+
+    if (0 != serialize_memory_image(hex_data,args))
+      goto error;
 
     result = atmel_flash( device, hex_data, 0, args->eeprom_memory_size,
                           args->eeprom_page_size, true );
@@ -219,6 +243,9 @@ static int32_t execute_flash_user_page( dfu_device_t *device,
                  "Something went wrong with creating the memory image.\n" );
         goto error;
     }
+
+    if (0 != serialize_memory_image(hex_data,args))
+      goto error;
 
     result = atmel_user( device, hex_data, args->flash_page_size );
 
@@ -314,6 +341,9 @@ static int32_t execute_flash_normal( dfu_device_t *device,
                  "Something went wrong with creating the memory image.\n" );
         goto error;
     }
+
+    if (0 != serialize_memory_image(hex_data,args))
+      goto error;
 
     for( i = args->bootloader_bottom; i <= args->bootloader_top; i++) {
         if( -1 != hex_data[i] ) {

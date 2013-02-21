@@ -187,6 +187,9 @@ struct programmer_arguments {
             int32_t suppress_validation;
             char original_first_char;
             char *file;
+            int16_t *serial_data; /* serial number or other device specific bytes */
+            size_t serial_offset; /* where the serial_data should be written */
+            size_t serial_length; /* how many bytes to write */
         } com_flash_data;
 
         struct com_get_struct {
