@@ -67,3 +67,8 @@ Contributors:
         - support for xmega devices
     - Kees Bakker
         - support for atxmega256a3bu
+    - David Nelson
+        - support for at32uc3a4256s
+        - support for using a specific usb bus/address
+        - support for device serialisation
+        - correction to --quiet output
