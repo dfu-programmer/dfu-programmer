@@ -1,3 +1,8 @@
+2013-02-22 Simon Large
+    * configure.ac
+      When building Configure on a system that does not have pkg-config
+      installed, supply the default include and lib paths for libusb-1.0.
+
 2013-02-21 Simon Large
     * doc/dfu-programmer.1 doc/dfu-programmer.html
       Apply patch sent by David Nelson and copy into the html help too.
