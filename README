@@ -80,7 +80,9 @@ Simple install procedure for Unix/Linux/MAC
   % cd dfu-programmer                           # change to the top-level
                                                 # directory
 
-  [ If the source was checked-out from SVN, run the following command ]
+  [ If the source was checked-out from SVN, run the following command.
+    You may also need to do this if your libusb is in a non-standard location,
+    or if the build fails to find it for some reason. ]
   % ./bootstrap.sh                              # regenerate base config
                                                 # files
   
