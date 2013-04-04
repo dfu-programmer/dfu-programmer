@@ -1,3 +1,8 @@
+2013-04-04 Simon Large
+    * doc/dfu-programmer.1 doc/dfu-programmer.html
+      Document the fact that dfu-programmer requires separate erase
+      and program commands, unlike BatchISP.
+
 2013-02-22 Simon Large
     * configure.ac
       When building Configure on a system that does not have pkg-config

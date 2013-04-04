@@ -74,6 +74,10 @@ Unless you override it,
 commands which write to the microcontroller will perform 
 a validation step that rereads the data which was written,
 compares it to the expected result, and reports any errors.
+.PP
+Note that unlike Atmel's BatchISP program, dfu-programmer will
+only perform a single operation at a time. Erasing and programming
+require separate commands.
 .HP
 .B configure
 register
