@@ -162,8 +162,8 @@ static int32_t execute_flash_eeprom( dfu_device_t *device,
                           args->eeprom_page_size, true );
 
     if( result < 0 ) {
-        DEBUG( "Error while flashing. (%d)\n", result );
-        fprintf( stderr, "Error while flashing.\n" );
+        DEBUG( "Error while programming eeprom. (%d)\n", result );
+        fprintf( stderr, "Error while programming eeprom.\n" );
         goto error;
     }
 
@@ -176,8 +176,8 @@ static int32_t execute_flash_eeprom( dfu_device_t *device,
                                    buffer, args->eeprom_memory_size, true, false );
 
         if( args->eeprom_memory_size != result ) {
-            DEBUG( "Error while validating.\n" );
-            fprintf( stderr, "Error while validating.\n" );
+            DEBUG( "Error while reading back eeprom.\n" );
+            fprintf( stderr, "Error while reading back eeprom.\n" );
             goto error;
         }
 
@@ -187,7 +187,7 @@ static int32_t execute_flash_eeprom( dfu_device_t *device,
                 if( ((uint8_t) hex_data[i]) != buffer[i] ) {
                     DEBUG( "Image did not validate at location: %d (%02x != %02x)\n", i,
                            (0xff & hex_data[i]), (0xff & buffer[i]) );
-                    fprintf( stderr, "Image did not validate.\n" );
+                    fprintf( stderr, "Eeprom did not validate.\n" );
                     goto error;
                 }
             }
@@ -250,8 +250,8 @@ static int32_t execute_flash_user_page( dfu_device_t *device,
     result = atmel_user( device, hex_data, args->flash_page_size );
 
     if( result < 0 ) {
-        DEBUG( "Error while flashing. (%d)\n", result );
-        fprintf( stderr, "Error while flashing.\n" );
+        DEBUG( "Error while flashing user page. (%d)\n", result );
+        fprintf( stderr, "Error while flashing user page.\n" );
         goto error;
     }
 
@@ -264,8 +264,8 @@ static int32_t execute_flash_user_page( dfu_device_t *device,
                                    buffer, args->flash_page_size, false, true );
 
         if( args->flash_page_size != result ) {
-            DEBUG( "Error while validating.\n" );
-            fprintf( stderr, "Error while validating.\n" );
+            DEBUG( "Error while reading back user flash.\n" );
+            fprintf( stderr, "Error while reading back user flash.\n" );
             goto error;
         }
 
@@ -275,7 +275,7 @@ static int32_t execute_flash_user_page( dfu_device_t *device,
                 if( ((uint8_t) hex_data[i]) != buffer[i] ) {
                     DEBUG( "Image did not validate at location: %d (%02x != %02x)\n", i,
                            (0xff & hex_data[i]), (0xff & buffer[i]) );
-                    fprintf( stderr, "Image did not validate.\n" );
+                    fprintf( stderr, "User flash did not validate. Did you erase first?\n" );
                     goto error;
                 }
             }
@@ -379,8 +379,8 @@ static int32_t execute_flash_normal( dfu_device_t *device,
                                    memory_size, false, false );
 
         if( memory_size != result ) {
-            DEBUG( "Error while validating.\n" );
-            fprintf( stderr, "Error while validating.\n" );
+            DEBUG( "Error while reading back flash.\n" );
+            fprintf( stderr, "Error while reading back flash.\n" );
             goto error;
         }
 
@@ -390,7 +390,7 @@ static int32_t execute_flash_normal( dfu_device_t *device,
                 if( ((uint8_t) hex_data[j]) != buffer[i] ) {
                     DEBUG( "Image did not validate at location: %d (%02x != %02x)\n", i,
                            (0xff & hex_data[j]), (0xff & buffer[i]) );
-                    fprintf( stderr, "Image did not validate.\n" );
+                    fprintf( stderr, "Flash did not validate. Did you erase first?\n" );
                     goto error;
                 }
             }
