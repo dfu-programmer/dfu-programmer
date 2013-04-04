@@ -42,6 +42,11 @@ Atmel chips with USB support.
 %{_datadir}/hal/fdi/information/20thirdparty/10-dfu-programmer.fdi
 
 %changelog
+* Thu Apr 04 2013 Simon Large - 0.6.1-1
+- Added support for specifying a USB bus and address
+- Added support for device serialization
+- Fix packaging problem when dist built on a Windows machine.
+- Clarified some error messages
 * Tue Jan 29 2013 Simon Large - 0.6.0-1
 - Added support for xmega chips currently supported by FLIP
 - Do not attempt eeprom operations on devices without eeprom
