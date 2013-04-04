@@ -1,3 +1,9 @@
+Release 0.6.1
+* Added support for specifying a USB bus and address
+* Added support for device serialization
+* Fix packaging problem which failed to supply the default path
+  for libusb-1.0 files when built on a machine without that package.
+* Clarified some error messages
 Release 0.6.0
 * Added support for xmega chips currently supported by FLIP
 * Do not attempt eeprom operations on devices without eeprom
