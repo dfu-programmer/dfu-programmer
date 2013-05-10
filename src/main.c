@@ -133,7 +133,7 @@ error:
         }
 #endif
     }
-    
+
 #ifdef HAVE_LIBUSB_1_0
     libusb_exit(usbcontext);
 #endif

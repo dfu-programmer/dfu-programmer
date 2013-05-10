@@ -18,7 +18,7 @@ target[:usb-bus,usb-addr] command [options] [parameters]
 .B dfu\-programmer
 is a multi-platform command line Device Firmware Upgrade (DFU) based programmer
 for the flash memory on Atmel AVR, AVR32, XMEGA and 8051 based microcontrollers
-which ship with a USB boot loader. 
+which ship with a USB boot loader.
 It supports In System Programming (ISP) for developers and potentially
 product updates in the field.
 Those boot loaders are patterned after the standard USB DFU 1.0 class
@@ -33,7 +33,7 @@ Then invoke this program to issue one or more DFU commands.
 You will normally need to start by issuing the "erase" command;
 the default security policies prevent extracting firmware, to prevent
 reverse engineering of what is usually proprietary code.
-.SH SUPPORTED MICROCONTROLLERS 
+.SH SUPPORTED MICROCONTROLLERS
 These chip names are used as the command line "target" parameter.
 .IP "8051 based controllers:"
 at89c51snd1c, at89c51snd2c, at89c5130, at89c5131, and at89c5132.
@@ -48,8 +48,8 @@ at32uc3a364, at32uc3a364s, at32uc3a3128, at32uc3a3128s,
 at32uc3a3256, at32uc3a3256s, at32uc3a4256s, at32uc3b064, at32uc3b164,
 at32uc3b0128, at32uc3b1128, at32uc3b0256, at32uc3b1256,
 at32uc3b0256es, at32uc3b1256es, at32uc3b1512, at32uc3b0512,
-at32uc3c064, at32uc3c0128, at32uc3c0256, at32uc3c0512, 
-at32uc3c164, at32uc3c1128, at32uc3c1256, at32uc3c1512, 
+at32uc3c064, at32uc3c0128, at32uc3c0256, at32uc3c0512,
+at32uc3c164, at32uc3c1128, at32uc3c1256, at32uc3c1512,
 at32uc3c264, at32uc3c2128, at32uc3c2256 and at32uc3c2512.
 .IP "XMEGA based controllers:"
 atxmega64a1u, atxmega128a1u, atxmega64a3u, atxmega128a3u,
@@ -60,18 +60,18 @@ atxmega128c3, atxmega256c3, atxmega384c3
 
 .SH USAGE
 There are no mechanisms to implement gang programming.
-By default, the first device that matches the id codes for the 
+By default, the first device that matches the id codes for the
 given target is selected. Many targets share the same id codes.
 Accordingly, you will usually avoid connecting more than one
 device of a given family (AVR, XMEGA, AVR32 or 8051) at a time.
 .PP
-The target may be qualified with the USB bus and address number 
-of the device you wish to program. This allows programming multiple 
+The target may be qualified with the USB bus and address number
+of the device you wish to program. This allows programming multiple
 devices of the same family at the same time.
 .PP
 All of these commands support the "global options".
 Unless you override it,
-commands which write to the microcontroller will perform 
+commands which write to the microcontroller will perform
 a validation step that rereads the data which was written,
 compares it to the expected result, and reports any errors.
 .PP

@@ -481,7 +481,7 @@ static int32_t execute_getfuse( dfu_device_t *device,
             message = "ISP Force";
             break;
     }
-    fprintf( stdout, "%s%s0x%02x (%d)\n", 
+    fprintf( stdout, "%s%s0x%02x (%d)\n",
              ((0 == args->quiet) ? message : ""),
              ((0 == args->quiet) ? ": " : ""),
              value, value );
@@ -590,7 +590,7 @@ static int32_t execute_get( dfu_device_t *device,
         return -2;
     }
 
-    fprintf( stdout, "%s%s0x%02x (%d)\n", 
+    fprintf( stdout, "%s%s0x%02x (%d)\n",
              ((0 == args->quiet) ? message : ""),
              ((0 == args->quiet) ? ": " : ""),
              value, value );
@@ -819,7 +819,7 @@ int32_t execute_command( dfu_device_t *device,
         case com_user:
             return execute_flash_user_page( device, args );
         case com_reset:
-            return atmel_reset( device ); 
+            return atmel_reset( device );
         case com_start_app:
             return atmel_start_app( device );
         case com_get:

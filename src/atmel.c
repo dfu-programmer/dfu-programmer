@@ -89,7 +89,7 @@ static int32_t atmel_read_command( dfu_device_t *device,
         //in two varieties in this chip.  data0 is the command to
         //select it
         //Data1 is the byte of that group we want
-        
+
         uint8_t command[4] = { 0x06, 0x03, 0x00, data0 };
 
         if( 4 != dfu_download(device, 4, command) ) {
@@ -153,8 +153,8 @@ int32_t atmel_read_fuses( dfu_device_t *device,
        DEBUG( "target does not support fuse operation.\n" );
        fprintf( stderr, "target does not support fuse operation.\n" );
        return -1;
-    } 
-    
+    }
+
     if( 0 != atmel_select_fuses(device) ) {
         return -3;
     }
@@ -183,7 +183,7 @@ int32_t atmel_read_fuses( dfu_device_t *device,
 
     return 0;
  }
- 
+
 /*
  *  This reads in all of the configuration and Manufacturer Information
  *  into the atmel_device_info data structure for easier use later.
@@ -337,7 +337,7 @@ int32_t atmel_set_fuse( dfu_device_t *device,
        DEBUG( "target does not support fuse operation.\n" );
        fprintf( stderr, "target does not support fuse operation.\n" );
        return -1;
-    } 
+    }
 
     if( 0 != atmel_select_fuses(device) ) {
         return -3;
@@ -438,7 +438,7 @@ int32_t atmel_set_fuse( dfu_device_t *device,
             return -2;
             break;
         }
-    
+
     result = atmel_flash_block( device, buffer, address, numbytes, false );
     if(result < 0) {
         return -6;
@@ -446,7 +446,7 @@ int32_t atmel_set_fuse( dfu_device_t *device,
     return 0;
 
 }
- 
+
 int32_t atmel_set_config( dfu_device_t *device,
                           const uint8_t property,
                           const uint8_t value )
@@ -617,7 +617,7 @@ int32_t atmel_read_flash( dfu_device_t *device,
                 return -4;
             }
         }
-        
+
         result = __atmel_read_page( device, current_start, (current_start + size), buffer, eeprom );
         if( size != result ) {
             return -5;
@@ -916,24 +916,24 @@ int32_t atmel_user( dfu_device_t *device,
         DEBUG( "invalid arguments.\n" );
         return -1;
     }
-    
+
     /* Select USER page */
     uint8_t command[4] = { 0x06, 0x03, 0x00, 0x06 };
     if( 4 != dfu_download(device, 4, command) ) {
         DEBUG( "dfu_download failed.\n" );
         return -2;
     }
-    
+
     //The user block is one flash page, so we'll just do it all in a block.
     result = atmel_flash_block( device, buffer, 0, end, 0 );
-    
+
     if( result < 0 ) {
         DEBUG( "error flashing the block: %d\n", result );
         return -4;
     }
-    
+
     return 0;
-    
+
 }
 
 int32_t atmel_secure( dfu_device_t *device )
@@ -948,16 +948,16 @@ int32_t atmel_secure( dfu_device_t *device )
         DEBUG( "dfu_download failed.\n" );
         return -2;
     }
-    
+
     // The security block is a single byte, so we'll just do it all in a block.
     buffer[0] = 0x01;   // Non-zero to set security fuse.
     result = atmel_flash_block( device, buffer, 0, 1, false );
-    
+
     if( result < 0 ) {
         DEBUG( "error flashing security fuse: %d\n", result );
         return -4;
     }
-    
+
     return 0;
 }
 
@@ -983,7 +983,7 @@ int32_t atmel_getsecure( dfu_device_t *device )
             return -1;
         }
     }
-    
+
     // The security block is a single byte, so we'll just do it all in a block.
     result = __atmel_read_page( device, 0, 1, buffer, false );
     if( 1 != result ) {
@@ -1205,7 +1205,7 @@ static int32_t atmel_flash_block( dfu_device_t *device,
                                   const uint32_t base_address,
                                   const size_t length,
                                   const dfu_bool eeprom )
-                              
+
 {
     uint8_t message[ATMEL_MAX_FLASH_BUFFER_SIZE];
     uint8_t *header;

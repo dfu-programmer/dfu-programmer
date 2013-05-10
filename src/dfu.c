@@ -381,7 +381,7 @@ struct libusb_device *dfu_device_init( const uint32_t vendor,
     size_t i,devicecount;
     extern libusb_context *usbcontext;
     int32_t retries = 4;
-    
+
     TRACE( "%s( %u, %u, %p, %s, %s )\n", __FUNCTION__, vendor, product,
            dfu_device, ((true == initial_abort) ? "true" : "false"),
            ((true == honor_interfaceclass) ? "true" : "false") );
@@ -390,7 +390,7 @@ struct libusb_device *dfu_device_init( const uint32_t vendor,
 
 retry:
     devicecount = libusb_get_device_list( usbcontext, &list );
-    
+
     for( i = 0; i < devicecount; i++ ) {
         libusb_device *device = list[i];
         struct libusb_device_descriptor descriptor;
@@ -399,7 +399,7 @@ retry:
              DEBUG( "Failed in libusb_get_device_descriptor\n" );
              break;
         }
-        
+
         DEBUG( "%2d: 0x%04x, 0x%04x\n", (int) i,
                 descriptor.idVendor, descriptor.idProduct );
 
@@ -416,7 +416,7 @@ retry:
              * and claim it. */
             tmp = dfu_find_interface( device, honor_interfaceclass,
                                       descriptor.bNumConfigurations );
-            
+
             if( 0 <= tmp ) {    /* The interface is valid. */
                 dfu_device->interface = tmp;
 
@@ -681,7 +681,7 @@ static int32_t dfu_find_interface( struct libusb_device *device,
                                    const uint8_t bNumConfigurations)
 {
     int32_t c,i,s;
-    
+
     TRACE( "%s()\n", __FUNCTION__ );
 
     /* Loop through all of the configurations */
@@ -739,7 +739,7 @@ static int32_t dfu_find_interface( const struct usb_device *device,
     int32_t c, i;
     struct usb_config_descriptor *config;
     struct usb_interface_descriptor *interface;
-    
+
     /* Loop through all of the configurations */
     for( c = 0; c < device->descriptor.bNumConfigurations; c++ ) {
         config = &(device->config[c]);

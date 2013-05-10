@@ -329,7 +329,7 @@ static int32_t assign_target( struct programmer_arguments *args,
             args->device_address = 0;
             if (value[name_len] == ':') {
               /* The target name includes USB bus and address info.
-               * This is used to differentiate between multiple dfu 
+               * This is used to differentiate between multiple dfu
                * devices with the same vendor/chip ID numbers. By
                * specifying the bus and address, mltiple units can
                * be programmed at one time.
