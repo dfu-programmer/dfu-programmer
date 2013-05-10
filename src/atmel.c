@@ -63,11 +63,16 @@ static int32_t atmel_flash_block( dfu_device_t *device,
                                   const uint32_t base_address,
                                   const size_t length,
                                   const dfu_bool eeprom );
+
 static int32_t atmel_select_flash( dfu_device_t *device );
+
 static int32_t atmel_select_user( dfu_device_t *device );
+
 static int32_t atmel_select_fuses( dfu_device_t *device );
+
 static int32_t atmel_select_page( dfu_device_t *device,
                                   const uint16_t mem_page );
+
 static int32_t __atmel_read_page( dfu_device_t *device,
                                   const uint32_t start,
                                   const uint32_t end,
@@ -182,7 +187,7 @@ int32_t atmel_read_fuses( dfu_device_t *device,
     info->isp_force = buffer[31];
 
     return 0;
- }
+}
 
 /*
  *  This reads in all of the configuration and Manufacturer Information
@@ -257,7 +262,6 @@ int32_t atmel_read_config( dfu_device_t *device,
 
     return retVal;
 }
-
 
 /*
  *
@@ -437,14 +441,13 @@ int32_t atmel_set_fuse( dfu_device_t *device,
             fprintf( stderr, "Fuse bits unrecognized.\n" );
             return -2;
             break;
-        }
+    }
 
     result = atmel_flash_block( device, buffer, address, numbytes, false );
     if(result < 0) {
         return -6;
-     }
+    }
     return 0;
-
 }
 
 int32_t atmel_set_config( dfu_device_t *device,
@@ -740,8 +743,6 @@ done:
     return -3;
 }
 
-
-
 /* Reset the processor.
  * This is done internally by forcing a watchdog reset.
  * Depending on fuse settings this may go straight back into the bootloader.
@@ -765,7 +766,6 @@ int32_t atmel_reset( dfu_device_t *device )
     return 0;
 }
 
-
 /* Start the app by jumping to the start of the app area.
  * This does not do a true device reset.
  */
@@ -787,7 +787,6 @@ int32_t atmel_start_app( dfu_device_t *device )
 
     return 0;
 }
-
 
 static int32_t atmel_select_flash( dfu_device_t *device )
 {
@@ -822,7 +821,6 @@ static int32_t atmel_select_fuses( dfu_device_t *device )
 
     return 0;
 }
-
 
 static int32_t atmel_select_user( dfu_device_t *device )
 {
@@ -870,7 +868,6 @@ static int32_t atmel_select_page( dfu_device_t *device,
 
     return 0;
 }
-
 
 static void atmel_flash_prepair_buffer( int16_t *buffer, const size_t size,
                                         const size_t page_size )
@@ -933,7 +930,6 @@ int32_t atmel_user( dfu_device_t *device,
     }
 
     return 0;
-
 }
 
 int32_t atmel_secure( dfu_device_t *device )
@@ -1120,7 +1116,6 @@ recheck_page:
     return sent;
 }
 
-
 static void atmel_flash_populate_footer( uint8_t *message, uint8_t *footer,
                                          const uint16_t vendorId,
                                          const uint16_t productId,
@@ -1205,7 +1200,6 @@ static int32_t atmel_flash_block( dfu_device_t *device,
                                   const uint32_t base_address,
                                   const size_t length,
                                   const dfu_bool eeprom )
-
 {
     uint8_t message[ATMEL_MAX_FLASH_BUFFER_SIZE];
     uint8_t *header;
@@ -1286,7 +1280,6 @@ static int32_t atmel_flash_block( dfu_device_t *device,
 
     return (int32_t) length;
 }
-
 
 void atmel_print_device_info( FILE *stream, atmel_device_info_t *info )
 {

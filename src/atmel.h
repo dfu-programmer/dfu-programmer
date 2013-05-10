@@ -72,16 +72,21 @@ typedef struct {
 
 int32_t atmel_read_config( dfu_device_t *device,
                            atmel_device_info_t *info );
+
 int32_t atmel_read_fuses( dfu_device_t *device,
                           atmel_avr32_fuses_t * info );
+
 int32_t atmel_erase_flash( dfu_device_t *device,
                            const uint8_t mode );
+
 int32_t atmel_set_fuse( dfu_device_t *device,
                           const uint8_t property,
                           const uint32_t value );
+
 int32_t atmel_set_config( dfu_device_t *device,
                           const uint8_t property,
                           const uint8_t value );
+
 int32_t atmel_read_flash( dfu_device_t *device,
                           const uint32_t start,
                           const uint32_t end,
@@ -89,21 +94,28 @@ int32_t atmel_read_flash( dfu_device_t *device,
                           const size_t buffer_len,
                           const dfu_bool eeprom,
                           const dfu_bool user );
+
 int32_t atmel_blank_check( dfu_device_t *device,
                            const uint32_t start,
                            const uint32_t end );
+
 int32_t atmel_reset( dfu_device_t *device );
+
 int32_t atmel_secure( dfu_device_t *device );
+
 int32_t atmel_getsecure( dfu_device_t *device );
+
 int32_t atmel_flash( dfu_device_t *device,
                      int16_t *buffer,
                      const uint32_t start,
                      const uint32_t end,
                      const size_t flash_page_size,
                      const dfu_bool eeprom );
+
 int32_t atmel_user( dfu_device_t *device,
                     int16_t *buffer,
                     const uint32_t end );
+
 int32_t atmel_start_app( dfu_device_t *device );
 
 void atmel_print_device_info( FILE *stream, atmel_device_info_t *info );

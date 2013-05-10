@@ -79,16 +79,19 @@ static int32_t dfu_find_interface( const struct usb_device *device,
                                    const dfu_bool honor_interfaceclass );
 #endif
 static int32_t dfu_make_idle( dfu_device_t *device, const dfu_bool initial_abort );
+
 static int32_t dfu_transfer_out( dfu_device_t *device,
                                  uint8_t request,
                                  const int32_t value,
                                  uint8_t* data,
                                  const size_t length );
+
 static int32_t dfu_transfer_in( dfu_device_t *device,
                                 uint8_t request,
                                 const int32_t value,
                                 uint8_t* data,
                                 const size_t length );
+
 static void dfu_msg_response_output( const char *function, const int32_t result );
 
 /* Allocate an N-byte block of memory from the heap.

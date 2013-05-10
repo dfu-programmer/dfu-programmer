@@ -68,7 +68,6 @@ static int intel_validate_checksum( struct intel_record *record )
     return (0xff & checksum);
 }
 
-
 static int intel_validate_line( struct intel_record *record )
 {
     /* Validate the checksum */
@@ -122,7 +121,6 @@ static int intel_validate_line( struct intel_record *record )
     return 0;
 }
 
-
 static void intel_process_address( struct intel_record *record )
 {
     switch( record->type ) {
@@ -149,7 +147,6 @@ static void intel_process_address( struct intel_record *record )
             break;
     }
 }
-
 
 static int intel_read_data( FILE *fp, struct intel_record *record )
 {
@@ -197,7 +194,6 @@ static int intel_read_data( FILE *fp, struct intel_record *record )
 
     return 0;
 }
-
 
 static int intel_parse_line( FILE *fp, struct intel_record *record )
 {
@@ -295,7 +291,6 @@ int16_t *intel_hex_to_buffer( char *filename, int max_size, int *usage )
     failure = 0;
 
 error:
-
     if( NULL != fp ) {
         fclose( fp );
         fp = NULL;

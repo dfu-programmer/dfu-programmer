@@ -312,7 +312,6 @@ static int32_t assign_option( int32_t *arg,
     return -1;
 }
 
-
 static int32_t assign_target( struct programmer_arguments *args,
                               char *value,
                               struct target_mapping_structure *map )
@@ -391,7 +390,6 @@ static int32_t assign_target( struct programmer_arguments *args,
 
     return -1;
 }
-
 
 static int32_t assign_global_options( struct programmer_arguments *args,
                                       const size_t argc,
@@ -563,8 +561,6 @@ static int32_t assign_com_setfuse_option( struct programmer_arguments *args,
     return 0;
 }
 
-
-
 static int32_t assign_com_configure_option( struct programmer_arguments *args,
                                             const int32_t parameter,
                                             char *value )
@@ -593,7 +589,6 @@ static int32_t assign_com_configure_option( struct programmer_arguments *args,
     return 0;
 }
 
-
 static int32_t assign_com_flash_option( struct programmer_arguments *args,
                                         const int32_t parameter,
                                         char *value )
@@ -619,8 +614,6 @@ static int32_t assign_com_getfuse_option( struct programmer_arguments *args,
     return 0;
 }
 
-
-
 static int32_t assign_com_get_option( struct programmer_arguments *args,
                                       const int32_t parameter,
                                       char *value )
@@ -634,7 +627,6 @@ static int32_t assign_com_get_option( struct programmer_arguments *args,
 
     return 0;
 }
-
 
 static int32_t assign_command_options( struct programmer_arguments *args,
                                        const size_t argc,
@@ -695,7 +687,6 @@ static int32_t assign_command_options( struct programmer_arguments *args,
     return 0;
 }
 
-
 static void print_args( struct programmer_arguments *args )
 {
     const char *command = "(unknown)";
@@ -755,7 +746,6 @@ static void print_args( struct programmer_arguments *args )
     fprintf( stderr, "\n" );
     fflush( stdout );
 }
-
 
 int32_t parse_arguments( struct programmer_arguments *args,
                          const size_t argc,

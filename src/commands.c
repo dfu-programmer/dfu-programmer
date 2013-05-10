@@ -77,7 +77,6 @@ static int32_t execute_erase( dfu_device_t *device,
                               args->flash_address_top );
 }
 
-
 static int32_t execute_setsecure( dfu_device_t *device,
                                   struct programmer_arguments *args )
 {
@@ -301,7 +300,6 @@ error:
     }
 
     return retval;
-
 }
 
 static int32_t execute_flash_normal( dfu_device_t *device,
@@ -488,7 +486,6 @@ static int32_t execute_getfuse( dfu_device_t *device,
     return 0;
 }
 
-
 static int32_t execute_get( dfu_device_t *device,
                             struct programmer_arguments *args )
 {
@@ -596,7 +593,6 @@ static int32_t execute_get( dfu_device_t *device,
              value, value );
     return 0;
 }
-
 
 static int32_t execute_dump_normal( dfu_device_t *device,
                                     struct programmer_arguments *args )
@@ -775,7 +771,6 @@ static int32_t execute_setfuse( dfu_device_t *device,
     return 0;
 }
 
-
 static int32_t execute_configure( dfu_device_t *device,
                                   struct programmer_arguments *args )
 {
@@ -803,7 +798,6 @@ static int32_t execute_configure( dfu_device_t *device,
 
     return 0;
 }
-
 
 int32_t execute_command( dfu_device_t *device,
                          struct programmer_arguments *args )
