@@ -82,10 +82,11 @@ Simple install procedure for Unix/Linux/MAC
 
   [ If the source was checked-out from SVN, run the following command.
     You may also need to do this if your libusb is in a non-standard location,
-    or if the build fails to find it for some reason. ]
+    or if the build fails to find it for some reason.  This command requires
+    that autoconf is installed (sudo apt-get install autoconf) ]
   % ./bootstrap.sh                              # regenerate base config
                                                 # files
-  
+
   % ./configure                                 # regenerate configure and
                                                 # run it
 
@@ -97,7 +98,8 @@ Simple install procedure for Unix/Linux/MAC
     It tries to auto-discover the library, falling back to the older
     libusb if libusb-1.0 is not available. This process is not entirely
     reliable and may decide that libusb-1.0 is available when in fact
-    it is not. You can select libusb using --disable-libusb_1_0. ]
+    it is not. You can select libusb using --disable-libusb_1_0. If
+    usb library is not available try getting libusb-1.0-0-dev ]
 
     % make                                        # build dfu-programmer
   [ Become root if necessary ]
