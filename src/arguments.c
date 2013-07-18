@@ -347,7 +347,14 @@ static int32_t assign_target( struct programmer_arguments *args,
             args->flash_page_size = map->flash_page_size;
             args->eeprom_page_size = map->eeprom_page_size;
             args->initial_abort = map->initial_abort;
-            args->honor_interfaceclass = map->honor_interfaceclass;
+            /* There have been several reports on the mailing list of dfu-programmer
+               reporting "No device present" when there clearly is. It seems Atmel's
+               bootloader has changed (or is buggy) and doesn't report interface class
+               and subclass the way is did before. However we have already matched
+               VID and PID so why would we worry about this. Don't use the device-
+               specific value, just ignore the error for all device types.
+            */
+            args->honor_interfaceclass = false;
             args->memory_address_top = map->memory_size - 1;
             args->memory_address_bottom = 0;
             args->flash_address_top = args->memory_address_top;
