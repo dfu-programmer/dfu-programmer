@@ -1,3 +1,6 @@
+Release 0.6.2
+* Use correct default libusb-1.0 path
+* Workaround for "Device not found" errors
 Release 0.6.1
 * Added support for specifying a USB bus and address
 * Added support for device serialization

@@ -3,7 +3,7 @@
 
 AC_PREREQ(2.59)
 #AC_INIT(dfu-programmer, VERSION, BUG-REPORT-ADDRESS)
-AC_INIT([dfu-programmer],[0.6.1])
+AC_INIT([dfu-programmer],[0.6.2])
 AC_CONFIG_AUX_DIR(m4)
 AM_INIT_AUTOMAKE(AC_PACKAGE_NAME, AC_PACKAGE_VERSION)
 AC_CONFIG_SRCDIR([src/atmel.c])

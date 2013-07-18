@@ -72,3 +72,5 @@ Contributors:
         - support for using a specific usb bus/address
         - support for device serialisation
         - correction to --quiet output
+    - Walker Inman
+        - More info in README

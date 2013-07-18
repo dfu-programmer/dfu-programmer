@@ -1,3 +1,27 @@
+2013-07-18 Simon Large
+    * src/arguments.c
+      Ignore "No device found" errors due to reporting the wrong interface
+      class as several Atmel devices seem to fail on this now.
+
+2013-07-18 Simon Large
+    * configure.ac
+      Use the correct linker argument to specify the path for libusb-1.0.
+
+2013-05-10 Simon Large
+    * config.h
+      Move config.h into the src directory for consistency and delete
+      the generated config.h.in from the repository.
+
+2013-05-10 Walker Inman
+    * README
+      Add some more hints to make first-time build easier.
+
+2013-05-10 Simon Large
+    * docs/dfu-programmer.1 docs/dfu-programmer.html src/arguments.c
+      src/arguments.h src/atmel.c src/atmel.h src/commands.c src/dfu.c
+      src/main.c src/intel_hex.c
+      Improve whitespace consistency and remove trailing whitespace.
+
 2013-04-04 Simon Large
     * src/commands.c
       Clarify some error messages and suggest that a validation
