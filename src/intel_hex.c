@@ -461,12 +461,13 @@ static int32_t ihex_make_record_04_offset( uint32_t offset, char *str ) {
 //    return 0;
 //}
 
-int32_t intel_hex_from_buffer( char *filename, atmel_buffer_in_t *buin,
+int32_t intel_hex_from_buffer( atmel_buffer_in_t *buin,
         dfu_bool force_full, uint32_t target_offset ) {
     char line[80];
     uint32_t offset_address = 0;    // offset address written to a previous line
     uint32_t address = 0;   // relative offset from previously set addr
     uint32_t i = buin->info.data_start;
+    uint16_t i_scan;
     struct intel_record record;
 
     ihex_clear_record( &record, i + target_offset );
@@ -474,10 +475,34 @@ int32_t intel_hex_from_buffer( char *filename, atmel_buffer_in_t *buin,
     // target_offset = 0x8000 0000 or 0x8080 0000
     // use buin->info.data_start to buin->info.data_stop as range
     // if target offset > page size, use process 04
-    // reasons to complete the current line, #cols, last value, last page val
+    // reasons to complete current line:
+    //      last value, next page blank, last page value, #cols reached
 
     for( i = buin->info.data_start; i <= buin->info.data_end; i++ ) {
         address = i + target_offset;
+        if( i % buin->info.page_size == 0 && !(force_full) ) {
+            /* you are at the start of a memory page, if force_full is not set
+             * then check if there is any data on the page, if there is none,
+             * then write current line and increment to the next page
+             */
+            for( i_scan = 0; i_scan < buin->info.page_size; i_scan++ ) {
+                if( buin->data[i + i_scan] != 0xFF )
+                    break;
+            }
+            if( i_scan == buin->info.page_size ) {
+                // no data found: write current, jump to next page
+                if( 0 != ihex_make_line(&record, line) ) {
+                    DEBUG( "Error making a line.\n" );
+                    return -2;
+                } else {
+                    if( *line )
+                        fprintf( stdout, "%s\n", line );
+                    ihex_clear_record( &record, address - offset_address );
+                }
+                i += buin->info.page_size - 1;
+                continue;
+            }
+        }
         if( address - offset_address >= 0x10000 ) {
             offset_address = (address / IHEX_64KB_PAGE) * IHEX_64KB_PAGE;
             // complete the line, before adding this next point
@@ -486,7 +511,8 @@ int32_t intel_hex_from_buffer( char *filename, atmel_buffer_in_t *buin,
                 DEBUG( "Error making a line.\n" );
                 return -2;
             } else {
-                fprintf( stdout, "%s\n", line );
+                if( *line )
+                    fprintf( stdout, "%s\n", line );
                 ihex_clear_record( &record, address - offset_address );
             }
 
@@ -495,7 +521,8 @@ int32_t intel_hex_from_buffer( char *filename, atmel_buffer_in_t *buin,
                 DEBUG( "Error making a class 4 offset.\n" );
                 return -2;
             } else {
-                fprintf( stdout, "%s\n", line );
+                if( *line )
+                    fprintf( stdout, "%s\n", line );
             }
         }
         if( record.count == IHEX_COLS ) {
@@ -503,7 +530,8 @@ int32_t intel_hex_from_buffer( char *filename, atmel_buffer_in_t *buin,
                 DEBUG( "Error making a line.\n" );
                 return -2;
             } else {
-                fprintf( stdout, "%s\n", line );
+                if( *line )
+                    fprintf( stdout, "%s\n", line );
                 ihex_clear_record( &record, address - offset_address );
             }
         }
@@ -515,7 +543,8 @@ int32_t intel_hex_from_buffer( char *filename, atmel_buffer_in_t *buin,
             DEBUG( "Error making a line.\n" );
             return -2;
         } else {
-            fprintf( stdout, "%s\n", line );
+            if( *line )
+                fprintf( stdout, "%s\n", line );
             ihex_clear_record( &record, address - offset_address );
         }
     }

@@ -634,7 +634,7 @@ static int32_t execute_dump( dfu_device_t *device,
             fprintf( stderr, "Dumping 0x%X bytes from address offset 0x%X.\n",
                     buin.info.data_end - buin.info.data_start + 1,
                     target_offset + buin.info.data_start );
-        intel_hex_from_buffer( NULL, &buin,
+        intel_hex_from_buffer( &buin,
                 args->com_read_data.force, target_offset );
     }
 
