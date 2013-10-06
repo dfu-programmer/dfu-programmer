@@ -153,20 +153,24 @@ static int32_t execute_flash_eeprom( dfu_device_t *device,
     }
     memset( buffer, 0, args->eeprom_memory_size );
 
-    bout.prog_usage = args->eeprom_memory_size;
-    bout.user_usage = 0; // no malloc of user_data so no need to free
+    bout.total_size = args->eeprom_memory_size;
+    bout.valid_start = 0;
+    bout.valid_end = args->eeprom_memory_size - 1;
 
     result = intel_hex_to_buffer( args->com_flash_data.file, &bout );
 
-    if ( 0 != result ) {
+    if ( result < 0 ) {
         DEBUG( "Something went wrong with creating the memory image.\n" );
         fprintf( stderr,
                  "Something went wrong with creating the memory image.\n" );
         goto error;
+    } else if ( result > 0 ) {
+        DEBUG( "WARNING: File contains 0x%X bytes outside target memory.\n",
+                result );
     }
 
-    hex_data = bout.prog_data;
-    usage = bout.prog_usage;
+    hex_data = bout.data;
+    usage = bout.data_end - bout.data_start + 1;
 
     if (0 != serialize_memory_image(hex_data,args))
       goto error;
@@ -248,6 +252,8 @@ static int32_t execute_flash_user_page( dfu_device_t *device,
 // location of the start of the string (to be used in the program file)
 
     // ----------------- CONVERT HEX FILE TO BINARY -------------------------
+    bout.start_addr = args->memory_address_top;
+    bout.end_addr = args->memory_address_bottom;
     bout.prog_usage = args->memory_address_top - args->memory_address_bottom + 1;
             // better error handling here than with prog_usage = 0;
     bout.user_usage = args->flash_page_size;
@@ -411,6 +417,8 @@ static int32_t execute_flash_normal( dfu_device_t *device,
     flash_size = args->flash_address_top - args->flash_address_bottom + 1;
 
     // ----------------- CONVERT HEX FILE TO BINARY -------------------------
+    bout.start_addr = args->memory_address_top;
+    bout.end_addr = args->memory_address_bottom;
     bout.prog_usage = memory_size;
     bout.user_usage = args->device_type == ADC_AVR32 ? \
                        args->flash_page_size : 0;

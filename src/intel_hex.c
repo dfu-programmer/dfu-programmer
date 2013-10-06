@@ -234,7 +234,7 @@ static int intel_parse_line( FILE *fp, struct intel_record *record ) {
 }
 
 int32_t intel_hex_to_buffer( char *filename, struct buffer_out *bout) {
-    uint32_t prog_size = bout->prog_usage;      // size of the flash
+    uint32_t prog_size;                         // total flash memory size
     uint32_t user_size = bout->user_usage;      // size of the user page
     const uint32_t ustart = 0x800000;           // start addresss of user page
     FILE *fp = NULL;
@@ -244,12 +244,13 @@ int32_t intel_hex_to_buffer( char *filename, struct buffer_out *bout) {
     unsigned int address = 0;
     unsigned int address_offset = 0;
     int i = 0;
-    bout->prog_usage = 0;
+
+    prog_size = bout->end_addr - bout->start_addr + 1;
     bout->user_usage = 0;
     bout->prog_data = NULL;
     bout->user_data = NULL;
 
-    if ( (0 >= prog_size) && (0 >= user_size) ) {
+    if ( (0 >= bout->prog_usage) && (0 >= user_size) ) {
         fprintf( stderr, "Must provide valid memory size in bout.\n" );
         goto error;
     }
@@ -269,7 +270,10 @@ int32_t intel_hex_to_buffer( char *filename, struct buffer_out *bout) {
         }
     }
 
-    if ( prog_size ) {
+    if ( bout->prog_usage ) {
+        bout->prog_usage = 0;
+        bout->start_addr = 0x80000000;      // max memory is 0x80000 so OK
+        bout->end_addr = 0;
         // allocate the memory
         bout->prog_data = (int16_t *) malloc( prog_size * sizeof(int16_t) );
         if( NULL == bout->prog_data ) {
@@ -322,6 +326,7 @@ int32_t intel_hex_to_buffer( char *filename, struct buffer_out *bout) {
                         goto error;
                     } else {
                         bout->prog_data[address] = 0xff & record.data[i];
+
                         address++;
                         (bout->prog_usage)++;
                     }

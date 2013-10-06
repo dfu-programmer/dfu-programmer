@@ -25,10 +25,13 @@
 
 // define structure containing information about the hex to buffer conversion
 struct buffer_out {
-    int16_t *prog_data;
-    int16_t *user_data;
-    uint32_t prog_usage;
-    uint32_t user_usage;
+    uint32_t total_size;
+    uint32_t data_start;
+    uint32_t data_end;
+    uint32_t valid_start;
+    uint32_t valid_end;
+    int16_t  page_size;
+    int16_t *data;
 };
 
 
@@ -36,6 +39,7 @@ struct buffer_out {
  *  memory containing the memory image described in the file.
  *
  *  \param filename the name of the intel hex file to process
+ *  \param address_offset is the flash memory address location of buffer[0]
  *  \param bout buffer_out structure containing pointer to memory data for the
  *          program and for the user page.  Each is an array of int16_t's where
  *          the values 0-255 are valid memory values, and anything else
@@ -47,8 +51,13 @@ struct buffer_out {
  *          in bytes.  After the program has run they will indicate the
  *          amount of available memory image used for each section
  *
- *  \return success integer (0 on success, anything else is no good..)
+ *  \return success integer
+ *          0 = success
+ *          + = the amount of data that exists outside the specified memory
+ *              area and has not been added to the buffer
+ *          - = all sorts of error codes (eg, no data in flash memory, ...)
  */
 
-int32_t intel_hex_to_buffer( char *filename, struct buffer_out *bout );
+int32_t intel_hex_to_buffer( char *filename, struct buffer_out *bout,
+        uint32_t address_offset );
 #endif
