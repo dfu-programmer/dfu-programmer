@@ -181,6 +181,7 @@ struct programmer_arguments {
         /* No special data needed for 'dump' */
 
         struct com_erase_struct {
+            dfu_bool force;
             int32_t suppress_validation;
         } com_erase_data;
 
@@ -195,10 +196,10 @@ struct programmer_arguments {
             int16_t *serial_data; /* serial number or other device specific bytes */
             size_t serial_offset; /* where the serial_data should be written */
             size_t serial_length; /* how many bytes to write */
-            dfu_bool force_config;  /* bootloader configuration for UC3 devices
-                                       is on last one or two words in the user
-                                       page depending on the version of the
-                                       bootloader - force overwrite required */
+            dfu_bool force;       /* bootloader configuration for UC3 devices
+                                     is on last one or two words in the user
+                                     page depending on the version of the
+                                     bootloader - force overwrite required */
         } com_flash_data;
 
         struct com_get_struct {

@@ -73,22 +73,23 @@ typedef struct {
 } atmel_avr32_fuses_t;
 
 typedef struct {
-    size_t total_size;
-    size_t  page_size;
-    uint32_t data_start;
-    uint32_t data_end;
-    uint32_t valid_start;
-    uint32_t valid_end;
+    size_t total_size;          // the total size of the buffer
+    size_t  page_size;          // the size of a flash page
+    uint32_t block_start;       // the start addr of a transfer
+    uint32_t block_end;         // the end addr of a transfer
+    uint32_t data_start;        // the first valid data addr
+    uint32_t data_end;          // the last valid data addr
+    uint32_t valid_start;       // the first valid memory addr
+    uint32_t valid_end;         // the last valid memory addr
+} atmel_buffer_info_t;
+
+typedef struct {
+    atmel_buffer_info_t info;
     uint16_t *data;
 } atmel_buffer_out_t;
 
 typedef struct {
-    size_t total_size;
-    size_t  page_size;
-    uint32_t data_start;
-    uint32_t data_end;
-    uint32_t valid_start;
-    uint32_t valid_end;
+    atmel_buffer_info_t info;
     uint8_t *data;
 } atmel_buffer_in_t;
 
@@ -121,9 +122,11 @@ int32_t atmel_init_buffer_in(atmel_buffer_in_t *buin, size_t total_size );
  */
 
 int32_t atmel_validate_buffer(atmel_buffer_in_t *buin,
-        atmel_buffer_out_t *bout);
+                                atmel_buffer_out_t *bout, dfu_bool quiet);
 /* compare the contents of buffer_in with buffer_out to check that a target
- * memory image matches with a memory read
+ * memory image matches with a memory read.
+ * return 0 for full validation, positive number if data bytes outside region do
+ * not validate, negative number if bytes inside region that do not validate
  */
 
 int32_t atmel_read_config( dfu_device_t *device,
@@ -166,7 +169,7 @@ int32_t atmel_read_flash( dfu_device_t *device,
                           atmel_buffer_in_t *buin,
                           uint8_t mem_segment,
                           const dfu_bool quiet);
-/* read the flash from buin->valid_start to buin->valid_end and place
+/* read the flash from buin->info.data_start to data_end and place
  * in buin.data. mem_segment is the segment of memory from the
  * atmel_memory_unit_enum.
  */
@@ -196,6 +199,7 @@ int32_t atmel_getsecure( dfu_device_t *device );
 int32_t atmel_flash( dfu_device_t *device,
                      atmel_buffer_out_t *bout,
                      const dfu_bool eeprom,
+                     const dfu_bool force,
                      const dfu_bool hide_progress );
 /* Flash data from the buffer to the main program memory on the device.
  * buffer contains the data to flash where buffer[0] is aligned with memory
@@ -208,8 +212,7 @@ int32_t atmel_flash( dfu_device_t *device,
  */
 
 int32_t atmel_user( dfu_device_t *device,
-                    int16_t *buffer,
-                    const size_t page_size );
+                    atmel_buffer_out_t *bout );
 /* Flash data to the user page.  Provide the buffer and the size of
  * flash pages for the device (this is the size of the user page).
  * Note that only the entire user page can be flashed because it is

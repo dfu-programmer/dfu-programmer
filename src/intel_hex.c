@@ -262,25 +262,25 @@ int32_t intel_process_data( atmel_buffer_out_t *bout, char value,
     address &= 0x7fffffff;
 
     if( (address < target_offset) ||
-        (address > target_offset + bout->total_size - 1) ) {
+        (address > target_offset + bout->info.total_size - 1) ) {
         return -1;
     } else {
         raddress = address - target_offset;
         // address >= target_offset so unsigned '-' is OK
         bout->data[raddress] = (uint16_t) (0xff & value);
         // update data limits
-        if( raddress < bout->data_start ) {
-            bout->data_start = raddress;
+        if( raddress < bout->info.data_start ) {
+            bout->info.data_start = raddress;
         }
-        if( raddress > bout->data_end ) {
-            bout->data_end = raddress;
+        if( raddress > bout->info.data_end ) {
+            bout->info.data_end = raddress;
         }
     }
     return 0;
 }
 
 int32_t intel_hex_to_buffer( char *filename, atmel_buffer_out_t *bout,
-        uint32_t target_offset ) {
+        uint32_t target_offset, dfu_bool quiet ) {
     FILE *fp = NULL;
     struct intel_record record;
     // unsigned int count, type, checksum, address; char data[256]
@@ -291,14 +291,14 @@ int32_t intel_hex_to_buffer( char *filename, atmel_buffer_out_t *bout,
     int32_t retval;             // return value
     int i = 0;
 
-    if ( (0 >= bout->total_size) ) {
+    if ( (0 >= bout->info.total_size) ) {
         DEBUG( "Must provide valid memory size in bout.\n" );
         retval = -1;
         goto error;
     }
 
     if (NULL == filename) {
-        fprintf( stderr, "Invalid filename.\n" );
+        if ( !quiet ) fprintf( stderr, "Invalid filename.\n" );
         retval = -2;
         goto error;
     }
@@ -308,7 +308,7 @@ int32_t intel_hex_to_buffer( char *filename, atmel_buffer_out_t *bout,
     } else {
         fp = fopen( filename, "r" );
         if( NULL == fp ) {
-            fprintf( stderr, "Error opening %s.\n", filename );
+            if ( !quiet ) fprintf( stderr, "Error opening %s\n", filename );
             retval = -3;
             goto error;
         }
@@ -317,8 +317,10 @@ int32_t intel_hex_to_buffer( char *filename, atmel_buffer_out_t *bout,
     // iterate through ihex file and assign values to memory and user
     do {
         if( 0 != (i=intel_parse_line(fp, &record)) ) {
-            fprintf( stderr, "Error parsing line %d, (err %d).\n",
-                    line_count, i );
+            if ( !quiet ) {
+                fprintf( stderr, "Error parsing line %d, (err %d).\n",
+                        line_count, i );
+            }
             retval = -4;
             goto error;
         } else
@@ -333,7 +335,7 @@ int32_t intel_hex_to_buffer( char *filename, atmel_buffer_out_t *bout,
                         // address was invalid
                         if ( !invalid_address_count ) {
                             intel_invalid_addr_warning(line_count, address,
-                                    target_offset, bout->total_size );
+                                    target_offset, bout->info.total_size );
                         }
                         invalid_address_count++;
                     }

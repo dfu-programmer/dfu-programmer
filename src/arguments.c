@@ -276,13 +276,17 @@ static void usage()
     fprintf( stderr, "        dump\n" );
     fprintf( stderr, "        dump-eeprom\n" );
     fprintf( stderr, "        dump-user\n" );
-    fprintf( stderr, "        erase [--suppress-validation]\n" );
-    fprintf( stderr, "        flash [--suppress-validation] [--suppress-bootloader-mem]\n"
+    fprintf( stderr, "        erase        [--force]\n"
+                     "                     [--suppress-validation]\n" );
+    fprintf( stderr, "        flash        [--force]\n"
+                     "                     [--suppress-validation]\n"
+                     "                     [--suppress-bootloader-mem]\n"
                      "                     [--serial=hexdigits:offset] {file|STDIN}\n" );
-    fprintf( stderr, "        flash-eeprom [--suppress-validation]\n"
+    fprintf( stderr, "        flash-eeprom [--force]\n"
+                     "                     [--suppress-validation]\n"
                      "                     [--serial=hexdigits:offset] {file|STDIN}\n" );
-    fprintf( stderr, "        flash-user   [--suppress-validation]\n"
-                     "                     [--force-config]\n"
+    fprintf( stderr, "        flash-user   [--force]\n"
+                     "                     [--suppress-validation]\n"
                      "                     [--serial=hexdigits:offset] {file|STDIN}\n" );
     fprintf( stderr, "        get     {bootloader-version|ID1|ID2|BSB|SBV|SSB|EB|\n"
                      "                 manufacturer|family|product-name|\n"
@@ -445,7 +449,29 @@ static int32_t assign_global_options( struct programmer_arguments *args,
                     /* not supported. */
                     return -1;
             }
+            break;
+        }
+    }
 
+    /* Find '--force' if it is here - even though it is not
+     * used by all this is easier. */
+    for( i = 0; i < argc; i++ ) {
+        if( 0 == strcmp("--force", argv[i]) ) {
+            *argv[i] = '\0';
+
+            switch( args->command ) {
+                case com_flash :
+                case com_eflash :
+                case com_user :
+                    args->com_flash_data.force = true;
+                    break;
+                case com_erase :
+                    args->com_erase_data.force = true;
+                    break;
+                default:
+                    // not supported
+                    return -1;
+            }
             break;
         }
     }

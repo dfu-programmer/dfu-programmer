@@ -37,12 +37,13 @@ int32_t intel_process_data( atmel_buffer_out_t *bout,
 // processing any data and putting it into a buffer
 
 int32_t intel_hex_to_buffer( char *filename, atmel_buffer_out_t *bout,
-        uint32_t target_offset );
+        uint32_t target_offset, dfu_bool quiet );
 /*  Used to read in a file in intel hex format and return a chunk of
  *  memory containing the memory image described in the file.
  *
  *  \param filename the name of the intel hex file to process
  *  \param target_offset is the flash memory address location of buffer[0]
+ *  \param quiet tells fcn to suppress termninal messages
  *  \param bout buffer_out structure containing pointer to memory data for the
  *          program and for the user page.  Each is an array of int16_t's where
  *          the values 0-255 are valid memory values, and anything else
