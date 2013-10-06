@@ -145,7 +145,8 @@ int32_t atmel_read_fuses( dfu_device_t *device,
                           atmel_avr32_fuses_t * info );
 
 int32_t atmel_erase_flash( dfu_device_t *device,
-                           const uint8_t mode );
+                           const uint8_t mode,
+                           dfu_bool quiet );
 /*  atmel_erase_flash
  *  device    - the usb_dev_handle to communicate with
  *  mode      - the mode to use when erasing flash
@@ -177,7 +178,8 @@ int32_t atmel_read_flash( dfu_device_t *device,
 
 int32_t atmel_blank_check( dfu_device_t *device,
                            const uint32_t start,
-                           const uint32_t end );
+                           const uint32_t end,
+                           dfu_bool quiet );
 /* check if memory between start byte and end byte (inclusive) is blank
  * returns 0 for success, < 0 for communication errors, > 0 for not blank
  */

@@ -213,12 +213,13 @@ int32_t atmel_validate_buffer( atmel_buffer_in_t *buin,
     DEBUG( "Validating image from byte 0x%X to 0x%X.\n",
             bout->info.valid_start, bout->info.valid_end );
 
-    if( !quiet ) fprintf( stderr, "Validating...\n" );
+    if( !quiet ) fprintf( stderr, "Validating...  " );
     for( i = bout->info.valid_start; i <= bout->info.valid_end; i++ ) {
         if(  bout->data[i] <= UINT8_MAX ) {
             // Memory should have been programmed here
             if( ((uint8_t) bout->data[i]) != buin->data[i] ) {
                 if ( !invalid_data_region ) {
+                    if( !quiet ) fprintf( stderr, "ERROR\n" );
                     DEBUG( "Image did not validate at byte: 0x%X of 0x%X.\n", i,
                             bout->info.valid_end - bout->info.valid_start + 1 );
                     DEBUG( "Wanted 0x%02x but read 0x%02x.\n",
@@ -242,7 +243,7 @@ int32_t atmel_validate_buffer( atmel_buffer_in_t *buin,
 
     if( !quiet ) {
         if ( 0 == invalid_data_region + invalid_outside_data_region ) {
-            fprintf( stderr, "SUCCESS.\n" );
+            fprintf( stderr, "SUCCESS\n" );
         } else {
             fprintf( stderr,
                     "%d invalid bytes in program region, %d outside region.\n",
@@ -424,7 +425,8 @@ int32_t atmel_read_config( dfu_device_t *device,
 }
 
 int32_t atmel_erase_flash( dfu_device_t *device,
-                           const uint8_t mode ) {
+                           const uint8_t mode,
+                           dfu_bool quiet ) {
     uint8_t command[3] = { 0x04, 0x00, 0x00 };
     dfu_status_t status;
     int32_t i;
@@ -452,7 +454,9 @@ int32_t atmel_erase_flash( dfu_device_t *device,
             return -1;
     }
 
+    if( !quiet ) fprintf( stderr, "Erasing flash...  " );
     if( 3 != dfu_download(device, 3, command) ) {
+        if( !quiet ) fprintf( stderr, "ERROR\n" );
         DEBUG( "dfu_download failed\n" );
         return -2;
     }
@@ -462,12 +466,15 @@ int32_t atmel_erase_flash( dfu_device_t *device,
      */
     for( i = 0; i < 10; i++ ) {
         if( 0 == dfu_get_status(device, &status) ) {
+            if( !quiet ) fprintf( stderr, "SUCCESS\n" );
             DEBUG ( "CMD_ERASE status: Erase Done.\n" );
             return status.bStatus;
         } else {
+            if( !quiet ) fprintf( stderr, "ERROR\n" );
             DEBUG ( "CMD_ERASE status check %d returned nonzero.\n", i );
         }
     }
+
 
     return -3;
 }
@@ -720,25 +727,35 @@ int32_t atmel_read_flash( dfu_device_t *device,
 
     if( (NULL == buin) || (NULL == device) ) {
         DEBUG( "invalid arguments.\n" );
+        if( !quiet )
+            fprintf( stderr, "Program Error, use debug for more info.\n" );
         return -1;
     } else if ( mem_segment != mem_flash &&
                 mem_segment != mem_user &&
                 mem_segment != mem_eeprom ) {
         DEBUG( "Invalid memory segment %d to read.\n", mem_segment );
+        if( !quiet )
+            fprintf( stderr, "Program Error, use debug for more info.\n" );
         return -1;
     }
 
     // For the AVR32/XMEGA chips, select the flash space. (safe for all parts)
     if( 0 != atmel_select_memory_unit(device, mem_segment) ) {
+        DEBUG ("Error selecting memory unit.\n");
+        if( !quiet )
+            fprintf( stderr, "Memory access error, use debug for more info.\n" );
         return -3;
     }
 
     if( !quiet ) {
+        if( debug <= ATMEL_DEBUG_THRESHOLD ) {
+            // NOTE: From here on we should go to finally on error
+            fprintf( stderr, "[================================] " );
+        }
         fprintf( stderr, "Reading 0x%X bytes...\n",
                 buin->info.data_end - buin->info.data_start + 1 );
         if( debug <= ATMEL_DEBUG_THRESHOLD ) {
             // NOTE: From here on we should go to finally on error
-            fprintf( stderr, "[================================]\n" );
             fprintf( stderr, "[" );
         }
     }
@@ -792,19 +809,22 @@ finally:
     if ( !quiet ) {
         if( 0 == retval ) {
             if ( debug <= ATMEL_DEBUG_THRESHOLD ) {
-                fprintf( stderr, "]\n" );
-            } else {
-                fprintf( stderr, "Read Complete.\n" );
+                fprintf( stderr, "] " );
             }
+            fprintf( stderr, "SUCCESS\n" );
         } else {
             if ( debug <= ATMEL_DEBUG_THRESHOLD ) {
-                fprintf( stderr, " X\n.");
-            } else {
-                fprintf( stderr, "Read ERROR.\n" );
+                fprintf( stderr, " X  ");
             }
+            fprintf( stderr, "ERROR\n" );
+            if( retval==-3 )
+                fprintf( stderr,
+                        "Memory access error, use debug for more info.\n" );
+            else if( retval==-5 )
+                fprintf( stderr,
+                        "Memory read error, use debug for more info.\n" );
         }
     }
-
     return retval;
 }
 
@@ -873,11 +893,13 @@ static int32_t __atmel_blank_page_check( dfu_device_t *device,
 
 int32_t atmel_blank_check( dfu_device_t *device,
                            const uint32_t start,
-                           const uint32_t end ) {
+                           const uint32_t end,
+                           dfu_bool quiet ) {
     int32_t result;                     // blank_page_check_result
     uint32_t blank_upto = start;        // up to is not inclusive
     uint32_t check_until;               // end address of page check
     uint16_t current_page;              // 64kb page number
+    int32_t retval;
 
     TRACE( "%s( %p, 0x%08X, 0x%08X )\n", __FUNCTION__, device, start, end );
 
@@ -895,6 +917,12 @@ int32_t atmel_blank_check( dfu_device_t *device,
         return -2;
     }
 
+    if( !quiet ) {
+        fprintf( stderr, "Checking memory from 0x%X to 0x%X...  ",
+                start, end );
+        // from here need to go to retval on error
+        if( debug > ATMEL_DEBUG_THRESHOLD ) fprintf( stderr, "\n" );
+    }
     do {
         // want to have checks align with pages
         current_page = blank_upto / ATMEL_64KB_PAGE;
@@ -905,7 +933,8 @@ int32_t atmel_blank_check( dfu_device_t *device,
         // below 0x10000 doesn't mean you are definitely on page 0)
         if ( 0 != atmel_select_page(device, current_page) ) {
             DEBUG ("page select error.\n");
-            return -3;
+            retval = -3;
+            goto error;
         }
 
         // send the 'page' address, not absolute address
@@ -920,13 +949,25 @@ int32_t atmel_blank_check( dfu_device_t *device,
         } else if ( result > 0 ) {
             blank_upto = result - 1 + ATMEL_64KB_PAGE * current_page;
             DEBUG ( "Flash NOT blank beginning at 0x%X.\n", blank_upto );
-            return blank_upto + 1;
+            retval = blank_upto + 1;
+            goto error;
         } else {
             DEBUG ( "Blank check fail err %d. Flash status unknown.\n", result );
-            return result;
+            retval = result;
+            goto error;
         }
     } while ( blank_upto < end );
-    return 0;
+    retval = 0;
+
+error:
+    if( retval == 0 ) {
+        if( !quiet ) fprintf( stderr, "EMPTY.\n" );
+    } else if ( retval > 0 ) {
+        if( !quiet ) fprintf( stderr, "NOT BLANK at 0x%X.\n", retval );
+    } else {
+        if( !quiet ) fprintf( stderr, "ERROR.\n" );
+    }
+    return retval;
 }
 
 int32_t atmel_start_app_reset( dfu_device_t *device ) {
@@ -1208,15 +1249,6 @@ int32_t atmel_getsecure( dfu_device_t *device ) {
     return( (0 == buffer[0]) ? ATMEL_SECURE_OFF : ATMEL_SECURE_ON );
 }
 
-//static void print_flash_usage( atmel_buffer_info_t *info ) {
-//    fprintf( stderr,
-//            "0x%X bytes written into 0x%X valid bytes (%.02f%%).\n",
-//            info->data_end - info->data_start + 1,
-//            info->valid_end - info->valid_start + 1,
-//            ((float) (100 * (info->data_end - info->data_start + 1)) /
-//                (float) (info->valid_end - info->valid_start + 1)) ) ;
-//}
-
 int32_t atmel_flash( dfu_device_t *device,
                      atmel_buffer_out_t *bout,
                      const dfu_bool eeprom,
@@ -1235,18 +1267,25 @@ int32_t atmel_flash( dfu_device_t *device,
     // check arguments
     if( (NULL == device) || (NULL == bout) ) {
         DEBUG( "ERROR: Invalid arguments, device/buffer pointer is NULL.\n" );
+        if( !quiet )
+            fprintf( stderr, "Program Error, use debug for more info.\n" );
         return -1;
     } else if ( bout->info.valid_start > bout->info.valid_end ) {
         DEBUG( "ERROR: No valid target memory, end 0x%X before start 0x%X.\n",
                 bout->info.valid_end, bout->info.valid_start );
+        if( !quiet )
+            fprintf( stderr, "Program Error, use debug for more info.\n" );
         return -1;
     }
 
     // for each page with data, fill unassigned values on the page with 0xFF
     // bout->data[0] always aligns with a flash page boundary irrespective
     // of where valid_start is located
-    if( 0 != atmel_flash_prep_buffer( bout ) )
+    if( 0 != atmel_flash_prep_buffer( bout ) ) {
+        if( !quiet )
+            fprintf( stderr, "Program Error, use debug for more info.\n" );
         return -2;
+    }
 
     // determine the limits of where actual data resides in the buffer
     bout->info.data_start = UINT32_MAX;
@@ -1282,12 +1321,16 @@ int32_t atmel_flash( dfu_device_t *device,
     if( (bout->info.data_start < bout->info.valid_start) ||
             (bout->info.data_end > bout->info.valid_end) ) {
         DEBUG( "ERROR: Data exists outside of the valid target flash region.\n" );
+        if( !quiet )
+            fprintf( stderr, "Hex file error, use debug for more info.\n" );
         return -1;
     } else if( bout->info.data_start == UINT32_MAX ) {
         DEBUG( "ERROR: No valid data to flash.\n" );
+        if( !quiet )
+            fprintf( stderr, "Hex file error, use debug for more info.\n" );
         return -1;
     } else if( !force && 0 != (result = atmel_blank_check(device,
-                    bout->info.data_start, bout->info.data_end)) ) {
+                    bout->info.data_start, bout->info.data_end, quiet)) ) {
         if ( !quiet )
             fprintf( stderr,
                     "The target memory for the program is not blank.\n"
@@ -1299,16 +1342,21 @@ int32_t atmel_flash( dfu_device_t *device,
     // select eeprom/flash as the desired memory target, safe for non GRP_AVR32
     mem_page = eeprom ? mem_eeprom : mem_flash;
     if( 0 != atmel_select_memory_unit(device, mem_page) ) {
-        DEBUG ("Error Selecting Memory.\n");
+        DEBUG ("Error selecting memory unit.\n");
+        if( !quiet )
+            fprintf( stderr, "Memory access error, use debug for more info.\n" );
         return -2;
     }
 
     if( !quiet ) {
+        if( debug <= ATMEL_DEBUG_THRESHOLD ) {
+            // NOTE: from here on we need to run finally block
+            fprintf( stderr, "[================================] " );
+        }
         fprintf( stderr, "Programming 0x%X bytes...\n",
                 bout->info.data_end - bout->info.data_start + 1 );
         if( debug <= ATMEL_DEBUG_THRESHOLD ) {
             // NOTE: from here on we need to run finally block
-            fprintf( stderr, "[================================]\n" );
             fprintf( stderr, "[" );
         }
     }
@@ -1374,16 +1422,20 @@ finally:
     if ( !quiet ) {
         if( 0 == retval ) {
             if ( debug <= ATMEL_DEBUG_THRESHOLD ) {
-                fprintf( stderr, "]\n" );
-            } else {
-                fprintf( stderr, "Write Complete.\n" );
+                fprintf( stderr, "] " );
             }
+            fprintf( stderr, "SUCCESS\n" );
         } else {
             if ( debug <= ATMEL_DEBUG_THRESHOLD ) {
-                fprintf( stderr, " X\n.");
-            } else {
-                fprintf( stderr, "Write ERROR.\n" );
+                fprintf( stderr, " X  ");
             }
+            fprintf( stderr, "ERROR\n" );
+            if( retval==-3 )
+                fprintf( stderr,
+                        "Memory access error, use debug for more info.\n" );
+            else if( retval==-4 )
+                fprintf( stderr,
+                        "Memory write error, use debug for more info.\n" );
         }
     }
 

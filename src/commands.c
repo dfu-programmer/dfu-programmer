@@ -74,7 +74,8 @@ static int32_t execute_erase( dfu_device_t *device,
 
     if( !args->com_erase_data.force ) {
         if ( 0 == atmel_blank_check( device, args->flash_address_bottom,
-                    args->flash_address_top ) ) {
+                                             args->flash_address_top,
+                                             args->quiet ) ) {
             if ( !args->quiet ) {
                 fprintf( stderr, "Chip already blank, to force erase use --force.\n");
             }
@@ -82,28 +83,15 @@ static int32_t execute_erase( dfu_device_t *device,
         }
     }
 
-    if( !args->quiet ) {
-        fprintf( stderr, "Erasing 0x%X bytes...\n",
-           args->flash_address_top - args->flash_address_bottom + 1 );
-    }
-
     DEBUG( "erase 0x%X bytes.\n",
            (args->flash_address_top - args->flash_address_bottom) );
 
-    result = atmel_erase_flash( device, ATMEL_ERASE_ALL );
-    if( 0 != result ) {
-        fprintf( stderr, "Erase Failed.\n" );
-        return result;
-    } else if( 0 == args->quiet ) {
-        fprintf( stderr, "Erase Success.\n" );
-    }
+    result = atmel_erase_flash( device, ATMEL_ERASE_ALL, args->quiet );
 
     if ( !args->com_erase_data.suppress_validation ) {
         result = atmel_blank_check( device, args->flash_address_bottom,
-                                            args->flash_address_top );
-    }
-    if( 0 != result ) {
-        fprintf( stderr, "Blank Check Failed.\n" );
+                                            args->flash_address_top,
+                                            args->quiet );
     }
     return result;
 }
@@ -122,7 +110,7 @@ static int32_t execute_setsecure( dfu_device_t *device,
 
     if( result < 0 ) {
         DEBUG( "Error while setting security bit. (%d)\n", result );
-        fprintf( stderr, "Error while setting security bit.\n" );
+        fprintf( stderr, "Error setting security bit.\n" );
         return -1;
     }
 
@@ -176,7 +164,6 @@ static int32_t execute_validate( dfu_device_t *device,
     if( 0 !=  (result = atmel_read_flash(device, &buin,
                                          mem_segment, quiet)) ) {
         DEBUG("ERROR: could not read memory, err %d.\n", result);
-        fprintf( stderr, "Error while reading back memory.\n" );
         goto error;
     }
 
@@ -195,6 +182,15 @@ error:
     }
 
     return retval;
+}
+
+static void print_flash_usage( atmel_buffer_info_t *info ) {
+    fprintf( stderr,
+            "0x%X bytes written into 0x%X bytes memory (%.02f%%).\n",
+            info->data_end - info->data_start + 1,
+            info->valid_end - info->valid_start + 1,
+            ((float) (100 * (info->data_end - info->data_start + 1)) /
+                (float) (info->valid_end - info->valid_start + 1)) ) ;
 }
 
 static int32_t execute_flash( dfu_device_t *device,
@@ -263,8 +259,6 @@ static int32_t execute_flash( dfu_device_t *device,
             fprintf( stderr, " and will not be written.\n" );
         }
     }
-
-
 // TODO : consider accepting a string to flash to the user page as well as a hex
 // file.. this would be easier than using serialize and could return the address
 // location of the start of the string (to be used in the program file)
@@ -345,7 +339,7 @@ static int32_t execute_flash( dfu_device_t *device,
                 args->com_flash_data.force, args->quiet);
     }
     if( 0 != result ) {
-        DEBUG( "Error while writing %s data. (err %d)\n", "memory", result );
+        DEBUG( "Error writing %s data. (err %d)\n", "memory", result );
         goto error;
     }
 
@@ -354,10 +348,11 @@ static int32_t execute_flash( dfu_device_t *device,
         if( 0 != execute_validate(device, &bout, mem_type, args->quiet) ) {
             fprintf( stderr, "Memory did not validate. Did you erase?\n" );
             goto error;
-        }
-    }
+        } else
+            if( 0 == args->quiet ) print_flash_usage( &bout.info );
+    } else
+        if( 0 == args->quiet ) print_flash_usage( &bout.info );
 
-//    if( 0 == args->quiet ) print_flash_usage( &bout.info );
 
     retval = 0;
 
@@ -592,7 +587,6 @@ static int32_t execute_dump( dfu_device_t *device,
     if( 0 != (result = atmel_read_flash(device, &buin,
                     mem_segment, args->quiet)) ) {
         DEBUG("ERROR: could not read memory, err %d.\n", result);
-        fprintf( stderr, "Error while reading back memory.\n" );
         security_message();
         goto error;
     }
