@@ -164,14 +164,12 @@ register
 .br
 Displays various product identifier bytes.
 .HP
-.B reset
+.B launch
+[\-\-no\-reset]
 .br
-Resets microcontroller using watchdog timer
-.HP
-.B start
-.br
-Starts the application firmware by having the microcontroller
-jump to address zero.
+Launch the application by resetting the device. The --no-reset flag
+can be used to launch the device without a reset (jump to the start
+address of the program).
 .SS Global Options
 \-\-quiet \- minimizes the output
 

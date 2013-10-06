@@ -799,6 +799,15 @@ static int32_t execute_configure( dfu_device_t *device,
     return 0;
 }
 
+static int32_t execute_launch( dfu_device_t *device,
+                                  struct programmer_arguments *args ) {
+    if ( args->com_launch_config.noreset ) {
+        return atmel_start_app_noreset( device );
+    } else {
+        return atmel_start_app_reset( device );
+    }
+}
+
 int32_t execute_command( dfu_device_t *device,
                          struct programmer_arguments *args )
 {
@@ -812,10 +821,12 @@ int32_t execute_command( dfu_device_t *device,
             return execute_flash_eeprom( device, args );
         case com_user:
             return execute_flash_user_page( device, args );
-        case com_reset:
-            return atmel_reset( device );
         case com_start_app:
-            return atmel_start_app( device );
+            args->com_launch_config.noreset = true;
+        case com_reset:
+            args->command = com_launch;
+        case com_launch:
+            return execute_launch( device, args );
         case com_get:
             return execute_get( device, args );
         case com_getfuse:

@@ -167,6 +167,7 @@ static struct option_mapping_structure command_map[] = {
     { "flash-eeprom", com_eflash    },
     { "get",          com_get       },
     { "getfuse",      com_getfuse   },
+    { "launch",       com_launch    },
     { "setfuse",      com_setfuse   },
     { "setsecure",    com_setsecure },
     { "reset",        com_reset     },
@@ -288,12 +289,11 @@ static void usage()
     fprintf( stderr, "        getfuse {LOCK|EPFL|BOOTPROT|BODLEVEL|BODHYST|\n"
                      "                 BODEN|ISP_BOD_EN|ISP_IO_COND_EN|\n"
                      "                 ISP_FORCE}\n" );
+    fprintf( stderr, "        launch       [--no-reset]\n" );
     fprintf( stderr, "        setfuse {LOCK|EPFL|BOOTPROT|BODLEVEL|BODHYST|\n"
                      "                 BODEN|ISP_BOD_EN|ISP_IO_COND_EN|\n"
                      "                 ISP_FORCE} data\n" );
     fprintf( stderr, "        setsecure\n" );
-    fprintf( stderr, "        reset\n" );
-    fprintf( stderr, "        start\n" );
 }
 
 static int32_t assign_option( int32_t *arg,
@@ -449,6 +449,21 @@ static int32_t assign_global_options( struct programmer_arguments *args,
         }
     }
 
+    /* Find '--no-reset' if it is here - even though it is not
+     * used by all this is easier. */
+    for( i = 0; i < argc; i++ ) {
+        if( 0 == strcmp("--no-reset", argv[i]) ) {
+            *argv[i] = '\0';
+
+            if ( args->command == com_launch ) {
+                args->com_launch_config.noreset = true;
+            } else {
+                // not supported
+                return -1;
+            }
+            break;
+        }
+    }
 
     /* Find '--debug' if it is here */
     for( i = 0; i < argc; i++ ) {
@@ -746,6 +761,9 @@ static void print_args( struct programmer_arguments *args )
             break;
         case com_get:
             fprintf( stderr, "       name: %d\n", args->com_get_data.name );
+            break;
+        case com_launch:
+            fprintf( stderr, "   no-reset: %d\n", args->com_launch_config.noreset );
             break;
         default:
             break;

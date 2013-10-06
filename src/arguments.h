@@ -34,6 +34,7 @@
  *  erase [--suppress-validation, --quiet, --debug level]
  *  flash [--suppress-validation, --quiet, --debug level] file
  *  get {bootloader-version|ID1|ID2|BSB|SBV|SSB|EB|manufacturer|family|product-name|product-revision|HSB} [--quiet, --debug level]
+ *  launch [--no-reset]
  */
 
 extern int debug;
@@ -118,7 +119,7 @@ enum targets_enum { tar_at89c51snd1c,
 enum commands_enum { com_none, com_erase, com_flash, com_user, com_eflash,
                      com_configure, com_get, com_getfuse, com_dump, com_edump,
                      com_udump, com_setfuse, com_setsecure,
-                     com_start_app, com_version, com_reset };
+                     com_start_app, com_version, com_reset, com_launch };
 
 enum configure_enum { conf_BSB = ATMEL_SET_CONFIG_BSB,
                       conf_SBV = ATMEL_SET_CONFIG_SBV,
@@ -182,6 +183,10 @@ struct programmer_arguments {
         struct com_erase_struct {
             int32_t suppress_validation;
         } com_erase_data;
+
+        struct com_launch_struct {
+            dfu_bool noreset;
+        } com_launch_config;
 
         struct com_flash_struct {
             int32_t suppress_validation;

@@ -189,13 +189,12 @@ erase the bootloader.
 <p>
 Displays various product identifier bytes.
 </p>
-<h4><b>reset</b></h4><p>
-Resets microcontroller using watchdog timer
 </p>
-<h4><b>start</b></h4>
+<h4><b>launch</b> [--no-reseet]</h4>
 <p>
-Starts the application firmware by having the microcontroller
-jump to address zero.
+Launch the application by resetting the device. The --no-reset flag
+can be used to launch the device without a reset (jump to the start
+address of the program).
 </p>
 <h3>Global Options</h3>
 <h4><b>--quiet</b></h4>

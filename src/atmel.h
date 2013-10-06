@@ -99,7 +99,9 @@ int32_t atmel_blank_check( dfu_device_t *device,
                            const uint32_t start,
                            const uint32_t end );
 
-int32_t atmel_reset( dfu_device_t *device );
+int32_t atmel_start_app_reset( dfu_device_t *device );
+
+int32_t atmel_start_app_noreset( dfu_device_t *device );
 
 int32_t atmel_secure( dfu_device_t *device );
 
@@ -115,8 +117,6 @@ int32_t atmel_flash( dfu_device_t *device,
 int32_t atmel_user( dfu_device_t *device,
                     int16_t *buffer,
                     const uint32_t end );
-
-int32_t atmel_start_app( dfu_device_t *device );
 
 void atmel_print_device_info( FILE *stream, atmel_device_info_t *info );
 #endif
