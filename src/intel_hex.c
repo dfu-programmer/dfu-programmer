@@ -44,6 +44,7 @@ struct intel_record {
     unsigned int type;
     unsigned int checksum;
     unsigned int address;
+    // FIXME : change this to unsigned int 8
     char data[256];
 };
 
@@ -59,11 +60,15 @@ struct intel_record {
 #define DEBUG(...)  dfu_debug( __FILE__, __FUNCTION__, __LINE__, \
                                IHEX_DEBUG_THRESHOLD, __VA_ARGS__ )
 
+// ________  P R O T O T Y P E S  _______________________________
+static int intel_validate_checksum( struct intel_record *record );
 /*  This walks over the record and ensures that the checksum is
  *  correct for the record.
  *
  *  returns 0 if checksum validates, anything else on error
  */
+
+// ________  F U N C T I O N S  _______________________________
 static int intel_validate_checksum( struct intel_record *record ) {
     int i = 0;
     int checksum = 0;
@@ -233,30 +238,68 @@ static int intel_parse_line( FILE *fp, struct intel_record *record ) {
     return 0;
 }
 
-int32_t intel_hex_to_buffer( char *filename, struct buffer_out *bout) {
-    uint32_t prog_size;                         // total flash memory size
-    uint32_t user_size = bout->user_usage;      // size of the user page
-    const uint32_t ustart = 0x800000;           // start addresss of user page
+static void intel_invalid_addr_warning(uint32_t line_count, uint32_t address,
+        uint32_t target_offset, size_t total_size) {
+    DEBUG("Valid address region from 0x%X to 0x%X.\n",
+        target_offset, target_offset + total_size - 1);
+    fprintf( stderr,
+        "WARNING (line %u): 0x%02x address outside valid region,\n",
+        line_count, address);
+    fprintf( stderr,
+            " suppressing additional address error messages.\n" );
+}
+
+int32_t intel_process_data( atmel_buffer_out_t *bout, char value,
+        uint32_t target_offset, uint32_t address) {
+    // NOTE : there are some hex program files that contain data in the user
+    // page.  In this situation, the hex file is processed and used as normal
+    // with a warning message containing the first line with an invalid address.
+    uint32_t raddress;   // relative address = address - target offset
+
+    // The Atmel flash page starts at address 0x80000000, we need to ignore
+    // that bit
+    target_offset &= 0x7fffffff;
+    address &= 0x7fffffff;
+
+    if( (address < target_offset) ||
+        (address > target_offset + bout->total_size - 1) ) {
+        return -1;
+    } else {
+        raddress = address - target_offset;
+        // address >= target_offset so unsigned '-' is OK
+        bout->data[raddress] = (uint16_t) (0xff & value);
+        // update data limits
+        if( raddress < bout->data_start ) {
+            bout->data_start = raddress;
+        }
+        if( raddress > bout->data_end ) {
+            bout->data_end = raddress;
+        }
+    }
+    return 0;
+}
+
+int32_t intel_hex_to_buffer( char *filename, atmel_buffer_out_t *bout,
+        uint32_t target_offset ) {
     FILE *fp = NULL;
-    int32_t failure = 1;
     struct intel_record record;
     // unsigned int count, type, checksum, address; char data[256]
-    unsigned int address = 0;
-    unsigned int address_offset = 0;
+    uint32_t address = 0;       // line address for intel_hex
+    uint32_t address_offset = 0;// offset address from intel_hex
+    uint32_t line_count = 1;                // used for debugging hex file
+    int32_t  invalid_address_count = 0;     // used for error checking
+    int32_t retval;             // return value
     int i = 0;
 
-    prog_size = bout->end_addr - bout->start_addr + 1;
-    bout->user_usage = 0;
-    bout->prog_data = NULL;
-    bout->user_data = NULL;
-
-    if ( (0 >= bout->prog_usage) && (0 >= user_size) ) {
-        fprintf( stderr, "Must provide valid memory size in bout.\n" );
+    if ( (0 >= bout->total_size) ) {
+        DEBUG( "Must provide valid memory size in bout.\n" );
+        retval = -1;
         goto error;
     }
 
     if (NULL == filename) {
         fprintf( stderr, "Invalid filename.\n" );
+        retval = -2;
         goto error;
     }
 
@@ -265,36 +308,9 @@ int32_t intel_hex_to_buffer( char *filename, struct buffer_out *bout) {
     } else {
         fp = fopen( filename, "r" );
         if( NULL == fp ) {
-            fprintf( stderr, "Error opening the file.\n" );
+            fprintf( stderr, "Error opening %s.\n", filename );
+            retval = -3;
             goto error;
-        }
-    }
-
-    if ( bout->prog_usage ) {
-        bout->prog_usage = 0;
-        bout->start_addr = 0x80000000;      // max memory is 0x80000 so OK
-        bout->end_addr = 0;
-        // allocate the memory
-        bout->prog_data = (int16_t *) malloc( prog_size * sizeof(int16_t) );
-        if( NULL == bout->prog_data ) {
-            fprintf( stderr, "Error getting memory for program data.\n" );
-            goto error;
-        }
-
-        // initialize program memory to -1 (invalid data)
-        for( i = 0; i < prog_size; i++ ) {
-            bout->prog_data[i] = -1;
-        }
-    }
-
-    if ( user_size ) {
-        bout->user_data = (int16_t *) malloc( user_size * sizeof(int16_t) );
-        if( NULL == bout->user_data ) {
-            fprintf( stderr, "Error getting memory for user page.\n" );
-            goto error;
-        }
-        for( i = 0; i < user_size; i++ ) {
-            bout->user_data[i] = -1;
         }
     }
 
@@ -302,33 +318,24 @@ int32_t intel_hex_to_buffer( char *filename, struct buffer_out *bout) {
     do {
         if( 0 != (i=intel_parse_line(fp, &record)) ) {
             fprintf( stderr, "Error parsing line %d, (err %d).\n",
-                    bout->prog_usage + bout->user_usage, i );
+                    line_count, i );
+            retval = -4;
             goto error;
-        }
+        } else
+            line_count++;
 
         switch( record.type ) {
             case 0:
-                address = address_offset + record.address;
-                for( i = 0; i < record.count; i++ ) {
-                    if ((ustart <= address) && (address < ustart + user_size)) {
-                        bout->user_data[address-ustart] = 0xff & record.data[i];
-                        address++;
-                        (bout->user_usage)++;
-                    } else if (address_offset == 0x800000) {
-                        fprintf( stderr,
-                                "Address error: 0x%02x outside user page",
-                                record.address);
-                        goto error;
-                    } else if ( address >= prog_size ) {
-                        fprintf( stderr,
-                                "Address error: 0x%x with offset 0x%x.\n",
-                                record.address, address_offset);
-                        goto error;
-                    } else {
-                        bout->prog_data[address] = 0xff & record.data[i];
-
-                        address++;
-                        (bout->prog_usage)++;
+                for( address = address_offset + ((uint32_t) record.address),
+                        i = 0; i < record.count; i++, address++ ) {
+                    if ( 0 != intel_process_data(bout, record.data[i],
+                                target_offset, address) ) {
+                        // address was invalid
+                        if ( !invalid_address_count ) {
+                            intel_invalid_addr_warning(line_count, address,
+                                    target_offset, bout->total_size );
+                        }
+                        invalid_address_count++;
                     }
                 }
                 break;
@@ -340,13 +347,18 @@ int32_t intel_hex_to_buffer( char *filename, struct buffer_out *bout) {
                 /* Note: In AVR32 memory map, FLASH starts at 0x80000000, but the
                  * ISP places this memory at 0.  The hex file will use 0x8..., so
                  * mask off that bit. */
-                address_offset = (0x7fffffff & record.address);
+                address_offset = (uint32_t) (0x7fffffff & record.address);
                 DEBUG( "Address offset set to 0x%x.\n", address_offset );
                 break;
         }
     } while( (1 != record.type) );
 
-    failure = 0;
+    if ( invalid_address_count ) {
+        fprintf( stderr, "Total of 0x%X bytes in invalid addressed.\n",
+                invalid_address_count );
+    }
+
+    retval = invalid_address_count;
 
 error:
     if( NULL != fp ) {
@@ -354,17 +366,10 @@ error:
         fp = NULL;
     }
 
-    if ( 0 != failure ) {
-        if ( NULL != bout->prog_data ) {
-            free( bout->prog_data );
-            bout->prog_data = NULL;
-        }
+    return retval;
+}
 
-        if ( NULL != bout->user_data ) {
-            free( bout->user_data );
-            bout->user_data = NULL;
-        }
-    }
-
-    return failure;
+int32_t buffer_to_intel_hex( char *filename, atmel_buffer_in_t *buin,
+        uint32_t target_offset ) {
+    return -1;
 }

@@ -23,23 +23,26 @@
 
 #include <stdint.h>
 
-// define structure containing information about the hex to buffer conversion
-struct buffer_out {
-    uint32_t total_size;
-    uint32_t data_start;
-    uint32_t data_end;
-    uint32_t valid_start;
-    uint32_t valid_end;
-    int16_t  page_size;
-    int16_t *data;
-};
+#include "atmel.h"
 
+int32_t intel_process_data( atmel_buffer_out_t *bout,
+        char value, uint32_t target_offset, uint32_t address);
+/* process a data value by adding to the buffer at the appropriate address or if
+ * the address is out of range do nothing and return -1. Also update the valid
+ * range of data in bout
+ * return 0 on success, -1 on address error
+ */
 
+// NOTE : intel_process_data should be moved to a different module dealing with
+// processing any data and putting it into a buffer
+
+int32_t intel_hex_to_buffer( char *filename, atmel_buffer_out_t *bout,
+        uint32_t target_offset );
 /*  Used to read in a file in intel hex format and return a chunk of
  *  memory containing the memory image described in the file.
  *
  *  \param filename the name of the intel hex file to process
- *  \param address_offset is the flash memory address location of buffer[0]
+ *  \param target_offset is the flash memory address location of buffer[0]
  *  \param bout buffer_out structure containing pointer to memory data for the
  *          program and for the user page.  Each is an array of int16_t's where
  *          the values 0-255 are valid memory values, and anything else
@@ -56,8 +59,15 @@ struct buffer_out {
  *          + = the amount of data that exists outside the specified memory
  *              area and has not been added to the buffer
  *          - = all sorts of error codes (eg, no data in flash memory, ...)
+ *              if the hex file contains no valid data an error is NOT thrown
+ *              but the presence of valid data can be checked using the
+ *              data_start field in atmel_buffer_out_t
  */
 
-int32_t intel_hex_to_buffer( char *filename, struct buffer_out *bout,
-        uint32_t address_offset );
+int32_t buffer_to_intel_hex( char *filename, atmel_buffer_in_t *buin,
+        uint32_t target_offset );
+/*  Used to convert a buffer to an intel hex formatted file.
+ *
+ */
+
 #endif

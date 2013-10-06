@@ -191,6 +191,86 @@ static int32_t atmel_read_command( dfu_device_t *device,
     }
 }
 
+int32_t atmel_validate_buffer(atmel_buffer_in_t *buin,
+        atmel_buffer_out_t *bout) {
+    int32_t i;
+
+    DEBUG( "Starting program validation comparison.\n" );
+    DEBUG( "Validating image from byte 0x%X to 0x%X.\n",
+            bout->data_start, bout->data_end );
+
+    for( i = bout->data_start; i <= bout->data_end; i++ ) {
+        if(  bout->data[i] <= UINT8_MAX ) {
+            // Memory should have been programmed here
+            if( ((uint8_t) bout->data[i]) != buin->data[i] ) {
+                if( i > bout->data_start ) {
+                    DEBUG( "Image validates from: 0x%X to 0x%X.\n",
+                            bout->data_start, i - 1 );
+                }
+                DEBUG( "Image did not validate at byte: 0x%X of 0x%X.\n",
+                        i, bout->total_size );
+                DEBUG( "Wanted 0x%02x but read 0x%02x.\n",
+                        0xff & bout->data[i], buin->data[i] );
+                return -1;
+            }
+        }
+    }
+    return 0;
+}
+
+int32_t atmel_init_buffer_out(atmel_buffer_out_t *bout,
+        size_t total_size, size_t page_size ) {
+    uint32_t i;
+    if ( !total_size || !page_size ) {
+        DEBUG("What are you thinking... size must be > 0.\n");
+        return -1;
+    }
+
+    bout->total_size = total_size;
+    bout->page_size = page_size;
+    bout->data_start = UINT32_MAX;      // invalid data start
+    bout->data_end = 0;
+    bout->valid_start = 0;
+    bout->valid_end = total_size - 1;
+    // allocate the memory
+    bout->data = (uint16_t *) malloc( total_size * sizeof(uint16_t) );
+    if( NULL == bout->data ) {
+        DEBUG( "ERROR allocating 0x%X bytes of memory.\n",
+                total_size * sizeof(uint16_t));
+        return -2;
+    }
+
+    // initialize buffer to 0xFFFF (invalid / unassigned data)
+    for( i = 0; i < bout->total_size; i++ ) {
+        bout->data[i] = UINT16_MAX;
+    }
+    return 0;
+}
+
+int32_t atmel_init_buffer_in(atmel_buffer_in_t *buin, size_t total_size ) {
+    if ( !total_size ) {
+        DEBUG("What are you thinking... size must be > 0.\n");
+        return -1;
+    }
+
+    buin->total_size = total_size;
+    buin->data_start = UINT32_MAX;      // invalid data start
+    buin->data_end = UINT32_MAX;        // invalid data end
+    buin->valid_start = 0;
+    buin->valid_end = total_size - 1;
+
+    buin->data = (uint8_t *) malloc( total_size );
+    if( NULL == buin->data ) {
+        DEBUG( "ERROR allocating 0x%X bytes of memory.\n", total_size );
+        return -2;
+    }
+
+    // initialize buffer to 0xFF (blank / unassigned data)
+    memset( buin->data, UINT8_MAX, total_size );
+
+    return 0;
+}
+
 int32_t atmel_read_fuses( dfu_device_t *device,
                            atmel_avr32_fuses_t *info ) {
     if( NULL == device ) {

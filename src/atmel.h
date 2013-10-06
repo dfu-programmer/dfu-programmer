@@ -26,6 +26,8 @@
 #include "dfu-bool.h"
 #include "dfu-device.h"
 
+#define ATMEL_USER_PAGE_OFFSET 0x80800000
+
 #define ATMEL_ERASE_BLOCK_0     0
 #define ATMEL_ERASE_BLOCK_1     1
 #define ATMEL_ERASE_BLOCK_2     2
@@ -69,6 +71,49 @@ typedef struct {
     int32_t isp_io_cond_en;     // ISP uses User page to launch bootloader
     int32_t isp_force;          // Start the ISP no matter what
 } atmel_avr32_fuses_t;
+
+typedef struct {
+    size_t total_size;
+    size_t  page_size;
+    uint32_t data_start;
+    uint32_t data_end;
+    uint32_t valid_start;
+    uint32_t valid_end;
+    uint16_t *data;
+} atmel_buffer_out_t;
+
+typedef struct {
+    size_t total_size;
+    uint32_t data_start;
+    uint32_t data_end;
+    uint32_t valid_start;
+    uint32_t valid_end;
+    uint8_t *data;
+} atmel_buffer_in_t;
+
+int32_t atmel_init_buffer_out(atmel_buffer_out_t *bout,
+        size_t total_size, size_t page_size );
+/* intialize a buffer used to send data to flash memory
+ * the total size and page size must be provided.
+ * the data array is filled with 0xFFFF (an invalid memory
+ * value) indicating that it is unassigned. data start and
+ * data end are initialized with UINT32_MAX indicating there
+ * is no valid data in the buffer.  these two values are simply
+ * convenience values so the start and end of data do not need
+ * to be found multiple times.
+ */
+
+int32_t atmel_init_buffer_in(atmel_buffer_in_t *buin, size_t total_size );
+/* initialize a buffer_in, used for reading the contents of program
+ * memory.  total memory size must be provided.  the data array is filled
+ * with 0xFF, which is unprogrammed memory.
+ */
+
+int32_t atmel_validate_buffer(atmel_buffer_in_t *buin,
+        atmel_buffer_out_t *bout);
+/* compare the contents of buffer_in with buffer_out to check that a target
+ * memory image matches with a memory read
+ */
 
 int32_t atmel_read_config( dfu_device_t *device,
                            atmel_device_info_t *info );
