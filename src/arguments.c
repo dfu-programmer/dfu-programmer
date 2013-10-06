@@ -168,10 +168,10 @@ static struct option_mapping_structure command_map[] = {
     { "get",          com_get       },
     { "getfuse",      com_getfuse   },
     { "launch",       com_launch    },
+    { "reset",        com_reset     },
     { "setfuse",      com_setfuse   },
     { "setsecure",    com_setsecure },
     { "start",        com_start_app },
-    { "reset",        com_reset     },
     { NULL }
 };
 
