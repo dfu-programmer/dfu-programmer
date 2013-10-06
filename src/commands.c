@@ -171,7 +171,7 @@ static int32_t execute_flash_eeprom( dfu_device_t *device,
     if (0 != serialize_memory_image(hex_data,args))
       goto error;
 
-    result = atmel_flash( device, hex_data, 0, args->eeprom_memory_size,
+    result = atmel_flash( device, hex_data, 0, args->eeprom_memory_size - 1,
                           args->eeprom_page_size, true );
 
     if( result < 0 ) {
@@ -451,7 +451,7 @@ static int32_t execute_flash_normal( dfu_device_t *device,
 
     // flash the hex_data onto the device
     result = atmel_flash( device, bout.prog_data, args->flash_address_bottom,
-                          args->flash_address_top + 1, args->flash_page_size, false );
+                          args->flash_address_top, args->flash_page_size, false );
 
     if( result < 0 ) {
         DEBUG( "Error while flashing program data. (err %d)\n", result );

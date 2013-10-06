@@ -142,10 +142,21 @@ int32_t atmel_flash( dfu_device_t *device,
                      const uint32_t end,
                      const size_t flash_page_size,
                      const dfu_bool eeprom );
+/* Flash data from the buffer to the main program memory on the device.
+ * start and end are the start and end addresses of the data
+ * flash_page_size is the size of flash pages - used for alignment
+ * eeprom bool tells if you want to flash to eeprom or flash memory
+ */
 
 int32_t atmel_user( dfu_device_t *device,
                     int16_t *buffer,
-                    const uint32_t end );
+                    const size_t page_size );
+/* Flash data to the user page.  Provide the buffer and the size of
+ * flash pages for the device (this is the size of the user page).
+ * Note that only the entire user page can be flashed because it is
+ * deleted before it is flashed to.  Therfore buffer must fill this
+ * space (start at zero and contain page_size bytes).
+ */
 
 void atmel_print_device_info( FILE *stream, atmel_device_info_t *info );
 
