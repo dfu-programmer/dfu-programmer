@@ -84,16 +84,18 @@ int main( int argc, char **argv )
 #endif
     }
 
-    device = dfu_device_init( args.vendor_id, args.chip_id,
-                              args.bus_id, args.device_address,
-                              &dfu_device,
-                              args.initial_abort,
-                              args.honor_interfaceclass );
+    if( !(args.command == com_bin2hex || args.command == com_hex2bin) ) {
+        device = dfu_device_init( args.vendor_id, args.chip_id,
+                                  args.bus_id, args.device_address,
+                                  &dfu_device,
+                                  args.initial_abort,
+                                  args.honor_interfaceclass );
 
-    if( NULL == device ) {
-        fprintf( stderr, "%s: no device present.\n", progname );
-        retval = DEVICE_ACCESS_ERROR;
-        goto error;
+        if( NULL == device ) {
+            fprintf( stderr, "%s: no device present.\n", progname );
+            retval = DEVICE_ACCESS_ERROR;
+            goto error;
+        }
     }
 
     if( 0 != (retval = execute_command(&dfu_device, &args)) ) {
