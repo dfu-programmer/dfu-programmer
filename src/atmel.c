@@ -99,11 +99,14 @@ static int32_t __atmel_read_page( dfu_device_t *device,
                                   uint8_t* buffer,
                                   const dfu_bool eeprom );
 
-static int32_t __atmel_blank_check_internal( dfu_device_t *device,
-                                             const uint32_t start,
-                                             const uint32_t end );
+static int32_t __atmel_blank_page_check( dfu_device_t *device,
+                                         const uint32_t start,
+                                         const uint32_t end );
 /* use to check if a certain address range on the current page is blank
  * it assumes current page has previously been selected.
+ * returns 0 if the page is blank
+ * returns the first non-blank address + 1 if not blank (no zero!)
+ * returns a negative number if the blank check fails
  */
 
 // ________  F U N C T I O N S  _______________________________
@@ -643,12 +646,26 @@ int32_t atmel_read_flash( dfu_device_t *device,
     return (end - start);
 }
 
-static int32_t __atmel_blank_check_internal( dfu_device_t *device,
+static int32_t __atmel_blank_page_check( dfu_device_t *device,
                                              const uint32_t start,
                                              const uint32_t end ) {
     uint8_t command[6] = { 0x03, 0x01, 0x00, 0x00, 0x00, 0x00 };
+    dfu_status_t status;
 
     TRACE( "%s( %p, 0x%08x, 0x%08x )\n", __FUNCTION__, device, start, end );
+
+    if( (NULL == device) ) {
+        DEBUG( "ERROR: Invalid arguments, device pointer is NULL.\n" );
+        return -1;
+    } else if ( start > end ) {
+        DEBUG( "ERROR: End address 0x%X before start address 0x%X.\n",
+                end, start );
+        return -1;
+    } else if ( end >= ATMEL_64KB_PAGE ) {
+        DEBUG( "ERROR: Address out of 64kb (0x10000) byte page range.\n",
+                end );
+        return -1;
+    }
 
     command[2] = 0xff & (start >> 8);
     command[3] = 0xff & start;
@@ -656,98 +673,98 @@ static int32_t __atmel_blank_check_internal( dfu_device_t *device,
     command[5] = 0xff & end;
 
     if( 6 != dfu_download(device, 6, command) ) {
-        DEBUG( "dfu_download failed.\n" );
+        DEBUG( "__atmel_blank_page_check DFU_DNLOAD failed.\n" );
         return -2;
     }
 
-// FIXME : this function doesn't do anything.. need to call dfu_get_status
+    if( 0 != dfu_get_status(device, &status) ) {
+        DEBUG( "__atmel_blank_page_check DFU_GETSTATUS failed.\n" );
+        return -3;
+    }
 
+    // check status and proceed accordingly
+    if( DFU_STATUS_OK == status.bStatus ) {
+        DEBUG( "Region is bank.\n" );
+    } else if ( DFU_STATUS_ERROR_CHECK_ERASED == status.bStatus ) {
+        // need to DFU upload to get the address
+        DEBUG( "Region is NOT bank.\n" );
+        uint8_t addr[2] = { 0x00, 0x00 };
+        int32_t retval = 0;
+        if ( 2 != dfu_upload(device, 2, addr) ) {
+            DEBUG( "__atmel_blank_page_check DFU_UPLOAD failed.\n" );
+            return -4;
+        } else {
+            retval = (int32_t) ( ( ((uint16_t) addr[0]) << 8 ) + addr[1] );
+            DEBUG( " First non-blank address in region is 0x%X.\n", retval );
+            return retval + 1;
+        }
+    } else {
+        DEBUG( "Error: status (%s) was not OK.\n",
+            dfu_status_to_string(status.bStatus) );
+        if ( STATE_DFU_ERROR == status.bState ) {
+            dfu_clear_status( device );
+        }
+        return -4;
+    }
     return 0;
 }
 
 int32_t atmel_blank_check( dfu_device_t *device,
                            const uint32_t start,
                            const uint32_t end ) {
-    int32_t rv;
-    uint16_t page;
-    uint32_t current_start;
-    size_t size;
+    int32_t result;                     // blank_page_check_result
+    uint32_t blank_upto = start;        // up to is not inclusive
+    uint32_t check_until;               // end address of page check
+    uint16_t current_page;              // 64kb page number
 
     TRACE( "%s( %p, 0x%08x, 0x%08x )\n", __FUNCTION__, device, start, end );
 
-    if( (start >= end) || (NULL == device) ) {
-        DEBUG( "invalid arguments.\n" );
+    if( (NULL == device) ) {
+        DEBUG( "ERROR: Invalid arguments, device pointer is NULL.\n" );
+        return -1;
+    } else if ( start > end ) {
+        DEBUG( "ERROR: End address 0x%X before start address 0x%X.\n",
+                end, start );
         return -1;
     }
 
-    rv = -3;
-
-    /* Handle small memory (< 64k) devices without a page selection. */
-    if( end < ATMEL_64KB_PAGE - 1 ) {
-        rv = __atmel_blank_check_internal( device, start, end );
-        goto done;
+    // safe to call this with any type of device
+    if( 0 != atmel_select_memory_unit(device, mem_flash) ) {
+        return -2;
     }
 
-    /* Select FLASH memory */
-    if( GRP_AVR32 & device->type ) {
-        if( 0 != atmel_select_memory_unit(device, mem_flash) ) {
-            return -2;
-        }
-    }
+    do {
+        // want to have checks align with pages
+        current_page = blank_upto / ATMEL_64KB_PAGE;
+        check_until = ( current_page + 1 ) * ATMEL_64KB_PAGE - 1;
+        check_until = check_until > end ? end : check_until;
 
-    current_start = start;
-    size = end - current_start;
-    for( page = 0; 0 < size; page++ ) {
-        if( ATMEL_64KB_PAGE - 1 < size ) {
-            size = ATMEL_64KB_PAGE - 1;
-        }
-
-        /* Select the page of memory */
-        if( 0 != atmel_select_page(device, page) ) {
-            return -2;
+        // safe to call with any type of device (just bc end address is
+        // below 0x10000 doesn't mean you are definitely on page 0)
+        if ( 0 != atmel_select_page(device, current_page) ) {
+            DEBUG ("page select error.\n");
+            return -3;
         }
 
-        rv = __atmel_blank_check_internal( device, 0, size );
-        if( 0 != rv ) {
-            /* We ran into a problem. */
-            return rv;
-        }
+        // send the 'page' address, not absolute address
+        result = __atmel_blank_page_check( device,
+                blank_upto % ATMEL_64KB_PAGE,
+                check_until % ATMEL_64KB_PAGE );
 
-        /* Add 1 because we checked an inclusive number of bytes. */
-        current_start += size + 1;
-
-        /* because we are subtracting the number of bytes compared, the
-         * next starting position is 1 after the end, which causes all
-         * sorts of problems if size_t is unsigned. */
-        if( current_start < end ) {
-            size = end - current_start;
+        if ( result == 0 ) {
+            DEBUG ( "Flash blank from 0x%X to 0x%X.\n",
+                    start, check_until );
+            blank_upto = check_until + 1;
+        } else if ( result > 0 ) {
+            blank_upto = result - 1 + ATMEL_64KB_PAGE * current_page;
+            DEBUG ( "Flash NOT blank beginning at 0x%X.\n", blank_upto );
+            return blank_upto + 1;
         } else {
-            size = 0;
+            DEBUG ( "Blank check fail err %d. Flash status unknown.\n", result );
+            return result;
         }
-    }
-
-done:
-    if( 0 == rv ) {
-        int32_t i;
-
-        /* It looks like it can take a while to erase the chip.
-         * We will try for 10 seconds before giving up.
-         */
-        // FIXME: why is this being done here?  this is not the erase command
-        for( i = 0; i < 20; i++ ) {
-            dfu_status_t status;
-            if( 0 == dfu_get_status(device, &status) ) {
-                return status.bStatus;
-            }
-        }
-    }
-
-// FIXME : there doesn't seem to be any reason why get_status should be checked
-// here - and particularly 20 times.. also this isn't the erase command so erase
-// should not be mentioned here.
-
-    DEBUG( "erase chip failed.\n" );
-    return -3;
+    } while ( blank_upto < end );
+    return 0;
 }
 
 int32_t atmel_start_app_reset( dfu_device_t *device ) {
