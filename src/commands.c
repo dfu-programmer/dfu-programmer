@@ -610,33 +610,36 @@ static int32_t execute_dump( dfu_device_t *device,
                 buin.info.data_start = i;
             }
         }
-        for( i = buin.info.data_end; i > buin.info.data_start; i-- ) {
-            if( buin.data[i] !=0xFF ) break;
-            if( i / buin.info.page_size <
-                    buin.info.data_end / buin.info.page_size ) {
-                buin.info.data_end = i;
+        if( i == buin.info.data_end ) {
+            if( !args->quiet )
+                fprintf( stderr,
+                        "Memory is blank, returning a single blank page.\n"
+                        "Use --force to return the entire memory regardless.\n");
+            buin.info.data_start = 0;
+            buin.info.data_end = buin.info.page_size - 1;
+        } else {        // find last page with data
+            for( i = buin.info.data_end; i > buin.info.data_start; i-- ) {
+                if( buin.data[i] !=0xFF ) break;
+                if( i / buin.info.page_size <
+                        buin.info.data_end / buin.info.page_size ) {
+                    buin.info.data_end = i;
+                }
             }
         }
-        // find last page with data
     }
-    if( buin.info.data_start >= buin.info.data_end ) {
-        if( !args->quiet )
-            fprintf( stderr, "Memory is blank, returning a single blank page.\n"
-                             "Use --force to return the entire memory regardless.\n");
-        buin.info.data_start = 0;
-        buin.info.data_end = buin.info.page_size - 1;
-    }
-
-    if( !args->quiet )
-        fprintf( stderr, "Dumping 0x%X bytes from address offset 0x%X.\n",
-                buin.info.data_end - buin.info.data_start + 1,
-                target_offset + buin.info.data_start );
 
     if( args->com_read_data.bin ) {
-        for( i = buin.info.data_start; i <= buin.info.data_end; i++ ) {
+        if( !args->quiet )
+            fprintf( stderr, "Dumping 0x%X bytes from address offset 0x%X.\n",
+                    buin.info.data_end + 1, target_offset );
+        for( i = 0; i <= buin.info.data_end; i++ ) {
             fprintf( stdout, "%c", buin.data[i] );
         }
     } else {
+        if( !args->quiet )
+            fprintf( stderr, "Dumping 0x%X bytes from address offset 0x%X.\n",
+                    buin.info.data_end - buin.info.data_start + 1,
+                    target_offset + buin.info.data_start );
         intel_hex_from_buffer( NULL, &buin,
                 args->com_read_data.force, target_offset );
     }
