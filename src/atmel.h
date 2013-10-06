@@ -115,7 +115,8 @@ int32_t atmel_init_buffer_out(atmel_buffer_out_t *bout,
  * to be found multiple times.
  */
 
-int32_t atmel_init_buffer_in(atmel_buffer_in_t *buin, size_t total_size );
+int32_t atmel_init_buffer_in(atmel_buffer_in_t *buin,
+        size_t total_size, size_t page_size );
 /* initialize a buffer_in, used for reading the contents of program
  * memory.  total memory size must be provided.  the data array is filled
  * with 0xFF, which is unprogrammed memory.

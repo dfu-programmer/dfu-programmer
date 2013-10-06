@@ -98,8 +98,10 @@ static int32_t execute_erase( dfu_device_t *device,
         fprintf( stderr, "Erase Success.\n" );
     }
 
-    result = atmel_blank_check( device, args->flash_address_bottom,
-                                        args->flash_address_top );
+    if ( !args->com_erase_data.suppress_validation ) {
+        result = atmel_blank_check( device, args->flash_address_bottom,
+                                            args->flash_address_top );
+    }
     if( 0 != result ) {
         fprintf( stderr, "Blank Check Failed.\n" );
     }
@@ -163,15 +165,14 @@ static int32_t execute_validate( dfu_device_t *device,
     int32_t result;             // result of fcn calls
     atmel_buffer_in_t buin;     // buffer in for storing read mem
 
-    if( 0 != atmel_init_buffer_in(&buin, bout->info.total_size ) ) {
+    if( 0 != atmel_init_buffer_in(&buin, bout->info.total_size,
+                                            bout->info.page_size ) ) {
         DEBUG("ERROR initializing a buffer.\n");
         goto error;
     }
     buin.info.data_start = bout->info.valid_start;
     buin.info.data_end = bout->info.valid_end;
 
-    if( !quiet ) fprintf( stderr, "Reading 0x%X bytes...\n",
-            buin.info.data_end - buin.info.data_start + 1 );
     if( 0 !=  (result = atmel_read_flash(device, &buin,
                                          mem_segment, quiet)) ) {
         DEBUG("ERROR: could not read memory, err %d.\n", result);
@@ -204,26 +205,24 @@ static int32_t execute_flash( dfu_device_t *device,
     atmel_buffer_out_t bout;
     size_t   memory_size;
     size_t   page_size;
-    uint8_t  mem_type;
+    enum atmel_memory_unit_enum mem_type = args->com_flash_data.segment;
     uint32_t target_offset = 0;
 
     // assign the correct memory size
-    switch ( args->command ) {
-        case com_flash:
+    switch ( mem_type ) {
+        case mem_flash:
             memory_size = args->memory_address_top + 1;
             page_size = args->flash_page_size;
-            mem_type = mem_flash;
             break;
-        case com_eflash:
+        case mem_eeprom:
             if( 0 == args->eeprom_memory_size ) {
                 fprintf( stderr, "This device has no eeprom.\n" );
                 return -1;
             }
             memory_size = args->eeprom_memory_size;
             page_size = args->eeprom_page_size;
-            mem_type = mem_eeprom;
             break;
-        case com_user:
+        case mem_user:
             memory_size = args->flash_page_size;
             page_size = args->flash_page_size;
             mem_type = mem_user;
@@ -253,7 +252,7 @@ static int32_t execute_flash( dfu_device_t *device,
     } else if ( result > 0 ) {
         DEBUG( "WARNING: File contains 0x%X bytes outside target memory.\n",
                 result );
-        if( args->command == com_flash ) {
+        if( mem_type == mem_flash ) {
             DEBUG( "There may be data in the user page (offset %#X).\n",
                     ATMEL_USER_PAGE_OFFSET );
             DEBUG( "Inspect the hex file or try flash-user.\n" );
@@ -273,7 +272,7 @@ static int32_t execute_flash( dfu_device_t *device,
     if (0 != serialize_memory_image( &bout, args ))
       goto error;
 
-    if( args->command == com_flash ) {
+    if( mem_type == mem_flash ) {
         bout.info.valid_start = args->flash_address_bottom;
         bout.info.valid_end = args->flash_address_top;
 
@@ -290,7 +289,7 @@ static int32_t execute_flash( dfu_device_t *device,
                 }
             }
         }
-    } else if ( args->command == com_user ) {
+    } else if ( mem_type == mem_user ) {
         // check here about overwriting?
 
         if ( bout.info.data_start == UINT32_MAX ) {
@@ -338,11 +337,11 @@ static int32_t execute_flash( dfu_device_t *device,
     }
 
     // ------------------ WRITE PROGRAM DATA -------------------------------
-    if ( args->command == com_user ) {
+    if ( mem_type == mem_user ) {
         result = atmel_user( device, &bout );
     } else {
         result = atmel_flash(device, &bout,
-                args->command == com_eflash ? true : false,
+                mem_type == mem_eeprom ? true : false,
                 args->com_flash_data.force, args->quiet);
     }
     if( 0 != result ) {
@@ -550,33 +549,39 @@ static int32_t execute_dump( dfu_device_t *device,
     int32_t retval = -1;        // return value for this fcn
     int32_t result;             // result of fcn calls
     atmel_buffer_in_t buin;     // buffer in for storing read mem
-    uint8_t mem_segment = 0;
+    enum atmel_memory_unit_enum mem_segment = args->com_read_data.segment;
     size_t mem_size = 0;
+    size_t page_size = 0;
+    uint32_t target_offset = 0; // address offset on the target device
+        // NOTE: target_offset may not be set appropriately for device
+        // classes other than ADC_AVR32
 
-    switch( args->command ) {
-        case com_dump:
+    switch( mem_segment ) {
+        case mem_flash:
             mem_size = args->memory_address_top + 1;
-            mem_segment = mem_flash;
+            page_size = args->flash_page_size;
+            if( ADC_AVR32 == args->device_type ) target_offset = 0x80000000;
             break;
-        case com_edump:
+        case mem_eeprom:
             mem_size = args->eeprom_memory_size;
-            mem_segment = mem_eeprom;
+            page_size = args->eeprom_page_size;
             break;
-        case com_udump:
+        case mem_user:
             mem_size = args->flash_page_size;
-            mem_segment = mem_user;
+            page_size = args->flash_page_size;
+            target_offset = 0x80800000;
             break;
         default:
             fprintf( stderr, "Dump not currenlty supported for this memory.\n" );
             goto error;
     }
 
-    if( 0 != atmel_init_buffer_in(&buin, mem_size) ) {
+    if( 0 != atmel_init_buffer_in(&buin, mem_size, page_size) ) {
         DEBUG("ERROR initializing a buffer.\n");
         goto error;
     }
 
-    if( args->command == com_dump ) {
+    if( mem_segment == mem_flash ) {
         buin.info.data_start = args->flash_address_bottom;
         buin.info.data_end = args->flash_address_top;
     }
@@ -584,8 +589,6 @@ static int32_t execute_dump( dfu_device_t *device,
     /* Check AVR32 security bit in order to provide a better error message. */
     security_check( device );   // avr32 has no eeprom, but OK
 
-    if( !args->quiet ) fprintf( stderr, "Reading 0x%X bytes...\n",
-            buin.info.data_end - buin.info.data_start + 1 );
     if( 0 != (result = atmel_read_flash(device, &buin,
                     mem_segment, args->quiet)) ) {
         DEBUG("ERROR: could not read memory, err %d.\n", result);
@@ -594,8 +597,48 @@ static int32_t execute_dump( dfu_device_t *device,
         goto error;
     }
 
-    for( i = 0; i <= buin.info.data_end; i++ ) {
-        fprintf( stdout, "%c", buin.data[i] );
+    // determine first & last page with non-blank data
+    if( args->com_read_data.force ) {
+        buin.info.data_start = 0;
+    } else {
+        // find first page with data
+        for( i = buin.info.data_start; i < buin.info.data_end; i++ ) {
+            if( buin.data[i] != 0xFF ) break;
+            if( i / buin.info.page_size >
+                    buin.info.data_start / buin.info.page_size ) {
+                // i has just jumpped to a different page than buin.data_start
+                buin.info.data_start = i;
+            }
+        }
+        for( i = buin.info.data_end; i > buin.info.data_start; i-- ) {
+            if( buin.data[i] !=0xFF ) break;
+            if( i / buin.info.page_size <
+                    buin.info.data_end / buin.info.page_size ) {
+                buin.info.data_end = i;
+            }
+        }
+        // find last page with data
+    }
+    if( buin.info.data_start >= buin.info.data_end ) {
+        if( !args->quiet )
+            fprintf( stderr, "Memory is blank, returning a single blank page.\n"
+                             "Use --force to return the entire memory regardless.\n");
+        buin.info.data_start = 0;
+        buin.info.data_end = buin.info.page_size - 1;
+    }
+
+    if( !args->quiet )
+        fprintf( stderr, "Dumping 0x%X bytes from address offset 0x%X.\n",
+                buin.info.data_end - buin.info.data_start + 1,
+                target_offset + buin.info.data_start );
+
+    if( args->com_read_data.bin ) {
+        for( i = buin.info.data_start; i <= buin.info.data_end; i++ ) {
+            fprintf( stdout, "%c", buin.data[i] );
+        }
+    } else {
+        intel_hex_from_buffer( NULL, &buin,
+                args->com_read_data.force, target_offset );
     }
 
     fflush( stdout );
@@ -679,8 +722,14 @@ int32_t execute_command( dfu_device_t *device,
         case com_erase:
             return execute_erase( device, args );
         case com_flash:
+            return execute_flash( device, args );
         case com_eflash:
+            args->com_flash_data.segment = mem_eeprom;
+            args->command = com_launch;
+            return execute_flash( device, args );
         case com_user:
+            args->com_flash_data.segment = mem_user;
+            args->command = com_launch;
             return execute_flash( device, args );
         case com_start_app:
             args->com_launch_config.noreset = true;
@@ -693,8 +742,23 @@ int32_t execute_command( dfu_device_t *device,
         case com_getfuse:
             return execute_getfuse( device, args );
         case com_dump:
+            args->command = com_read;
+            args->com_read_data.force = true;
+            args->com_read_data.bin = 1;
+            return execute_dump( device, args );
         case com_edump:
+            args->com_read_data.segment = mem_eeprom;
+            args->com_read_data.force = true;
+            args->command = com_read;
+            args->com_read_data.bin = 1;
+            return execute_dump( device, args );
         case com_udump:
+            args->com_read_data.segment = mem_eeprom;
+            args->com_read_data.force = true;
+            args->command = com_read;
+            args->com_read_data.bin = 1;
+            return execute_dump( device, args );
+        case com_read:
             return execute_dump( device, args );
         case com_configure:
             return execute_configure( device, args );

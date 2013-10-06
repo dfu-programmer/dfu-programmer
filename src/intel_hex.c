@@ -40,19 +40,15 @@
 #include "util.h"
 
 struct intel_record {
-    unsigned int count;
-    unsigned int type;
-    unsigned int checksum;
-    unsigned int address;
-    // FIXME : change this to unsigned int 8
-    char data[256];
+    uint8_t count;      // single byte count
+    uint8_t type;       // single byte type
+    uint16_t address;   // two byte address
+    uint8_t checksum;   // single byte checksum
+    uint8_t data[256];
 };
 
-#define IHEX_DEBUG_THRESHOLD 50
-
-#define DEBUG(...)  dfu_debug( __FILE__, __FUNCTION__, __LINE__, \
-                               IHEX_DEBUG_THRESHOLD, __VA_ARGS__ )
-
+#define IHEX_COLS 16
+#define IHEX_64KB_PAGE 0x10000
 
 
 #define IHEX_DEBUG_THRESHOLD 50
@@ -67,6 +63,35 @@ static int intel_validate_checksum( struct intel_record *record );
  *
  *  returns 0 if checksum validates, anything else on error
  */
+
+static int32_t ihex_make_line( struct intel_record *record, char *str );
+/* provide record typea list of values, they are converted into a line and put at str
+ * values are 2 address bytes, the record type and any values. A checksum
+ * is added to the end and the line length is prepended.
+ */
+
+static int32_t ihex_make_checksum( struct intel_record *record );
+/* make a checksum using the values in record, place it in the record and
+ * return 0
+ */
+
+static int32_t ihex_make_record_04_offset( uint32_t offset, char *str );
+/* make an 04 record type offset, where the desired offset address is found by
+ * multiplying value by 0x1000 (or the 64kb page size).  Therefore, the given
+ * offset value must be a clean multiple of 0x10000.  the offset value
+ * is placed in the buffer at str
+ */
+
+//static int32_t ihex_process_record( struct intel_record *record,
+//        const uint8_t job, uint32_t next_address );
+/* call this function when a record needs to be processed (specify w/ job)
+ * and a new blank record needs to be created
+ */
+
+static void ihex_clear_record( struct intel_record *record, uint32_t address );
+/* wipes out a record (resets it to zero)
+ */
+
 
 // ________  F U N C T I O N S  _______________________________
 static int intel_validate_checksum( struct intel_record *record ) {
@@ -117,7 +142,7 @@ static int intel_validate_line( struct intel_record *record ) {
 
         case 3:                             /* start address record */
             /* just ignore these records (could verify addr == 0) */
-            return -8;
+            break;
 
         case 4:                             /* extended linear address record */
             if( (0 != record->address) || (2 != record->count) ) {
@@ -141,39 +166,17 @@ static int intel_validate_line( struct intel_record *record ) {
     return 0;
 }
 
-static void intel_process_address( struct intel_record *record ) {
-    switch( record->type ) {
-        case 2:
-            /* 0x1238 -> 0x00012380 */
-            record->address = ((0xff & record->data[0]) << 8);
-            record->address |= (0xff & record->data[1]);
-            record->address *= 16;
-            break;
-
-        case 4:
-            /* 0x1234 -> 0x12340000 */
-            record->address = ((0xff & record->data[0]) << 8);
-            record->address |= (0xff & record->data[1]);
-            record->address <<= 16;
-            break;
-
-        case 5:
-            /* 0x12345678 -> 0x12345678 */
-            record->address = ((0xff & record->data[0]) << 24) |
-                              ((0xff & record->data[1]) << 16) |
-                              ((0xff & record->data[2]) <<  8) |
-                               (0xff & record->data[3]);
-            break;
-    }
-}
-
 static int intel_read_data( FILE *fp, struct intel_record *record ) {
     int i;
     int c;
     int status;
     char buffer[10];
-    int addr_upper = 0;
-    int addr_lower = 0;
+    int addr_upper;
+    int addr_lower;
+    int count;
+    int type;
+    int data;
+    int checksum;
 
     /* read in the ':bbaaaarr'
      *   bb - byte count
@@ -181,26 +184,26 @@ static int intel_read_data( FILE *fp, struct intel_record *record ) {
      *   rr - record type
      */
 
-    if( NULL == fgets(buffer, 10, fp) ) return -1;
-    status = sscanf( buffer, ":%02x%02x%02x%02x", &(record->count),
-                     &addr_upper, &addr_lower, &(record->type) );
-    if( 4 != status ) return -2;
+    if( NULL == fgets(buffer, 10, fp) )                     return -1;
+    status = sscanf( buffer, ":%02x%02x%02x%02x", &count,
+                     &addr_upper, &addr_lower, &type );
+    if( 4 != status )                                       return -2;
 
-    record->address = addr_upper << 8 | addr_lower;
+    record->count =   (uint8_t)  count;
+    record->address = (uint16_t) (addr_upper << 8 | addr_lower);
+    record->type =    (uint8_t)  type;
 
     /* Read the data */
     for( i = 0; i < record->count; i++ ) {
-        int data = 0;
+        if( NULL == fgets(buffer, 3, fp) )                  return -3;
+        if( 1 != sscanf(buffer, "%02x", &data) )            return -4;
 
-        if( NULL == fgets(buffer, 3, fp) ) return -3;
-        if( 1 != sscanf(buffer, "%02x", &data) ) return -4;
-
-        record->data[i] = 0xff & data;
+        record->data[i] = (uint8_t) (0xff & data);
     }
 
     /* Read the checksum */
-    if( NULL == fgets(buffer, 3, fp) ) return -5;
-    if( 1 != sscanf(buffer, "%02x", &(record->checksum)) ) return -6;
+    if( NULL == fgets(buffer, 3, fp) )                      return -5;
+    if( 1 != sscanf(buffer, "%02x", &checksum) )            return -6;
 
     /* Chomp the [\r]\n */
     c = fgetc( fp );
@@ -208,32 +211,9 @@ static int intel_read_data( FILE *fp, struct intel_record *record ) {
         c = fgetc( fp );
     }
     if( '\n' != c ) {
-        DEBUG( "Error: end of line != \\n.\n" );
-        return -7;
+        DEBUG( "Error: end of line != \\n.\n" );            return -7;
     }
-
-    return 0;
-}
-
-static int intel_parse_line( FILE *fp, struct intel_record *record ) {
-    int rdata_result;
-    if( 0 != (rdata_result = intel_read_data(fp, record)) ) {
-        DEBUG( "Error reading data (E = %d).\n", rdata_result );
-        return rdata_result;
-    }
-
-    switch( intel_validate_line(record) ) {
-        case 0:     /* data, extended address, etc */
-            intel_process_address( record );
-            break;
-
-        case -8:    /* start address (ignore) */
-            break;
-
-        default:
-            DEBUG( "intel_validate_line returned not -8 or 0" );
-            return -1;
-    }
+    record->checksum = (uint8_t) checksum;
 
     return 0;
 }
@@ -252,8 +232,9 @@ static void intel_invalid_addr_warning(uint32_t line_count, uint32_t address,
 int32_t intel_process_data( atmel_buffer_out_t *bout, char value,
         uint32_t target_offset, uint32_t address) {
     // NOTE : there are some hex program files that contain data in the user
-    // page.  In this situation, the hex file is processed and used as normal
-    // with a warning message containing the first line with an invalid address.
+    // page, which is outside of 'valid' memory.  In this situation, the hex
+    // file is processed and used as normal with a warning message containing
+    // the first line with an invalid address.
     uint32_t raddress;   // relative address = address - target offset
 
     // The Atmel flash page starts at address 0x80000000, we need to ignore
@@ -263,6 +244,9 @@ int32_t intel_process_data( atmel_buffer_out_t *bout, char value,
 
     if( (address < target_offset) ||
         (address > target_offset + bout->info.total_size - 1) ) {
+        DEBUG( "Address 0x%X is outside valid range 0x%X to 0x%X.\n",
+                address, target_offset,
+                target_offset + bout->info.total_size - 1 );
         return -1;
     } else {
         raddress = address - target_offset;
@@ -298,7 +282,7 @@ int32_t intel_hex_to_buffer( char *filename, atmel_buffer_out_t *bout,
     }
 
     if (NULL == filename) {
-        if ( !quiet ) fprintf( stderr, "Invalid filename.\n" );
+        if( !quiet ) fprintf( stderr, "Invalid filename.\n" );
         retval = -2;
         goto error;
     }
@@ -308,7 +292,7 @@ int32_t intel_hex_to_buffer( char *filename, atmel_buffer_out_t *bout,
     } else {
         fp = fopen( filename, "r" );
         if( NULL == fp ) {
-            if ( !quiet ) fprintf( stderr, "Error opening %s\n", filename );
+            if( !quiet ) fprintf( stderr, "Error opening %s\n", filename );
             retval = -3;
             goto error;
         }
@@ -316,16 +300,21 @@ int32_t intel_hex_to_buffer( char *filename, atmel_buffer_out_t *bout,
 
     // iterate through ihex file and assign values to memory and user
     do {
-        if( 0 != (i=intel_parse_line(fp, &record)) ) {
-            if ( !quiet ) {
-                fprintf( stderr, "Error parsing line %d, (err %d).\n",
-                        line_count, i );
-            }
+        // read the data
+        if( 0 != intel_read_data(fp, &record) ) {
+            if( !quiet )
+                fprintf( stderr, "Error reading line %u.\n", line_count );
             retval = -4;
+            goto error;
+        } else if ( 0 != intel_validate_line( &record ) ) {
+            if( !quiet )
+                fprintf( stderr, "Error: Line %u does not validate.\n", line_count );
+            retval = -5;
             goto error;
         } else
             line_count++;
 
+        // process the data
         switch( record.type ) {
             case 0:
                 for( address = address_offset + ((uint32_t) record.address),
@@ -341,23 +330,36 @@ int32_t intel_hex_to_buffer( char *filename, atmel_buffer_out_t *bout,
                     }
                 }
                 break;
-            case 2:
-                // record.address set appropriately in intel_process_address
-            case 4:
-                // record.address set appropriately in intel_process_address
-            case 5:
+            case 2:             // 0x1238 -> 0x00012380
+                address_offset = (((uint32_t) record.data[0]) << 12) |
+                                  ((uint32_t) record.data[1]) << 4;
+                address_offset = (0x7fffffff & address_offset);
+                DEBUG( "Address offset set to 0x%x.\n", address_offset );
+                break;
+            case 4:             // 0x1234 -> 0x12340000
+                address_offset = (((uint32_t) record.data[0]) << 24) |
+                                  ((uint32_t) record.data[1]) << 16;
+                address_offset = (0x7fffffff & address_offset);
+                DEBUG( "Address offset set to 0x%x.\n", address_offset );
+                break;
+            case 5:             // 0x12345678 -> 0x12345678
+                address_offset = (((uint32_t) record.data[0]) << 24) |
+                                 (((uint32_t) record.data[1]) << 16) |
+                                 (((uint32_t) record.data[2]) <<  8) |
+                                  ((uint32_t) record.data[3]);
                 /* Note: In AVR32 memory map, FLASH starts at 0x80000000, but the
                  * ISP places this memory at 0.  The hex file will use 0x8..., so
                  * mask off that bit. */
-                address_offset = (uint32_t) (0x7fffffff & record.address);
+                address_offset = (0x7fffffff & address_offset);
                 DEBUG( "Address offset set to 0x%x.\n", address_offset );
                 break;
         }
     } while( (1 != record.type) );
 
     if ( invalid_address_count ) {
-        fprintf( stderr, "Total of 0x%X bytes in invalid addressed.\n",
-                invalid_address_count );
+        if( !quiet )
+            fprintf( stderr, "Total of 0x%X bytes in invalid addressed.\n",
+                    invalid_address_count );
     }
 
     retval = invalid_address_count;
@@ -368,10 +370,156 @@ error:
         fp = NULL;
     }
 
+    if( retval & !quiet ) {
+        fprintf( stderr, "See --debug=%u or greater for more information.\n",
+                IHEX_DEBUG_THRESHOLD + 1 );
+    }
+
     return retval;
 }
 
-int32_t buffer_to_intel_hex( char *filename, atmel_buffer_in_t *buin,
-        uint32_t target_offset ) {
-    return -1;
+// ___ CONVERT TO INTEL HEX __________________________
+static void ihex_clear_record( struct intel_record *record, uint32_t address ) {
+    record->count = 0;
+    record->address = ((uint16_t) (address % 0xffff));
+    record->type = 0;
+    record->data[0] = 0;
+    record->checksum = 0;
+}
+
+static int32_t ihex_make_checksum( struct intel_record *record ) {
+    uint16_t sum = 0;
+    uint8_t i;
+    sum += record->count;
+    sum += record->type;
+    sum += (record->address & 0xff) + (0xff & (record->address >> 8));
+    for( i = 0; i < record->count; i++ ) {
+        sum += record->data[i];
+    }
+    record->checksum = ((uint8_t) (0xff & (0x100 - (0xff & sum))));
+    return 0;
+}
+
+static int32_t ihex_make_line( struct intel_record *record, char *str ) {
+    uint8_t i;
+    if( record->type > 5 ) {
+        DEBUG( "Record type 0x%X unknown.\n", record->type );
+        return -1;
+    } else if( record->count > IHEX_COLS ) {
+        DEBUG( "Each line must have no more than 16 values.\n" );
+        return -1;
+    }
+
+    if( record->count == 0 ) {
+        // if there is no data set the string to empty, return
+        *str = 0;
+        return 0;
+    }
+
+    ihex_make_checksum(record);          // make the checksum
+
+    sprintf( str, ":%02X%04X%02X",      // ':bbaaaarr'
+            record->count, record->address, record->type );
+
+    for ( i = 0; i < record->count; i++ ) {
+        sprintf( str + 9 + 2*i, "%02X", record->data[i] );
+    }
+    sprintf( str + 9 + 2*i, "%02X", record->checksum );
+
+    return 0;
+}
+
+static int32_t ihex_make_record_04_offset( uint32_t offset, char *str ) {
+    struct intel_record record;
+    if ( offset & 0xffff ) {
+        DEBUG( "ihex 04 type offset must be divisible by 0x%X, not 0x%X.\n",
+                0x10000, offset );
+        return -1;
+    }
+    record.type = 4;
+    record.count = 2;
+    record.address = 0;
+    record.data[0] = (uint8_t) (0xff & (offset >> 24));
+    record.data[1] = (uint8_t) (0xff & (offset >> 16));
+    return ihex_make_line( &record, str );
+}
+
+//static int32_t ihex_process_record( struct intel_record *record,
+//        const uint8_t job, uint32_t next_address ) {
+//    char line[80];
+//    if( record->count ) {
+//        if( 0 != ihex_make_line(record, line) ) {
+//            DEBUG( "Error making a line.\n" );
+//            return -2;
+//        } else {
+//            ihex_clear_record( record, next_address );
+//        }
+//        if( job==0 ) {
+//            fprintf( stdout, "%s\n", line );
+//        }
+//    }
+//    return 0;
+//}
+
+int32_t intel_hex_from_buffer( char *filename, atmel_buffer_in_t *buin,
+        dfu_bool force_full, uint32_t target_offset ) {
+    char line[80];
+    uint32_t offset_address = 0;    // offset address written to a previous line
+    uint32_t address = 0;   // relative offset from previously set addr
+    uint32_t i = buin->info.data_start;
+    struct intel_record record;
+
+    ihex_clear_record( &record, i + target_offset );
+
+    // target_offset = 0x8000 0000 or 0x8080 0000
+    // use buin->info.data_start to buin->info.data_stop as range
+    // if target offset > page size, use process 04
+    // reasons to complete the current line, #cols, last value, last page val
+
+    for( i = buin->info.data_start; i <= buin->info.data_end; i++ ) {
+        address = i + target_offset;
+        if( address - offset_address >= 0x10000 ) {
+            offset_address = (address / IHEX_64KB_PAGE) * IHEX_64KB_PAGE;
+            // complete the line, before adding this next point
+
+            if( 0 != ihex_make_line(&record, line) ) {
+                DEBUG( "Error making a line.\n" );
+                return -2;
+            } else {
+                fprintf( stdout, "%s\n", line );
+                ihex_clear_record( &record, address - offset_address );
+            }
+
+            // reset offset address
+            if( 0 != ihex_make_record_04_offset(offset_address, line) ) {
+                DEBUG( "Error making a class 4 offset.\n" );
+                return -2;
+            } else {
+                fprintf( stdout, "%s\n", line );
+            }
+        }
+        if( record.count == IHEX_COLS ) {
+            if( 0 != ihex_make_line(&record, line) ) {
+                DEBUG( "Error making a line.\n" );
+                return -2;
+            } else {
+                fprintf( stdout, "%s\n", line );
+                ihex_clear_record( &record, address - offset_address );
+            }
+        }
+        record.data[ record.count ] = buin->data[i];
+        record.count ++;
+    }
+    if( record.count ) {
+        if( 0 != ihex_make_line(&record, line) ) {
+            DEBUG( "Error making a line.\n" );
+            return -2;
+        } else {
+            fprintf( stdout, "%s\n", line );
+            ihex_clear_record( &record, address - offset_address );
+        }
+    }
+    fprintf( stdout, ":00000001FF\n" );
+
+    return 0;
 }

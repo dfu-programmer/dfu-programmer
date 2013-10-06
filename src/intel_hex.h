@@ -65,10 +65,11 @@ int32_t intel_hex_to_buffer( char *filename, atmel_buffer_out_t *bout,
  *              data_start field in atmel_buffer_out_t
  */
 
-int32_t buffer_to_intel_hex( char *filename, atmel_buffer_in_t *buin,
-        uint32_t target_offset );
+int32_t intel_hex_from_buffer( char *filename, atmel_buffer_in_t *buin,
+        dfu_bool force_full, uint32_t target_offset );
 /*  Used to convert a buffer to an intel hex formatted file.
- *
+ *  target offset is the address location of buffer 0
+ *  force_full sets whether to keep writing entirely blank pages.
  */
 
 #endif

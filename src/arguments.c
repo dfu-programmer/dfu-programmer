@@ -158,6 +158,7 @@ static struct target_mapping_structure target_map[] = {
 /* ----- command specific structures ---------------------------------------- */
 static struct option_mapping_structure command_map[] = {
     { "configure",    com_configure },
+    { "read",         com_read      },
     { "dump",         com_dump      },
     { "dump-eeprom",  com_edump     },
     { "dump-user",    com_udump     },
@@ -264,42 +265,51 @@ static void usage()
 {
     fprintf( stderr, "Usage: dfu-programmer target[:usb-bus,usb-addr] command [options] "
                      "[global-options] [file|data]\n\n" );
-
     fprintf( stderr, "global-options:\n"
                      "        --quiet\n"
                      "        --debug level    (level is an integer specifying level of detail)\n"
                      "        Global options can be used with any command and must come\n"
-                     "        after the command and before any file or data value\n\n" );
-    fprintf( stderr, "commands:\n" );
-    fprintf( stderr, "        configure {BSB|SBV|SSB|EB|HSB} "
-                     "[--suppress-validation] data\n" );
-    fprintf( stderr, "        dump\n" );
-    fprintf( stderr, "        dump-eeprom\n" );
-    fprintf( stderr, "        dump-user\n" );
-    fprintf( stderr, "        erase        [--force]\n"
-                     "                     [--suppress-validation]\n" );
-    fprintf( stderr, "        flash        [--force]\n"
+                     "        after the command and before any file or data value\n" );
+    fprintf( stderr, "\n" );
+    fprintf( stderr, "command summary:\n" );
+    fprintf( stderr, "        launch       [--no-reset]\n" );
+    fprintf( stderr, "        read         [--force] [--bin] [(flash)|--user|--eeprom]\n" );
+    fprintf( stderr, "        erase        [--force] [--suppress-validation]\n" );
+    fprintf( stderr, "        flash        [--force] [(flash)|--user|--eeprom]\n"
                      "                     [--suppress-validation]\n"
                      "                     [--suppress-bootloader-mem]\n"
                      "                     [--serial=hexdigits:offset] {file|STDIN}\n" );
-    fprintf( stderr, "        flash-eeprom [--force]\n"
-                     "                     [--suppress-validation]\n"
-                     "                     [--serial=hexdigits:offset] {file|STDIN}\n" );
-    fprintf( stderr, "        flash-user   [--force]\n"
-                     "                     [--suppress-validation]\n"
-                     "                     [--serial=hexdigits:offset] {file|STDIN}\n" );
+    fprintf( stderr, "        setsecure\n" );
+    fprintf( stderr, "        configure {BSB|SBV|SSB|EB|HSB}"
+                     " [--suppress-validation] data\n" );
     fprintf( stderr, "        get     {bootloader-version|ID1|ID2|BSB|SBV|SSB|EB|\n"
                      "                 manufacturer|family|product-name|\n"
                      "                 product-revision|HSB}\n" );
     fprintf( stderr, "        getfuse {LOCK|EPFL|BOOTPROT|BODLEVEL|BODHYST|\n"
                      "                 BODEN|ISP_BOD_EN|ISP_IO_COND_EN|\n"
                      "                 ISP_FORCE}\n" );
-    fprintf( stderr, "        launch       [--no-reset]\n" );
     fprintf( stderr, "        setfuse {LOCK|EPFL|BOOTPROT|BODLEVEL|BODHYST|\n"
                      "                 BODEN|ISP_BOD_EN|ISP_IO_COND_EN|\n"
                      "                 ISP_FORCE} data\n" );
-    fprintf( stderr, "        setsecure\n" );
+    fprintf( stderr, "\n" );
+    fprintf( stderr, "additional details:\n" );
+    fprintf( stderr,
+" launch: Launch from the bootloader into the main program using a watchdog\n"
+"         reset.  To jump directly into the main program use --no-reset.\n");
+    fprintf( stderr,
+"   read: Read the program memory in flash and output non-blank pages in ihex\n"
+"         format.  Use --force to output the entire memory and --bin for binary\n"
+"         output.  User page and eeprom are selected using --user and --eprom\n");
+    fprintf( stderr,
+"  erase: Erase memory contents if the chip is not blank or always with --force\n");
+    fprintf( stderr,
+"  flash: Flash a program onto device flash memory.  EEPROM and user page are\n"
+"         selected using --eeprom|--user flags. Use --force to ignore warning\n"
+"         when data exists in target memory region.  Bootloader configuration\n"
+"         uses last 4 to 8 bytes of user page, --force always required here.\n");
+    fprintf( stderr, "Note: version 0.6.1 commands still supported.\n");
 }
+
 
 static int32_t assign_option( int32_t *arg,
                               char *value,
@@ -453,17 +463,81 @@ static int32_t assign_global_options( struct programmer_arguments *args,
         }
     }
 
+    /* Find '--bin' for read binary */
+    for( i = 0; i < argc; i++ ) {
+        if( 0 == strcmp("--bin", argv[i]) ) {
+            *argv[i] = '\0';
+
+            switch( args->command ) {
+                case com_read:
+                case com_dump:
+                case com_edump:
+                case com_udump:
+                    args->com_read_data.bin = 1;
+                    break;
+                default:
+                    /* not supported. */
+                    return -1;
+            }
+            break;
+        }
+    }
+
+    /* Find '--user' for the user page segment */
+    for( i = 0; i < argc; i++ ) {
+        if( 0 == strcmp("--user", argv[i]) ) {
+            *argv[i] = '\0';
+            switch( args->command ) {
+                case com_read:
+                case com_udump:
+                    args->com_read_data.segment = mem_user;
+                    break;
+                case com_flash:
+                case com_user:
+                    args->com_flash_data.segment = mem_user;
+                    break;
+                default:
+                    /* not supported. */
+                    return -1;
+            }
+            break;
+        }
+    }
+
+    /* Find '--eeprom' for the eeprom page segment */
+    for( i = 0; i < argc; i++ ) {
+        if( 0 == strcmp("--eeprom", argv[i]) ) {
+            *argv[i] = '\0';
+            switch( args->command ) {
+                case com_read:
+                case com_udump:
+                    args->com_read_data.segment = mem_eeprom;
+                    break;
+                case com_flash:
+                case com_user:
+                    args->com_flash_data.segment = mem_eeprom;
+                    break;
+                default:
+                    /* not supported. */
+                    return -1;
+            }
+            break;
+        }
+    }
+
     /* Find '--force' if it is here - even though it is not
      * used by all this is easier. */
     for( i = 0; i < argc; i++ ) {
         if( 0 == strcmp("--force", argv[i]) ) {
             *argv[i] = '\0';
-
             switch( args->command ) {
                 case com_flash :
                 case com_eflash :
                 case com_user :
                     args->com_flash_data.force = true;
+                    break;
+                case com_read :
+                    args->com_read_data.force = true;
                     break;
                 case com_erase :
                     args->com_erase_data.force = true;
@@ -825,7 +899,9 @@ int32_t parse_arguments( struct programmer_arguments *args,
             list_targets();
             return -1;
         }
-        if( 0 == strcasecmp(argv[1], "--help") ) {
+        if( 0 == strcasecmp(argv[1], "--help") ||
+                0 == strcasecmp(argv[1], "-h") ||
+                0 == strcasecmp(argv[1], "--h") ) {
             usage();
             return -1;
         }

@@ -118,8 +118,8 @@ enum targets_enum { tar_at89c51snd1c,
 
 enum commands_enum { com_none, com_erase, com_flash, com_user, com_eflash,
                      com_configure, com_get, com_getfuse, com_dump, com_edump,
-                     com_udump, com_setfuse, com_setsecure,
-                     com_start_app, com_version, com_reset, com_launch };
+                     com_udump, com_setfuse, com_setsecure, com_start_app,
+                     com_version, com_reset, com_launch, com_read };
 
 enum configure_enum { conf_BSB = ATMEL_SET_CONFIG_BSB,
                       conf_SBV = ATMEL_SET_CONFIG_SBV,
@@ -178,7 +178,11 @@ struct programmer_arguments {
             int32_t value;
         } com_setfuse_data;
 
-        /* No special data needed for 'dump' */
+        struct com_read_struct {
+            dfu_bool bin;
+            dfu_bool force;
+            enum atmel_memory_unit_enum segment;
+        } com_read_data;
 
         struct com_erase_struct {
             dfu_bool force;
@@ -200,6 +204,7 @@ struct programmer_arguments {
                                      is on last one or two words in the user
                                      page depending on the version of the
                                      bootloader - force overwrite required */
+            enum atmel_memory_unit_enum segment;
         } com_flash_data;
 
         struct com_get_struct {

@@ -81,7 +81,7 @@ static int32_t __atmel_flash_block( dfu_device_t *device,
  */
 
 static int32_t atmel_select_memory_unit( dfu_device_t *device,
-        const uint8_t unit );
+        enum atmel_memory_unit_enum unit );
 /* select a memory unit from the following list (enumerated)
  * flash, eeprom, security, configuration, bootloader, signature, user page
  */
@@ -285,11 +285,12 @@ int32_t atmel_init_buffer_out(atmel_buffer_out_t *bout,
     return 0;
 }
 
-int32_t atmel_init_buffer_in(atmel_buffer_in_t *buin, size_t total_size ) {
+int32_t atmel_init_buffer_in(atmel_buffer_in_t *buin,
+        size_t total_size, size_t page_size ) {
     // TODO : is there a way to combine this and above? maybe typecast to an
     // in or out buffer from a char pointer?
     buin->info.total_size = total_size;
-    buin->info.page_size = 0;
+    buin->info.page_size = page_size;
     buin->info.data_start = 0;
     buin->info.data_end = total_size - 1;
     buin->info.valid_start = 0;
@@ -711,6 +712,7 @@ int32_t atmel_read_flash( dfu_device_t *device,
     uint8_t mem_page = 0;           // tracks the current memory page
     uint32_t progress = 0;          // used to indicate progress
     int32_t result = 0;
+    // TODO : use status instead of result
     int32_t retval = -1;            // the return value for this function
 
     TRACE( "%s( %p, %p, %u, %s )\n", __FUNCTION__, device, buin,
@@ -964,7 +966,7 @@ int32_t atmel_start_app_noreset( dfu_device_t *device ) {
 }
 
 static int32_t atmel_select_memory_unit( dfu_device_t *device,
-                                         const uint8_t unit ) {
+                                enum atmel_memory_unit_enum unit ) {
     TRACE( "%s( %p, %d )\n", __FUNCTION__, device, unit );
 
     uint8_t command[4] = { 0x06, 0x03, 0x00, (0xFF & unit) };
