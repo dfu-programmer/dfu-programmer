@@ -39,6 +39,16 @@
 
 static int security_bit_state;
 
+// ________  P R O T O T Y P E S  _______________________________
+static int32_t execute_validate( dfu_device_t *device,
+                                 atmel_buffer_out_t *bout,
+                                 uint8_t mem_segment,
+                                 dfu_bool quiet );
+/* provide an out buffer to validate and whether this is from
+ * flash or eeprom data sections, also wether you want it quiet
+ */
+
+// ________  F U N C T I O N S  _______________________________
 static void security_check( dfu_device_t *device ) {
     if( ADC_AVR32 == device->type ) {
         // Get security bit state for AVR32.
@@ -61,6 +71,11 @@ static void security_message() {
 static int32_t execute_erase( dfu_device_t *device,
                               struct programmer_arguments *args ) {
     int32_t result = 0;
+
+    if( !args->quiet ) {
+        fprintf( stderr, "Erasing 0x%X bytes...\n",
+           args->flash_address_top - args->flash_address_bottom + 1 );
+    }
 
     DEBUG( "erase 0x%X bytes.\n",
            (args->flash_address_top - args->flash_address_bottom) );
@@ -143,7 +158,6 @@ static int32_t execute_flash_eeprom( dfu_device_t *device,
                                      struct programmer_arguments *args ) {
     int32_t result;
     int32_t retval;
-    atmel_buffer_in_t buin;
     atmel_buffer_out_t bout;
 
     retval = -1;
@@ -185,26 +199,7 @@ static int32_t execute_flash_eeprom( dfu_device_t *device,
     }
 
     if( 0 == args->com_flash_data.suppress_validation ) {
-        if( 0 == args->quiet ) {
-            fprintf( stderr, "Validating...\n" );
-        }
-
-        if( 0 != atmel_init_buffer_in(&buin, bout.total_size ) ) {
-            DEBUG("ERROR initializing a buffer.\n");
-            goto error;
-        }
-
-        result = atmel_read_flash( device, 0, args->eeprom_memory_size,
-                                   buin.data, args->eeprom_memory_size,
-                                   true, false );
-
-        if( args->eeprom_memory_size != result ) {
-            DEBUG( "Error while reading back eeprom.\n" );
-            fprintf( stderr, "Error while reading back eeprom.\n" );
-            goto error;
-        }
-
-        if( 0 != atmel_validate_buffer( &buin, &bout ) ) {
+        if( 0 != execute_validate(device, &bout, mem_eeprom, args->quiet) ) {
             fprintf( stderr,
                     "Memory did not validate. Did you erase first?\n" );
             goto error;
@@ -216,14 +211,52 @@ static int32_t execute_flash_eeprom( dfu_device_t *device,
     retval = 0;
 
 error:
-    if( NULL != buin.data ) {
-        free( buin.data );
-        buin.data = NULL;
-    }
-
     if( NULL != bout.data ) {
         free( bout.data );
         bout.data = NULL;
+    }
+
+    return retval;
+}
+
+static int32_t execute_validate( dfu_device_t *device,
+                                 atmel_buffer_out_t *bout,
+                                 uint8_t mem_segment,
+                                 const dfu_bool quiet ) {
+    int32_t retval = -1;        // return value for this fcn
+    int32_t result;             // result of fcn calls
+    atmel_buffer_in_t buin;     // buffer in for storing read mem
+
+    if( 0 != atmel_init_buffer_in(&buin, bout->total_size ) ) {
+        DEBUG("ERROR initializing a buffer.\n");
+        goto error;
+    }
+    buin.valid_start = bout->valid_start;
+    buin.valid_end = bout->valid_end;
+
+    if( !quiet ) fprintf( stderr, "Reading 0x%X bytes...\n",
+            buin.valid_end - buin.valid_start + 1 );
+    if( 0 !=  (result = atmel_read_flash(device, &buin,
+                                         mem_segment, quiet)) ) {
+        DEBUG("ERROR: could not read memory, err %d.\n", result);
+        fprintf( stderr, "Error while reading back memory.\n" );
+        goto error;
+    }
+
+    if( !quiet ) fprintf( stderr, "Validating...  " );
+    if( 0 != atmel_validate_buffer( &buin, bout ) ) {
+        goto error;
+    }
+    if( !quiet ) fprintf( stderr, "SUCCESS\n" );
+
+    retval = 0;
+
+error:
+    if( !quiet && 0 != retval ) fprintf( stderr, "FAIL\n" );
+
+    if( NULL != buin.data ) {
+        free( buin.data );
+        buin.data = NULL;
     }
 
     return retval;
@@ -235,7 +268,6 @@ static int32_t execute_flash_user_page( dfu_device_t *device,
     int32_t i;
     int32_t retval;
     atmel_buffer_out_t bout;
-    atmel_buffer_in_t buin;
 
     retval = -1;
 
@@ -333,28 +365,8 @@ static int32_t execute_flash_user_page( dfu_device_t *device,
     }
 
     if( 0 == args->com_flash_data.suppress_validation ) {
-        if( 0 == args->quiet ) {
-            fprintf( stderr, "Validating...\n" );
-        }
-
-        if( 0 != atmel_init_buffer_in(&buin, bout.total_size ) ) {
-            fprintf( stderr, "ERROR initializing a buffer.\n" );
-            goto error;
-        }
-
-        result = atmel_read_flash( device, 0, args->flash_page_size,
-                                   buin.data, args->flash_page_size,
-                                   false, true );
-
-        if( args->flash_page_size != result ) {
-            DEBUG( "Error while reading back user flash.\n" );
-            fprintf( stderr, "Error while reading back user flash.\n" );
-            goto error;
-        }
-
-        if( 0 != atmel_validate_buffer( &buin, &bout ) ) {
-            fprintf( stderr,
-                    "Memory did not validate. Did you erase first?\n" );
+        if( 0 != execute_validate(device, &bout, mem_user, args->quiet) ) {
+            fprintf( stderr, "Memory did not validate. Did you erase?\n" );
             goto error;
         }
     }
@@ -364,11 +376,6 @@ static int32_t execute_flash_user_page( dfu_device_t *device,
     retval = 0;
 
 error:
-    if( NULL != buin.data ) {
-        free( buin.data );
-        buin.data = NULL;
-    }
-
     if( NULL != bout.data ) {
         free( bout.data );
         bout.data = NULL;
@@ -382,8 +389,6 @@ static int32_t execute_flash_normal( dfu_device_t *device,
     int32_t  retval = -1;
     int32_t  result = 0;
     uint32_t  i;
-    uint32_t flash_size;
-    atmel_buffer_in_t buin;
     atmel_buffer_out_t bout;
 
     /* Why +1? Because the flash_address_top location is inclusive, as
@@ -394,11 +399,9 @@ static int32_t execute_flash_normal( dfu_device_t *device,
      * exist in the hex file but be ignored by the program.  Flash size is the
      * valid max program size taking into account the region reserved for the
      * bootloader */
-    flash_size = args->flash_address_top - args->flash_address_bottom + 1;
 
     // ----------------- CONVERT HEX FILE TO BINARY -------------------------
-    if( 0 != atmel_init_buffer_out(&bout,
-                args->memory_address_top - args->memory_address_bottom + 1,
+    if( 0 != atmel_init_buffer_out(&bout, args->memory_address_top + 1,
                 args->flash_page_size) ) {
         DEBUG("ERROR initializing a buffer.\n");
         goto error;
@@ -437,7 +440,10 @@ static int32_t execute_flash_normal( dfu_device_t *device,
             if( true == args->suppressbootloader ) {
                 //If we're ignoring the bootloader, don't write to it
                 bout.data[i] = UINT16_MAX;
-                bout.data_start = UINT32_MAX;
+                if ( i == bout.data_start )
+                    bout.data_start = UINT32_MAX;
+                if ( i == bout.data_end )
+                    bout.data_end = 0;
             } else {
                 fprintf( stderr, "Bootloader and code overlap.\n" );
                 fprintf( stderr, "Use --suppress-bootloader-mem to ignore\n" );
@@ -446,10 +452,19 @@ static int32_t execute_flash_normal( dfu_device_t *device,
         }
     }
 
+    // re-check where the data_start / end are found if need be
     if( bout.data_start == UINT32_MAX ) {
-        for( i = args->bootloader_top + 1; i < bout.total_size; i++ ) {
+        for( i = bout.valid_start; i <= bout.valid_end; i++ ) {
             if( bout.data[i] <= UINT8_MAX ) {
                 bout.data_start = i;
+                break;
+            }
+        }
+    }
+    if( bout.data_end == 0 ) {
+        for( i = bout.valid_end; i >= bout.valid_start; i-- ) {
+            if( bout.data[i] <= UINT8_MAX ) {
+                bout.data_end = i;
                 break;
             }
         }
@@ -468,8 +483,7 @@ static int32_t execute_flash_normal( dfu_device_t *device,
     result = atmel_flash( device, (int16_t *) bout.data, args->flash_address_bottom,
                           args->flash_address_top, args->flash_page_size,
                           false, args->quiet );
-
-    if( result < 0 ) {
+    if( 0 != result ) {
         DEBUG( "Error while flashing program data. (err %d)\n", result );
         fprintf( stderr, "Error while flashing program data.\n" );
         goto error;
@@ -477,33 +491,8 @@ static int32_t execute_flash_normal( dfu_device_t *device,
 
     // ------------------  VALIDATE PROGRAM ------------------------------
     if( 0 == args->com_flash_data.suppress_validation ) {
-        if( 0 == args->quiet ) {
-            fprintf( stderr, "Validating...\n" );
-        }
-
-        // initialize a buffer to read data into
-        if( 0 != atmel_init_buffer_in(&buin, bout.total_size ) ) {
-            fprintf( stderr, "ERROR initializing a buffer.\n" );
-            goto error;
-        }
-
-        // load data from device into buffer
-        result = atmel_read_flash( device, args->flash_address_bottom,
-                                   args->flash_address_top + 1,
-                                   &buin.data[args->flash_address_bottom],
-                                   flash_size, false, false );
-        DEBUG ( "0x%X bytes of flash read into buffer.\n", result );
-
-        // basic error check on atmel_read_flash
-        if( flash_size != result ) {
-            DEBUG( "Error reading flash to validate.\n" );
-            fprintf( stderr, "Error reading flash to validate.\n" );
-            goto error;
-        }
-
-        if( 0 != atmel_validate_buffer( &buin, &bout ) ) {
-            fprintf( stderr,
-                    "Memory did not validate. Did you erase first?\n" );
+        if( 0 != execute_validate(device, &bout, mem_flash, args->quiet) ) {
+            fprintf( stderr, "Memory did not validate. Did you erase?\n" );
             goto error;
         }
     }
@@ -513,11 +502,6 @@ static int32_t execute_flash_normal( dfu_device_t *device,
     retval = 0;
 
 error:
-    if( NULL != buin.data ) {
-        free( buin.data );
-        buin.data = NULL;
-    }
-
     if( NULL != bout.data ) {
         free( bout.data );
         bout.data = NULL;
@@ -699,152 +683,71 @@ static int32_t execute_get( dfu_device_t *device,
     return 0;
 }
 
-static int32_t execute_dump_normal( dfu_device_t *device,
-                                    struct programmer_arguments *args ) {
-    int32_t i = 0;
-    uint8_t *buffer = NULL;
-    size_t memory_size;
-    size_t adjusted_flash_top_address;
-
-    /* Why +1? Because the flash_address_top location is inclusive, as
-     * apposed to most times when sizes are specified by length, etc.
-     * and they are exclusive. */
-    adjusted_flash_top_address = args->flash_address_top + 1;
-    memory_size = adjusted_flash_top_address - args->flash_address_bottom;
-
-    buffer = (uint8_t *) malloc( memory_size );
-    if( NULL == buffer ) {
-        fprintf( stderr, "Request for %lu bytes of memory failed.\n",
-                 (unsigned long) memory_size );
-        goto error;
-    }
-
-    /* Check AVR32 security bit in order to provide a better error message. */
-    security_check( device );
-
-    DEBUG( "dump %d bytes\n", memory_size );
-
-    if( memory_size != atmel_read_flash(device, args->flash_address_bottom,
-                                  adjusted_flash_top_address, buffer,
-                                  memory_size, false, false) )
-    {
-        fprintf( stderr, "Failed to read %lu bytes from device.\n",
-                 (unsigned long) memory_size );
-        security_message();
-        return -1;
-    }
-
-    if( false == args->bootloader_at_highmem ) {
-        for( i = 0; i <= args->bootloader_top; i++ ) {
-            fprintf( stdout, "%c", 0xff );
-        }
-    }
-    for( i = 0; i < memory_size; i++ ) {
-        fprintf( stdout, "%c", buffer[i] );
-    }
-
-    fflush( stdout );
-
-error:
-    if( NULL != buffer ) {
-        free( buffer );
-        buffer = NULL;
-    }
-
-    return 0;
-}
-
-static int32_t execute_dump_eeprom( dfu_device_t *device,
-                                    struct programmer_arguments *args ) {
-    int32_t i = 0;
-    uint8_t *buffer = NULL;
-    size_t memory_size;
-
-    if( 0 == args->eeprom_memory_size ) {
-        fprintf( stderr, "This device has no eeprom.\n" );
-        return -1;
-    }
-
-    memory_size = args->eeprom_memory_size;
-
-    buffer = (uint8_t *) malloc( args->eeprom_memory_size );
-    if( NULL == buffer ) {
-        fprintf( stderr, "Request for %lu bytes of memory failed.\n",
-                 (unsigned long) memory_size );
-        goto error;
-    }
-
-    /* Check AVR32 security bit in order to provide a better error message. */
-    security_check( device );
-
-    DEBUG( "dump %d bytes\n", memory_size );
-
-    if( memory_size != atmel_read_flash(device, 0,
-                                  args->eeprom_memory_size, buffer,
-                                  memory_size, true, false) )
-    {
-        fprintf( stderr, "Failed to read %lu bytes from device.\n",
-                 (unsigned long) memory_size );
-        security_message();
-        return -1;
-    }
-
-    for( i = 0; i < memory_size; i++ ) {
-        fprintf( stdout, "%c", buffer[i] );
-    }
-
-    fflush( stdout );
-
-error:
-    if( NULL != buffer ) {
-        free( buffer );
-        buffer = NULL;
-    }
-
-    return 0;
-}
-
-static int32_t execute_dump_user_page( dfu_device_t *device,
+static int32_t execute_dump( dfu_device_t *device,
                              struct programmer_arguments *args ) {
     int32_t i = 0;
-    uint8_t *buffer = NULL;
-    size_t page_size = args->flash_page_size;
+    int32_t retval = -1;        // return value for this fcn
+    int32_t result;             // result of fcn calls
+    atmel_buffer_in_t buin;     // buffer in for storing read mem
+    uint8_t mem_segment = 0;
+    size_t mem_size = 0;
 
-    buffer = (uint8_t *) malloc( page_size );
-    if( NULL == buffer ) {
-        fprintf( stderr, "Request for %lu bytes of memory failed.\n",
-                 (unsigned long) page_size );
+    switch( args->command ) {
+        case com_dump:
+            mem_size = args->memory_address_top + 1;
+            mem_segment = mem_flash;
+            break;
+        case com_edump:
+            mem_size = args->eeprom_memory_size;
+            mem_segment = mem_eeprom;
+            break;
+        case com_udump:
+            mem_size = args->flash_page_size;
+            mem_segment = mem_user;
+            break;
+        default:
+            fprintf( stderr, "Dump not currenlty supported for this memory.\n" );
+            goto error;
+    }
+
+    if( 0 != atmel_init_buffer_in(&buin, mem_size) ) {
+        DEBUG("ERROR initializing a buffer.\n");
         goto error;
     }
 
-    /* Check AVR32 security bit in order to provide a better error message. */
-    security_check( device );
-
-    DEBUG( "dump %d bytes\n", page_size );
-
-    if( page_size != atmel_read_flash(device, 0,
-                                  page_size, buffer,
-                                  page_size, false, true) )
-    {
-        fprintf( stderr, "Failed to read %lu bytes from device.\n",
-                 (unsigned long) page_size );
-        security_message();
-        return -1;
+    if( args->command == com_dump ) {
+        buin.valid_start = args->flash_address_bottom;
+        buin.valid_end = args->flash_address_top;
     }
 
-    for( i = 0; i < page_size; i++ ) {
-        fprintf( stdout, "%c", buffer[i] );
+    /* Check AVR32 security bit in order to provide a better error message. */
+    security_check( device );   // avr32 has no eeprom, but OK
+
+    if( !args->quiet ) fprintf( stderr, "Reading 0x%X bytes...\n",
+            buin.valid_end - buin.valid_start + 1 );
+    if( 0 != (result = atmel_read_flash(device, &buin,
+                    mem_segment, args->quiet)) ) {
+        DEBUG("ERROR: could not read memory, err %d.\n", result);
+        fprintf( stderr, "Error while reading back memory.\n" );
+        security_message();
+        goto error;
+    }
+
+    for( i = 0; i <= buin.valid_end; i++ ) {
+        fprintf( stdout, "%c", buin.data[i] );
     }
 
     fflush( stdout );
 
+    retval = 0;
+
 error:
-    if( NULL != buffer ) {
-        free( buffer );
-        buffer = NULL;
+    if( NULL != buin.data ) {
+        free( buin.data );
+        buin.data = NULL;
     }
 
-    return 0;
+    return retval;
 }
 
 static int32_t execute_setfuse( dfu_device_t *device,
@@ -931,11 +834,9 @@ int32_t execute_command( dfu_device_t *device,
         case com_getfuse:
             return execute_getfuse( device, args );
         case com_dump:
-            return execute_dump_normal( device, args );
         case com_edump:
-            return execute_dump_eeprom( device, args );
         case com_udump:
-            return execute_dump_user_page( device, args );
+            return execute_dump( device, args );
         case com_configure:
             return execute_configure( device, args );
         case com_setfuse:

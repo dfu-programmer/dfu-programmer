@@ -91,6 +91,14 @@ typedef struct {
     uint8_t *data;
 } atmel_buffer_in_t;
 
+enum atmel_memory_unit_enum { mem_flash, mem_eeprom, mem_security, mem_config,
+    mem_boot, mem_sig, mem_user, mem_ram, mem_ext0, mem_ext1, mem_ext2,
+    mem_ext3, mem_ext, mem_ext5, mem_ext6, mem_ext7, mem_extdf };
+
+#define ATMEL_MEM_UNIT_NAMES "flash", "eeprom", "security", "config", \
+    "bootloader", "signature", "user", "int_ram", "ext_cs0", "ext_cs1", \
+    "ext_cs2", "ext_cs3", "ext_cs4", "ext_cs5", "ext_cs6", "ext_cs7", "ext_df"
+
 int32_t atmel_init_buffer_out(atmel_buffer_out_t *bout,
         size_t total_size, size_t page_size );
 /* intialize a buffer used to send data to flash memory
@@ -152,12 +160,13 @@ int32_t atmel_set_config( dfu_device_t *device,
                           const uint8_t value );
 
 int32_t atmel_read_flash( dfu_device_t *device,
-                          const uint32_t start,
-                          const uint32_t end,
-                          uint8_t* buffer,
-                          const size_t buffer_len,
-                          const dfu_bool eeprom,
-                          const dfu_bool user );
+                          atmel_buffer_in_t *buin,
+                          uint8_t mem_segment,
+                          const dfu_bool quiet);
+/* read the flash from buin->valid_start to buin->valid_end and place
+ * in buin.data. mem_segment is the segment of memory from the
+ * atmel_memory_unit_enum.
+ */
 
 int32_t atmel_blank_check( dfu_device_t *device,
                            const uint32_t start,
