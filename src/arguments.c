@@ -173,6 +173,8 @@ static struct option_mapping_structure command_map[] = {
     { "setfuse",      com_setfuse   },
     { "setsecure",    com_setsecure },
     { "start",        com_start_app },
+    { "bin2hex",      com_bin2hex   },
+    { "hex2bin",      com_hex2bin   },
     { NULL }
 };
 
@@ -723,6 +725,18 @@ static int32_t assign_com_flash_option( struct programmer_arguments *args,
     return 0;
 }
 
+static int32_t assign_com_convert_option( struct programmer_arguments *args,
+                                          const int32_t parameter,
+                                          char *value )
+{
+    /* file */
+    args->com_convert_data.original_first_char = *value;
+    args->com_convert_data.file = value;
+
+    return 0;
+}
+
+
 static int32_t assign_com_getfuse_option( struct programmer_arguments *args,
                                       const int32_t parameter,
                                       char *value )
@@ -785,11 +799,19 @@ static int32_t assign_command_options( struct programmer_arguments *args,
                     return -3;
                 break;
 
+            case com_bin2hex:
+            case com_hex2bin:
+                required_params = 1;
+                if( 0 != assign_com_convert_option(args, param, argv[i]) )
+                    return -3;
+                break;
+
             case com_getfuse:
                 required_params = 1;
                 if( 0 != assign_com_getfuse_option(args, param, argv[i]) )
                     return -4;
                 break;
+
             case com_get:
                 required_params = 1;
                 if( 0 != assign_com_get_option(args, param, argv[i]) )
@@ -949,7 +971,8 @@ int32_t parse_arguments( struct programmer_arguments *args,
     }
 
     /* if this is a flash command, restore the filename */
-    if( (com_flash == args->command) || (com_eflash == args->command) || (com_user == args->command) ) {
+    if( (com_flash == args->command) || (com_eflash == args->command)
+            || (com_user == args->command) ) {
         if( 0 == args->com_flash_data.file ) {
 // TODO : it should be ok to not have a filename if --serial=hexdigits:offset is
 // provided, this should be implemented.. in fact, given that most of this
@@ -961,6 +984,15 @@ int32_t parse_arguments( struct programmer_arguments *args,
             goto done;
         }
         args->com_flash_data.file[0] = args->com_flash_data.original_first_char;
+    }
+
+    if( (com_bin2hex == args->command) || (com_hex2bin == args->command) ) {
+        if( 0 == args->com_convert_data.file ) {
+            fprintf( stderr, "conversion filename is missing\n" );
+            status = -8;
+            goto done;
+        }
+        args->com_convert_data.file[0] = args->com_convert_data.original_first_char;
     }
 
 done:

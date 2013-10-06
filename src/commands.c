@@ -193,6 +193,95 @@ static void print_flash_usage( atmel_buffer_info_t *info ) {
                 (float) (info->valid_end - info->valid_start + 1)) ) ;
 }
 
+static int32_t execute_hex2bin( dfu_device_t *device,
+        struct programmer_arguments *args ) {
+    int32_t  retval = -1;
+    uint32_t  i;
+    atmel_buffer_out_t bout;
+    size_t   memory_size;
+    size_t   page_size;
+    uint32_t target_offset = 0;
+
+    memory_size = args->memory_address_top + 1;
+    page_size = args->flash_page_size;
+
+    // ----------------- CONVERT HEX FILE TO BINARY -------------------------
+    if( 0 != atmel_init_buffer_out(&bout, memory_size, page_size) ) {
+        DEBUG("ERROR initializing a buffer.\n");
+        goto error;
+    }
+
+    if( 0!= intel_hex_to_buffer( args->com_convert_data.file, &bout,
+                target_offset, args->quiet ) ) {
+        DEBUG( "Something went wrong with creating the memory image.\n" );
+        goto error;
+    }
+
+    if( !args->quiet )
+        fprintf( stderr, "Dumping 0x%X bytes from address offset 0x%X.\n",
+                bout.info.data_end + 1, target_offset );
+    for( i = 0; i <= bout.info.data_end; i++ ) {
+        fprintf( stdout, "%c", bout.data[i] <= 0xFF ? bout.data[i] & 0xFF : 0xFF);
+    }
+
+    fflush( stdout );
+
+    retval = 0;
+
+error:
+    if( NULL != bout.data ) {
+        free( bout.data );
+        bout.data = NULL;
+    }
+
+    return retval;
+}
+
+static int32_t execute_bin2hex( dfu_device_t *device,
+        struct programmer_arguments *args ) {
+    // FIXME : this doesn't work.. it it the reverese
+    int32_t  retval = -1;
+    uint32_t  i;
+    atmel_buffer_out_t bout;
+    size_t   memory_size;
+    size_t   page_size;
+    uint32_t target_offset = 0;
+
+    memory_size = args->memory_address_top + 1;
+    page_size = args->flash_page_size;
+
+    // ----------------- CONVERT HEX FILE TO BINARY -------------------------
+    if( 0 != atmel_init_buffer_out(&bout, memory_size, page_size) ) {
+        DEBUG("ERROR initializing a buffer.\n");
+        goto error;
+    }
+
+    if( 0!= intel_hex_to_buffer( args->com_convert_data.file, &bout,
+                target_offset, args->quiet ) ) {
+        DEBUG( "Something went wrong with creating the memory image.\n" );
+        goto error;
+    }
+
+    if( !args->quiet )
+        fprintf( stderr, "Dumping 0x%X bytes from address offset 0x%X.\n",
+                bout.info.data_end + 1, target_offset );
+    for( i = 0; i <= bout.info.data_end; i++ ) {
+        fprintf( stdout, "%c", bout.data[i] <= 0xFF ? bout.data[i] & 0xFF : 0xFF);
+    }
+
+    fflush( stdout );
+
+    retval = 0;
+
+error:
+    if( NULL != bout.data ) {
+        free( bout.data );
+        bout.data = NULL;
+    }
+
+    return retval;
+}
+
 static int32_t execute_flash( dfu_device_t *device,
                                 struct programmer_arguments *args ) {
     int32_t  retval = -1;
@@ -726,6 +815,10 @@ int32_t execute_command( dfu_device_t *device,
     switch( args->command ) {
         case com_erase:
             return execute_erase( device, args );
+        case com_bin2hex:
+            return execute_bin2hex( device, args );
+        case com_hex2bin:
+            return execute_hex2bin( device, args );
         case com_flash:
             return execute_flash( device, args );
         case com_eflash:
