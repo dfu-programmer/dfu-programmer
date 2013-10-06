@@ -133,6 +133,7 @@ with a "0x" prefix, octal if it begins with a "0", otherwise is it
 assumed to be decimal.
 .HP
 .B flash-user
+[\-\-force\-config]
 [\-\-suppress\-validation]
 [\-\-serial=hexbytes:offset]
 file or STDIN
@@ -140,7 +141,11 @@ file or STDIN
 Writes to user space flash on the AVR32 chips.  This block of flash
 is out of the normal range of flash blocks and is designed to contain
 configuration parameters.  The input file (or stdin) must use the "ihex"
-file format convention for a memory image.
+file format convention for a memory image.  The bootloader often uses
+the last word or last two words on the user page for configuration.  In
+order to write the last two words of the user page, \-\-force\-config
+must be set.  If this data is corrupted, the device will restart into the
+bootloader until valid data is used (see atmel doc7745 or doc32166).
 .HP
 .B flash-eeprom
 [\-\-suppress\-validation]

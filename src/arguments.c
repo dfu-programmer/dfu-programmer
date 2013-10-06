@@ -170,8 +170,8 @@ static struct option_mapping_structure command_map[] = {
     { "launch",       com_launch    },
     { "setfuse",      com_setfuse   },
     { "setsecure",    com_setsecure },
-    { "reset",        com_reset     },
     { "start",        com_start_app },
+    { "reset",        com_reset     },
     { NULL }
 };
 
@@ -282,6 +282,7 @@ static void usage()
     fprintf( stderr, "        flash-eeprom [--suppress-validation]\n"
                      "                     [--serial=hexdigits:offset] {file|STDIN}\n" );
     fprintf( stderr, "        flash-user   [--suppress-validation]\n"
+                     "                     [--force-config]\n"
                      "                     [--serial=hexdigits:offset] {file|STDIN}\n" );
     fprintf( stderr, "        get     {bootloader-version|ID1|ID2|BSB|SBV|SSB|EB|\n"
                      "                 manufacturer|family|product-name|\n"
@@ -848,6 +849,11 @@ int32_t parse_arguments( struct programmer_arguments *args,
     /* if this is a flash command, restore the filename */
     if( (com_flash == args->command) || (com_eflash == args->command) || (com_user == args->command) ) {
         if( 0 == args->com_flash_data.file ) {
+// TODO : it should be ok to not have a filename if --serial=hexdigits:offset is
+// provided, this should be implemented.. in fact, given that most of this
+// program is written to use a single command by it self, this probably should
+// be separated out as a new command.  The caveat is if data is written to '\0'
+// in the hex file, serialize will do nothing bc can't unwrite w/o erase
             fprintf( stderr, "flash filename is missing\n" );
             status = -8;
             goto done;

@@ -23,18 +23,32 @@
 
 #include <stdint.h>
 
-/**
- *  Used to read in a file in intel hex format and return a chunck of
+// define structure containing information about the hex to buffer conversion
+struct buffer_out {
+    int16_t *prog_data;
+    int16_t *user_data;
+    uint32_t prog_usage;
+    uint32_t user_usage;
+};
+
+
+/*  Used to read in a file in intel hex format and return a chunk of
  *  memory containing the memory image described in the file.
  *
  *  \param filename the name of the intel hex file to process
- *  \param max_size the maximum size of the memory image in bytes
- *  \param usage[out] the amount of the available memory image used
+ *  \param bout buffer_out structure containing pointer to memory data for the
+ *          program and for the user page.  Each is an array of int16_t's where
+ *          the values 0-255 are valid memory values, and anything else
+ *          indicates an unused memory location.  These do not need to be
+ *          initialized before passing this parameter to the function.
  *
- *  \return an array of int16_t's where the values 0-255 are valid memory
- *          values, and anything else indicates an unused memory location,
- *          NULL on anything other than a success
+ *          when passed to the function, program_usage and user_usage must
+ *          indicate the maximum size of each of these memory sections
+ *          in bytes.  After the program has run they will indicate the
+ *          amount of available memory image used for each section
+ *
+ *  \return success integer (0 on success, anything else is no good..)
  */
-int16_t *intel_hex_to_buffer( char *filename, int max_size, int *usage );
 
+int32_t intel_hex_to_buffer( char *filename, struct buffer_out *bout );
 #endif

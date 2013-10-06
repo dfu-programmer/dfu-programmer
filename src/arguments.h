@@ -145,7 +145,7 @@ struct programmer_arguments {
     uint16_t vendor_id;
     uint16_t chip_id;
     uint16_t bus_id;            /* if non-zero, use bus_id and device_address */
-    uint16_t device_address;        /* to identify the specific target device. */
+    uint16_t device_address;    /* to identify the specific target device.    */
     atmel_device_class_t device_type;
     char device_type_string[DEVICE_TYPE_STRING_MAX_LENGTH];
     uint32_t memory_address_top;        /* the maximum memory address */
@@ -195,6 +195,10 @@ struct programmer_arguments {
             int16_t *serial_data; /* serial number or other device specific bytes */
             size_t serial_offset; /* where the serial_data should be written */
             size_t serial_length; /* how many bytes to write */
+            dfu_bool force_config;  /* bootloader configuration for UC3 devices
+                                       is on last one or two words in the user
+                                       page depending on the version of the
+                                       bootloader - force overwrite required */
         } com_flash_data;
 
         struct com_get_struct {

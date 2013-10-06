@@ -72,12 +72,31 @@ typedef struct {
 
 int32_t atmel_read_config( dfu_device_t *device,
                            atmel_device_info_t *info );
+/*  atmel_read_config reads in all of the configuration and Manufacturer
+ *  Information into the atmel_device_info data structure for easier use later.
+ *
+ *  device    - the usb_dev_handle to communicate with
+ *  info      - the data structure to populate
+ *
+ *  returns 0 if successful, < 0 if not
+ */
 
 int32_t atmel_read_fuses( dfu_device_t *device,
                           atmel_avr32_fuses_t * info );
 
 int32_t atmel_erase_flash( dfu_device_t *device,
                            const uint8_t mode );
+/*  atmel_erase_flash
+ *  device    - the usb_dev_handle to communicate with
+ *  mode      - the mode to use when erasing flash
+ *              ATMEL_ERASE_BLOCK_0
+ *              ATMEL_ERASE_BLOCK_1
+ *              ATMEL_ERASE_BLOCK_2
+ *              ATMEL_ERASE_BLOCK_3
+ *              ATMEL_ERASE_ALL
+ *
+ *  returns status DFU_STATUS_OK if ok, anything else on error
+ */
 
 int32_t atmel_set_fuse( dfu_device_t *device,
                           const uint8_t property,
@@ -98,10 +117,20 @@ int32_t atmel_read_flash( dfu_device_t *device,
 int32_t atmel_blank_check( dfu_device_t *device,
                            const uint32_t start,
                            const uint32_t end );
+/* check if memory between start byte and end byte (inclusive) is blank
+ * returns 0 for success, < 0 for communication errors, > 0 for not blank
+ */
 
 int32_t atmel_start_app_reset( dfu_device_t *device );
+/* Reset the processor and start application.
+ * This is done internally by forcing a watchdog reset.
+ * Depending on fuse settings this may go straight back into the bootloader.
+ */
 
 int32_t atmel_start_app_noreset( dfu_device_t *device );
+/* Start the app by jumping to the start of the app area.
+ * This does not do a true device reset.
+ */
 
 int32_t atmel_secure( dfu_device_t *device );
 
@@ -119,4 +148,5 @@ int32_t atmel_user( dfu_device_t *device,
                     const uint32_t end );
 
 void atmel_print_device_info( FILE *stream, atmel_device_info_t *info );
+
 #endif
