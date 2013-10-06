@@ -140,12 +140,17 @@ int32_t atmel_flash( dfu_device_t *device,
                      int16_t *buffer,
                      const uint32_t start,
                      const uint32_t end,
-                     const size_t flash_page_size,
-                     const dfu_bool eeprom );
+                     const size_t page_size,
+                     const dfu_bool eeprom,
+                     const dfu_bool hide_progress );
 /* Flash data from the buffer to the main program memory on the device.
- * start and end are the start and end addresses of the data
+ * buffer contains the data to flash where buffer[0] is aligned with memory
+ * address zero (which could be inside the bootloader and unavailable).
+ * buffer[start / end] correspond to the start / end of available memory
+ * outside the bootloader.
  * flash_page_size is the size of flash pages - used for alignment
  * eeprom bool tells if you want to flash to eeprom or flash memory
+ * hide_progress bool sets whether to display progress
  */
 
 int32_t atmel_user( dfu_device_t *device,

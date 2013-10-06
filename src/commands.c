@@ -172,7 +172,7 @@ static int32_t execute_flash_eeprom( dfu_device_t *device,
       goto error;
 
     result = atmel_flash( device, hex_data, 0, args->eeprom_memory_size - 1,
-                          args->eeprom_page_size, true );
+                          args->eeprom_page_size, true, args->quiet );
 
     if( result < 0 ) {
         DEBUG( "Error while programming eeprom. (%d)\n", result );
@@ -427,6 +427,9 @@ static int32_t execute_flash_normal( dfu_device_t *device,
     if (0 != serialize_memory_image( bout.prog_data, args ))
       goto error;
 
+    // ------------------ CHECK MEM IS CLEAR -------------------------------
+
+
     // ------------------  FLASH PROGRAM DATA ------------------------------
     // check that there isn't anything overlapping the bootloader
     for( i = args->bootloader_bottom; i <= args->bootloader_top; i++) {
@@ -445,13 +448,10 @@ static int32_t execute_flash_normal( dfu_device_t *device,
 
     DEBUG( "Write 0x%X of 0x%X bytes\n", bout.prog_usage, flash_size );
 
-    if( 0 == args->quiet ) {
-        fprintf( stderr, "Programming...\n" );
-    }
-
     // flash the hex_data onto the device
     result = atmel_flash( device, bout.prog_data, args->flash_address_bottom,
-                          args->flash_address_top, args->flash_page_size, false );
+                          args->flash_address_top, args->flash_page_size,
+                          false, args->quiet );
 
     if( result < 0 ) {
         DEBUG( "Error while flashing program data. (err %d)\n", result );
