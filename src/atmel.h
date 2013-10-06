@@ -84,12 +84,14 @@ typedef struct {
 
 typedef struct {
     size_t total_size;
+    size_t  page_size;
     uint32_t data_start;
     uint32_t data_end;
     uint32_t valid_start;
     uint32_t valid_end;
     uint8_t *data;
 } atmel_buffer_in_t;
+
 
 enum atmel_memory_unit_enum { mem_flash, mem_eeprom, mem_security, mem_config,
     mem_boot, mem_sig, mem_user, mem_ram, mem_ext0, mem_ext1, mem_ext2,
@@ -98,6 +100,7 @@ enum atmel_memory_unit_enum { mem_flash, mem_eeprom, mem_security, mem_config,
 #define ATMEL_MEM_UNIT_NAMES "flash", "eeprom", "security", "config", \
     "bootloader", "signature", "user", "int_ram", "ext_cs0", "ext_cs1", \
     "ext_cs2", "ext_cs3", "ext_cs4", "ext_cs5", "ext_cs6", "ext_cs7", "ext_df"
+
 
 int32_t atmel_init_buffer_out(atmel_buffer_out_t *bout,
         size_t total_size, size_t page_size );
@@ -191,10 +194,7 @@ int32_t atmel_secure( dfu_device_t *device );
 int32_t atmel_getsecure( dfu_device_t *device );
 
 int32_t atmel_flash( dfu_device_t *device,
-                     int16_t *buffer,
-                     const uint32_t start,
-                     const uint32_t end,
-                     const size_t page_size,
+                     atmel_buffer_out_t *bout,
                      const dfu_bool eeprom,
                      const dfu_bool hide_progress );
 /* Flash data from the buffer to the main program memory on the device.

@@ -60,7 +60,7 @@ static void security_check( dfu_device_t *device ) {
     }
 }
 
-static void security_message() {
+static void security_message( void ) {
     if( security_bit_state > ATMEL_SECURE_OFF ) {
         fprintf( stderr, "The security bit %s set.\n"
                          "Erase the device to clear temporarily.\n",
@@ -123,7 +123,7 @@ static int32_t execute_setsecure( dfu_device_t *device,
 // otherwise, the secion will end up '\0' unless a page erase is used.. so may
 // need to keep this part of the flash command, but specify that serialize data
 // 'wins' over data from the hex file
-static int32_t serialize_memory_image(atmel_buffer_out_t *bout,
+static int32_t serialize_memory_image( atmel_buffer_out_t *bout,
                                      struct programmer_arguments *args ) {
     uint32_t target_offset = 0;
     if( args->command == com_user )
@@ -145,7 +145,7 @@ static int32_t serialize_memory_image(atmel_buffer_out_t *bout,
     return 0;
 }
 
-static void print_flash_usage(atmel_buffer_out_t *bout) {
+static void print_flash_usage( atmel_buffer_out_t *bout ) {
     fprintf( stderr,
             "0x%X bytes written into 0x%X valid bytes (%.02f%%).\n",
             bout->data_end - bout->data_start + 1,
@@ -189,10 +189,7 @@ static int32_t execute_flash_eeprom( dfu_device_t *device,
     if (0 != serialize_memory_image(&bout, args))
       goto error;
 
-    result = atmel_flash( device, (int16_t *) bout.data, 0, args->eeprom_memory_size - 1,
-                          args->eeprom_page_size, true, args->quiet );
-
-    if( result < 0 ) {
+    if( 0 != (result = atmel_flash(device, &bout, true, args->quiet)) ) {
         DEBUG( "Error while programming eeprom. (%d)\n", result );
         fprintf( stderr, "Error while programming eeprom.\n" );
         goto error;
@@ -430,10 +427,6 @@ static int32_t execute_flash_normal( dfu_device_t *device,
     if (0 != serialize_memory_image( &bout, args ))
       goto error;
 
-    // ------------------ CHECK MEM IS CLEAR -------------------------------
-
-
-    // ------------------  FLASH PROGRAM DATA ------------------------------
     // check that there isn't anything overlapping the bootloader
     for( i = args->bootloader_bottom; i <= args->bootloader_top; i++) {
         if( bout.data[i] <= UINT8_MAX ) {
@@ -452,38 +445,8 @@ static int32_t execute_flash_normal( dfu_device_t *device,
         }
     }
 
-    // re-check where the data_start / end are found if need be
-    if( bout.data_start == UINT32_MAX ) {
-        for( i = bout.valid_start; i <= bout.valid_end; i++ ) {
-            if( bout.data[i] <= UINT8_MAX ) {
-                bout.data_start = i;
-                break;
-            }
-        }
-    }
-    if( bout.data_end == 0 ) {
-        for( i = bout.valid_end; i >= bout.valid_start; i-- ) {
-            if( bout.data[i] <= UINT8_MAX ) {
-                bout.data_end = i;
-                break;
-            }
-        }
-    }
-
-    if( bout.data_start == UINT32_MAX ) {
-        fprintf( stderr, "ERROR: No valid data to flash.\n");
-        goto error;
-    } else {
-        DEBUG( "Write 0x%X bytes into 0x%X bytes memory.\n",
-                bout.data_end - bout.data_start + 1,
-                bout.valid_end - bout.valid_start + 1);
-    }
-
-    // flash the hex_data onto the device
-    result = atmel_flash( device, (int16_t *) bout.data, args->flash_address_bottom,
-                          args->flash_address_top, args->flash_page_size,
-                          false, args->quiet );
-    if( 0 != result ) {
+    // ------------------  FLASH PROGRAM DATA ------------------------------
+    if( 0 != (result = atmel_flash(device, &bout, false, args->quiet)) ) {
         DEBUG( "Error while flashing program data. (err %d)\n", result );
         fprintf( stderr, "Error while flashing program data.\n" );
         goto error;

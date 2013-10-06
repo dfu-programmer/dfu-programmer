@@ -105,13 +105,14 @@ static int32_t __atmel_blank_page_check( dfu_device_t *device,
  * returns a negative number if the blank check fails
  */
 
-static int32_t atmel_flash_prep_buffer( int16_t *buffer, const size_t size,
-                                        const size_t page_size );
+static int32_t atmel_flash_prep_buffer( atmel_buffer_out_t *bout );
+//int16_t *buffer, const size_t size,
+//                                        const size_t page_size );
 /* prepare the buffer so that valid data fills each page that contains data.
  * unassigned data in buffer is given a value of 0xff (blank memory)
  * the buffer pointer must align with the beginning of a flash page
- * size is the number of bytes contained in the buffer
- * page_size is the size of the flash page
+// * size is the number of bytes contained in the buffer
+// * page_size is the size of the flash page
  * return 0 on success, -1 if assigning data would extend flash above size
  */
 
@@ -1043,35 +1044,28 @@ static int32_t atmel_select_page( dfu_device_t *device,
     return 0;
 }
 
-static int32_t atmel_flash_prep_buffer( int16_t *buffer, const size_t size,
-                                        const size_t page_size ) {
+static int32_t atmel_flash_prep_buffer( atmel_buffer_out_t *bout ) {
     int16_t *page;
     int32_t i;
 
-    TRACE( "%s( %p, %u, %u )\n", __FUNCTION__, buffer, size, page_size );
+    TRACE( "%s( %p )\n", __FUNCTION__, bout );
 
     // increment pointer by page_size * sizeof(int16) until page_start >= end
-    for( page = buffer; page < &buffer[size]; page = &page[page_size] ) {
+    for( page = bout->data;
+            page < &bout->data[bout->valid_end];
+            page = &page[bout->page_size] ) {
         // check if there is valid data on this page
-        for( i = 0; i < page_size; i++ ) {
-            if( (0 <= page[i]) && (page[i] <= UINT8_MAX) ) {
-                /* We found a valid value. */
+        for( i = 0; i < bout->page_size; i++ ) {
+            if( page[i] <= UINT8_MAX )
                 break;
-            }
         }
 
-        if( page_size != i ) {
+        if( bout->page_size != i ) {
             /* There was valid data in the block & we need to make
              * sure there is no unassigned data.  */
-            for( i = 0; i < page_size; i++ ) {
-                if ( &page[i] > &buffer[size] ) {
-                    DEBUG("ERROR: Page with valid data extends beyond buffer.\n");
-                    return -1;
-                }
-                if( (page[i] < 0) || (UINT8_MAX < page[i]) ) {
-                    /* Invalid memory value. */
-                    page[i] = 0xff;     // 0xff is 'unwritten'
-                }
+            for( i = 0; i < bout->page_size; i++ ) {
+                if( page[i] > UINT8_MAX )
+                    page[i] = 0xff;         // 0xff is blank
             }
         }
     }
@@ -1172,12 +1166,9 @@ int32_t atmel_getsecure( dfu_device_t *device ) {
 }
 
 int32_t atmel_flash( dfu_device_t *device,
-                     int16_t *buffer,
-                     const uint32_t start,
-                     const uint32_t end,
-                     const size_t page_size,
+                     atmel_buffer_out_t *bout,
                      const dfu_bool eeprom,
-                     dfu_bool hide_progress ) {
+                     const dfu_bool quiet ) {
     uint32_t first;         // buffer location of the first valid data
     uint32_t last;          // buffer location of the last valid data
     uint32_t curaddr;       // the current address in the buffer
@@ -1186,57 +1177,73 @@ int32_t atmel_flash( dfu_device_t *device,
     uint8_t mem_page = 0;   // tracks the current memory page
     int32_t result = 0;     // result storage for many function calls
 
-    TRACE( "%s( %p, %p, %u, %u, %u, %s )\n", __FUNCTION__, device, buffer,
-           start, end, page_size, ((true == eeprom) ? "true" : "false") );
+    TRACE( "%s( %p, %p, %s, %s )\n", __FUNCTION__, device, bout,
+                    ((true == eeprom) ? "true" : "false"),
+                    ((true == quiet) ? "true" : "false") );
 
     // check arguments
-    if( (NULL == device) || (NULL == buffer) ) {
+    if( (NULL == device) || (NULL == bout) ) {
         DEBUG( "ERROR: Invalid arguments, device/buffer pointer is NULL.\n" );
         return -1;
-    } else if ( start > end ) {
-        DEBUG( "ERROR: End address 0x%X before start address 0x%X.\n",
-                end, start );
+    } else if ( bout->valid_start > bout->valid_end ) {
+        DEBUG( "ERROR: No valid target memory, end 0x%X before start 0x%X.\n",
+                bout->valid_end, bout->valid_start );
         return -1;
     }
 
     // for each page with data, fill unassigned values on the page with 0xFF
-    // buffer[0] always aligns with a flash page boundary irrespecitve of start
-    result = atmel_flash_prep_buffer( buffer, end + 1, page_size );
-    if( 0 != result ) {
-        // error message is in atmel_flash_prep_buffer
+    // bout->data[0] always aligns with a flash page boundary irrespecitve
+    // of where valid_start is located
+    if( 0 != atmel_flash_prep_buffer( bout ) )
         return -2;
-    }
 
     // determine the limits of where actual data resides in the buffer
-    first = 0x80000000;     // max memory is 0x80000 so OK until mem > 2GB
-    for( curaddr = 0; curaddr < end; curaddr++ ) {
-        if( (0 <= buffer[curaddr]) && (buffer[curaddr] <= 0xFF) ) {
-            last = curaddr;
-            if (first == 0x80000000) first = curaddr;
+    first = UINT32_MAX;
+    for( curaddr = 0; curaddr < bout->total_size; curaddr++ ) {
+        if( bout->data[curaddr] <= UINT8_MAX ) {
+            bout->data_end = curaddr;
+            if (first == UINT32_MAX) bout->data_start = curaddr;
         }
     }
 
     // debug info about data limits
     DEBUG("Flash available from 0x%X to 0x%X (64kB p. %u to %u), 0x%X bytes.\n",
-            start, end, start / ATMEL_64KB_PAGE, end / ATMEL_64KB_PAGE,
-            end - start + 1); // bytes are inclusive so +1
+            bout->valid_start, bout->valid_end,
+            bout->valid_start / ATMEL_64KB_PAGE,
+            bout->valid_end / ATMEL_64KB_PAGE,
+            bout->valid_end - bout->valid_start + 1); // bytes inclusive so +1
     DEBUG("Data start @ 0x%X: 64kB p %u; %uB p 0x%X + 0x%X offset.\n",
-            first, first / ATMEL_64KB_PAGE,
-            page_size, first / page_size, first % page_size);
+            bout->data_start, bout->data_start / ATMEL_64KB_PAGE,
+            bout->page_size, bout->data_start / bout->page_size,
+            bout->data_start % bout->page_size);
     DEBUG("Data end @ 0x%X: 64kB p %u; %uB p 0x%X + 0x%X offset.\n",
-            last, last / ATMEL_64KB_PAGE,
-            page_size, last / page_size, last % page_size);
+            bout->data_end, bout->data_end / ATMEL_64KB_PAGE,
+            bout->page_size, bout->data_end / bout->page_size,
+            bout->data_end % bout->page_size);
     DEBUG("Totals: 0x%X bytes, %u %uB pages, %u 64kB byte pages.\n",
-            last - first + 1,
-            last / page_size + first / page_size + 1, page_size,
-            last / ATMEL_64KB_PAGE - first / ATMEL_64KB_PAGE + 1 );
+            bout->data_end - bout->data_start + 1,
+            bout->data_end/bout->page_size - bout->data_start/bout->page_size + 1,
+            bout->page_size,
+            bout->data_end/ATMEL_64KB_PAGE - bout->data_start/ATMEL_64KB_PAGE + 1 );
 
-    if( first < start ) {
-        // the bootloader region should end at a flash page boundary, this
-        // error will occur if that is not the case and there is program data
-        // too close to the bootloader region.
-        DEBUG( "ERROR: Data exists on a page overlapping the bootloader.\n" );
-        return -2;
+    // check if there is any data outside valid limits
+    if( (bout->data_start < bout->valid_start) ||
+            (bout->data_end > bout->valid_end) ) {
+        DEBUG( "ERROR: Data exists outside of the valid target flash region.\n" );
+        return -1;
+    }
+
+    // check if there is any valid data
+    if( bout->data_start == UINT32_MAX ) {
+        DEBUG( "ERROR: No valid data to flash.\n" );
+        return -1;
+    }
+
+    // check that the target memory is blank
+    if ( 0 != (result = atmel_blank_check(device, bout->data_start,
+                    bout->data_end)) ) {
+        DEBUG("The target memory is not blank.\n");
+        return -100;
     }
 
     // select eeprom/flash as the desired memory target, safe for non GRP_AVR32
@@ -1246,26 +1253,27 @@ int32_t atmel_flash( dfu_device_t *device,
         return -2;
     }
 
-    // TODO : move the text out of here.. only show hte progress bar. the text
+    // TODO : move the text out of here.. only show the progress bar. the text
     // should all go above, then you don't need the 'if'
 
-    if( !hide_progress && !(debug > ATMEL_DEBUG_THRESHOLD) ) {
-        fprintf( stderr, "Programming 0x%X bytes...\n", last - first + 1 );
-        fprintf( stderr, "[================================]\n" );
-        fprintf( stderr, "[" );
-    } else if (!hide_progress) {
-        fprintf( stderr, "Programming 0x%X bytes...\n", last - first + 1 );
+    if( !quiet ) {
+        fprintf( stderr, "Programming 0x%X bytes...\n",
+                bout->data_end - bout->data_start + 1 );
+        if( debug <= ATMEL_DEBUG_THRESHOLD ) {
+            fprintf( stderr, "[================================]\n" );
+            fprintf( stderr, "[" );
+        }
     }
 
     // program the data
-    curaddr = first;                // start could also be used
+    curaddr = bout->data_start;
     mem_page = curaddr / ATMEL_64KB_PAGE;
     if( 0 != (result = atmel_select_page( device, mem_page )) ) {
         DEBUG( "ERROR selecting 64kB page %d.\n", result );
         return -3;
     }
 
-    while (curaddr <= last) {       // end could also be used
+    while (curaddr <= bout->data_end) {
         // select the memory page if needed (safe for non GRP_AVR32)
         if ( curaddr / ATMEL_64KB_PAGE != mem_page ) {
             mem_page = curaddr / ATMEL_64KB_PAGE;
@@ -1276,9 +1284,9 @@ int32_t atmel_flash( dfu_device_t *device,
         }
 
         // find end address for data section to write
-        for(upto = curaddr; upto <= last; upto++) {
+        for(upto = curaddr; upto <= bout->data_end; upto++) {
             // check if the current value is valid
-            if( (0 > buffer[upto]) || (buffer[curaddr] > 0xff) ) break;
+            if( bout->data[upto] > UINT8_MAX ) break;
             // check if the current data packet is too big
             if( (upto - curaddr + 1) > ATMEL_MAX_TRANSFER_SIZE ) break;
             // check if the current data value is outside of the 64kB flash page
@@ -1292,28 +1300,28 @@ int32_t atmel_flash( dfu_device_t *device,
 //        if ( curaddr % page_size ) {
 //            DEBUG("NOTE: this would be faster if writes aligned with page boundaries.\n");
 //        }
-        result = __atmel_flash_page( device, &(buffer[curaddr]),
+        result = __atmel_flash_page( device, &(bout->data[curaddr]),
                 curaddr % ATMEL_64KB_PAGE, upto % ATMEL_64KB_PAGE, eeprom);
         if( 0 != result ) {
             DEBUG( "Error flashing the block: err %d.\n", result );
-            if ( !hide_progress && !(debug > ATMEL_DEBUG_THRESHOLD) )
+            if ( !quiet && !(debug > ATMEL_DEBUG_THRESHOLD) )
                 fprintf( stderr, " X\n.");
             return -4;
         }
 
         // incrment curaddr to the next valid address
-        for(curaddr = upto + 1; curaddr <= last; curaddr++) {
-            if( (0 <= buffer[upto]) || (buffer[curaddr] <= 0xff) ) break;
+        for(curaddr = upto + 1; curaddr <= bout->data_end; curaddr++) {
+            if( (bout->data[curaddr] <= UINT8_MAX) ) break;
         } // curaddr is now on the first valid data for the next segment
 
         // display progress in 32 increments (if not hidden)
-        while ( ((upto - first + 1) * 32) > progress ) {
-            if ( !hide_progress && !(debug > ATMEL_DEBUG_THRESHOLD) )
+        while ( ((upto - bout->data_start + 1) * 32) > progress ) {
+            if ( !quiet && !(debug > ATMEL_DEBUG_THRESHOLD) )
                 fprintf( stderr, ">" );
-            progress += last - first + 1;
+            progress += bout->data_end - bout->data_start + 1;
         }
     }
-    if ( !hide_progress && !(debug > ATMEL_DEBUG_THRESHOLD) )
+    if ( !quiet && !(debug > ATMEL_DEBUG_THRESHOLD) )
         fprintf( stderr, "]\n" );
 
     return 0;
