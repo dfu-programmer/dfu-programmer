@@ -87,12 +87,6 @@ static int32_t atmel_select_memory_unit( dfu_device_t *device,
  * flash, eeprom, security, configuration, bootloader, signature, user page
  */
 
-static int32_t atmel_select_flash( dfu_device_t *device );
-
-static int32_t atmel_select_user( dfu_device_t *device );
-
-static int32_t atmel_select_fuses( dfu_device_t *device );
-
 static int32_t atmel_select_page( dfu_device_t *device,
                                   const uint16_t mem_page );
 /* select a page in memory, numbering starts with 0, pages are
@@ -190,9 +184,10 @@ int32_t atmel_read_fuses( dfu_device_t *device,
         return -1;
     }
 
-    if( 0 != atmel_select_fuses(device) ) {
+    if( 0 != atmel_select_memory_unit(device, mem_config) ) {
         return -3;
     }
+
     int32_t result;
     uint8_t buffer[32];
     int i;
@@ -352,7 +347,7 @@ int32_t atmel_set_fuse( dfu_device_t *device,
        return -1;
     }
 
-    if( 0 != atmel_select_fuses(device) ) {
+    if( 0 != atmel_select_memory_unit(device, mem_config) ) {
         return -3;
     }
 
@@ -601,11 +596,11 @@ int32_t atmel_read_flash( dfu_device_t *device,
     /* For the AVR32/XMEGA chips, select the flash space. */
     if( GRP_AVR32 & device->type ) {
         if( user == true ) {
-            if( 0 != atmel_select_user(device) ) {
+            if( 0 != atmel_select_memory_unit(device, mem_user) ) {
                 return -3;
             }
         } else {
-            if( 0 != atmel_select_flash(device) ) {
+            if( 0 != atmel_select_memory_unit(device, mem_flash) ) {
                 return -3;
             }
         }
@@ -695,7 +690,7 @@ int32_t atmel_blank_check( dfu_device_t *device,
 
     /* Select FLASH memory */
     if( GRP_AVR32 & device->type ) {
-        if( 0 != atmel_select_flash(device) ) {
+        if( 0 != atmel_select_memory_unit(device, mem_flash) ) {
             return -2;
         }
     }
@@ -801,7 +796,7 @@ static int32_t atmel_select_memory_unit( dfu_device_t *device,
 
     // input parameter checks
     if( NULL == device) {
-        fprintf( stderr, "WARNING: Device pointer NULL.\n" );
+        DEBUG ( "ERROR: Device pointer is NULL.\n" );
         return -1;
     }
 
@@ -810,7 +805,11 @@ static int32_t atmel_select_memory_unit( dfu_device_t *device,
         DEBUG( "Ignore Select Memory Unit for non GRP_AVR32 device.\n" );
         return 0;
     } else if ( (ADC_AVR32 & device->type) && !( unit == mem_flash ||
-                                         unit == mem_user ) ) {
+                                                 unit == mem_security ||
+                                                 unit == mem_config ||
+                                                 unit == mem_boot ||
+                                                 unit == mem_sig ||
+                                                 unit == mem_user ) ) {
         DEBUG( "%d is not a valid memory unit for AVR32 devices.\n", unit );
         fprintf( stderr, "Invalid Memory Unit Selection.\n" );
         return -1;
@@ -846,83 +845,57 @@ static int32_t atmel_select_memory_unit( dfu_device_t *device,
     return 0;
 }
 
-static int32_t atmel_select_flash( dfu_device_t *device ) {
-    TRACE( "%s( %p )\n", __FUNCTION__, device );
-    int32_t result;
-
-    if (0 != (result = atmel_select_memory_unit(device, 0x00)) ) {
-        DEBUG( "Flash Memory NOT selected.\n" );
-        return result;
-    }
-
-    DEBUG( "Flash memory selected.\n" );
-    return result;
-}
-
-static int32_t atmel_select_fuses( dfu_device_t *device ) {
-    TRACE( "%s( %p )\n", __FUNCTION__, device );
-
-    if( (NULL != device) && (GRP_AVR32 & device->type) ) {
-        uint8_t command[4] = { 0x06, 0x03, 0x00, 0x03 };
-
-        if( 4 != dfu_download(device, 4, command) ) {
-            DEBUG( "dfu_download failed.\n" );
-            return -1;
-        }
-        DEBUG( "fuses selected\n" );
-    }
-
-    return 0;
-}
-
-static int32_t atmel_select_user( dfu_device_t *device ) {
-    TRACE( "%s( %p )\n", __FUNCTION__, device );
-    int32_t result;
-
-    if (0 != (result = atmel_select_memory_unit(device, 0x06)) ) {
-        DEBUG( "User Page Memory NOT selected.\n" );
-        return result;
-    }
-
-    DEBUG( "User Page memory selected.\n" );
-    return result;
-}
-
 static int32_t atmel_select_page( dfu_device_t *device,
                                   const uint16_t mem_page ) {
     TRACE( "%s( %p, %u )\n", __FUNCTION__, device, mem_page );
+    dfu_status_t status;
+
+    if( NULL == device ) {
+        DEBUG ( "ERROR: Device pointer is NULL.\n" );
+        return -2;
+    }
+
+    if ( ADC_8051 & device->type ) {
+        DEBUG( "Select page not implemented for 8051 device, ignoring.\n" );
+        return 0;
+    }
 
     DEBUG( "Selecting page %d, address 0x%X.\n",
             mem_page, ATMEL_64KB_PAGE * mem_page );
 
-    if( NULL != device ) {
-        if( GRP_AVR32 & device->type ) {
-            uint8_t command[5] = { 0x06, 0x03, 0x01, 0x00, 0x00 };
-            command[3] = 0xff & (mem_page >> 8);
-            command[4] = 0xff & mem_page;
+    if( GRP_AVR32 & device->type ) {
+        uint8_t command[5] = { 0x06, 0x03, 0x01, 0x00, 0x00 };
+        command[3] = 0xff & (mem_page >> 8);
+        command[4] = 0xff & mem_page;
 
-// FIXME : when you select a page that is out of range it fails here for an
-// unknown reason.  It should not fail here, but instead should return
-// bStatus = 0x08 errADDRESS... WHY?
-            // set page number
-            if( 5 != dfu_download(device, 5, command) ) {
-                DEBUG( "atmel_select_page dfu_download failed.\n" );
-                return -1;
-            }
-
-// TODO : run dfu_get_status to check if the page was selected
-
-        } else if( ADC_AVR == device->type ) {      // AVR but not 8051
-            uint8_t command[4] = { 0x06, 0x03, 0x00, 0x00 };
-
-            command[3] = (char) mem_page;
-
-            if( 4 != dfu_download(device, 4, command) ) {
-                DEBUG( "atmel_select_page dfu_download failed.\n" );
-                return -1;
-            }
-// TODO : run dfu_get_status to check if the page was selected
+        if( 5 != dfu_download(device, 5, command) ) {
+            DEBUG( "atmel_select_page DFU_DNLOAD failed.\n" );
+            return -1;
         }
+    } else if( ADC_AVR == device->type ) {      // AVR but not 8051
+        uint8_t command[4] = { 0x06, 0x03, 0x00, 0x00 };
+        command[3] = 0xff & mem_page;
+
+        if( 4 != dfu_download(device, 4, command) ) {
+            DEBUG( "atmel_select_page DFU_DNLOAD failed.\n" );
+            return -1;
+        }
+    }
+
+    // check that page number was set
+    if( 0 != dfu_get_status(device, &status) ) {
+        DEBUG( "atmel_select_page DFU_GETSTATUS failed.\n" );
+        return -3;
+    }
+
+    // if error, report and clear
+    if( DFU_STATUS_OK != status.bStatus ) {
+        DEBUG( "Error: status (%s) was not OK.\n",
+            dfu_status_to_string(status.bStatus) );
+        if ( STATE_DFU_ERROR == status.bState ) {
+            dfu_clear_status( device );
+        }
+        return -4;
     }
 
     return 0;
@@ -972,8 +945,11 @@ int32_t atmel_user( dfu_device_t *device,
     }
 
     /* Select USER page */
-    if( 0 != atmel_select_user(device) ) {
+    if( 0 != atmel_select_memory_unit(device, mem_user) ) {
+        DEBUG( "User Page Memory NOT selected.\n" );
         return -2;
+    } else {
+        DEBUG( "User Page memory selected.\n" );
     }
 
     //The user block is one flash page, so we'll just do it all in a block.
@@ -1071,7 +1047,7 @@ int32_t atmel_flash( dfu_device_t *device,
     if( ADC_8051 != device->type ) {
         if( GRP_AVR32 & device->type ) {
             /* Select FLASH memory */
-            if( 0 != atmel_select_flash(device) ) {
+            if( 0 != atmel_select_memory_unit(device, mem_flash) ) {
                 return -2;
             }
         }

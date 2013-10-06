@@ -148,14 +148,14 @@ struct programmer_arguments {
     uint16_t device_address;    /* to identify the specific target device.    */
     atmel_device_class_t device_type;
     char device_type_string[DEVICE_TYPE_STRING_MAX_LENGTH];
-    uint32_t memory_address_top;        /* the maximum memory address */
-    uint32_t memory_address_bottom;     /* the minimum memory address */
-    uint32_t flash_address_top;         /* the maximum flash-able address */
-    uint32_t flash_address_bottom;      /* the minimum flash-able address */
-    uint32_t bootloader_top;            /* the top of the bootloader code */
-    uint32_t bootloader_bottom;         /* the bottom of the bootloader code */
+    uint32_t memory_address_top;        /* the maximum flash memory addr.  */
+    uint32_t memory_address_bottom;     /*    including bootloader region  */
+    uint32_t flash_address_top;         /* the maximum flash-able address  */
+    uint32_t flash_address_bottom;      /*     excludes bootloader region  */
+    uint32_t bootloader_top;            /* top of the bootloader region    */
+    uint32_t bootloader_bottom;         /* bottom of the bootloader region */
     dfu_bool bootloader_at_highmem;
-    size_t flash_page_size;
+    size_t flash_page_size;             /* size of a page in bytes         */
     dfu_bool initial_abort;
     dfu_bool honor_interfaceclass;
     size_t eeprom_memory_size;
