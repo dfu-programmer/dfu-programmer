@@ -372,6 +372,13 @@ static int32_t execute_getfuse( dfu_device_t *device,
     int32_t value = 0;
     int32_t status;
 
+    /* only ADC_AVR32 seems to support fuse operation */
+    if( !(ADC_AVR32 & args->device_type) ) {
+        DEBUG( "target doesn't support fuse set operation.\n" );
+        fprintf( stderr, "target doesn't support fuse set operation.\n" );
+        return -1;
+    }
+
     /* Check AVR32 security bit in order to provide a better error message. */
     security_check( device );
 
@@ -656,7 +663,8 @@ static int32_t execute_setfuse( dfu_device_t *device,
     int32_t value = args->com_setfuse_data.value;
     int32_t name = args->com_setfuse_data.name;
 
-    if( GRP_AVR & args->device_type ) {
+    /* only ADC_AVR32 seems to support fuse operation */
+    if( !(ADC_AVR32 & args->device_type) ) {
         DEBUG( "target doesn't support fuse set operation.\n" );
         fprintf( stderr, "target doesn't support fuse set operation.\n" );
         return -1;
