@@ -178,7 +178,7 @@ int32_t dfu_download( dfu_device_t *device,
 
     return result;
 // TODO : consider adding dfu_get_status here and returning status instead of
-// the lenght of the download? if there is a lenght mismatch on the download it
+// the length of the download? if there is a length mismatch on the download it
 // can be returned as -1.. this should simplify all calls to dfu_ from atmel_
 }
 
