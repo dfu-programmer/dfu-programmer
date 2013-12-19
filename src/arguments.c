@@ -152,6 +152,11 @@ static struct target_mapping_structure target_map[] = {
     { "atxmega128c3",   tar_atxmega128c3,   ADC_XMEGA, 0x2FD7, 0x03eb, 0x20000, 0x2000, true,  512, true,  false, 32,  0x0800 },
     { "atxmega256c3",   tar_atxmega256c3,   ADC_XMEGA, 0x2FDA, 0x03eb, 0x40000, 0x2000, true,  512, true,  false, 32,  0x1000 },
     { "atxmega384c3",   tar_atxmega384c3,   ADC_XMEGA, 0x2FDB, 0x03eb, 0x60000, 0x2000, true,  512, true,  false, 32,  0x1000 },
+    // Name             ID (arguments.h)    DevType    PID     VID     MemSize  BootSz  BootHi FPage Abort IF     EPage ESize
+    { "stm32f4_B",      tar_stm32f4_B,      DC_STM32,  0xdf11, 0x0483, 0x20000, 0x0000, false, 512, false, true,  0,   0      },
+    { "stm32f4_C",      tar_stm32f4_C,      DC_STM32,  0xdf11, 0x0483, 0x40000, 0x0000, false, 512, false, true,  0,   0      },
+    { "stm32f4_E",      tar_stm32f4_E,      DC_STM32,  0xdf11, 0x0483, 0x80000, 0x0000, false, 512, false, true,  0,   0      },
+    { "stm32f4_G",      tar_stm32f4_G,      DC_STM32,  0xdf11, 0x0483, 0x100000,0x0000, false, 512, false, true,  0,   0      },
     { NULL }
 };
 
@@ -370,6 +375,7 @@ static int32_t assign_target( struct programmer_arguments *args,
                and subclass the way is did before. However we have already matched
                VID and PID so why would we worry about this. Don't use the device-
                specific value, just ignore the error for all device types.
+                TODO : check that this is not a permissions issue
             */
             args->honor_interfaceclass = false;
             args->memory_address_top = map->memory_size - 1;
@@ -403,6 +409,14 @@ static int32_t assign_target( struct programmer_arguments *args,
                     break;
                 case ADC_XMEGA:
                     strncpy( args->device_type_string, "XMEGA",
+                             DEVICE_TYPE_STRING_MAX_LENGTH );
+                    break;
+                case DC_STM32:
+                    strncpy( args->device_type_string, "STM32",
+                             DEVICE_TYPE_STRING_MAX_LENGTH );
+                    break;
+                default :
+                    strncpy( args->device_type_string, "UNKNO",
                              DEVICE_TYPE_STRING_MAX_LENGTH );
                     break;
             }

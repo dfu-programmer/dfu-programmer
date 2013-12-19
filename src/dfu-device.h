@@ -17,10 +17,12 @@
 #define ADC_AVR     (1<<1)
 #define ADC_AVR32   (1<<2)
 #define ADC_XMEGA   (1<<3)
+#define DC_STM32    (1<<4)
 
 // Most commands fall into one of 2 groups.
 #define GRP_AVR32   (ADC_AVR32 | ADC_XMEGA)
 #define GRP_AVR     (ADC_AVR | ADC_8051)
+#define GRP_STM32   (DC_STM32)
 
 typedef unsigned atmel_device_class_t;
 
@@ -35,6 +37,108 @@ typedef struct {
 } dfu_device_t;
 
 #endif /* __DFU_DEVICE_H__ */
+
+/******************* S T M 3 2   D F U   C O M M A N D S ******************
+========= USB DFU Bootloader Requests ==============
+DFU_DETACH - [ 0x00 ]       wTimeout    interface   zero        none
+    > Requests the device to leave DFU mode and enter the application.
+    NOTE : The Detach request is not meaningful in the case of the bootloader.
+           The bootloader is started by a system reset depending on the boot
+           mode configuration settings, which means that no other application
+           is running at this time.
+DFU_DNLOAD - [ 0x01 ]       wBlockNum   interface   length      firmware
+    > Requests data transfer from Host to the device in order to load them
+      into device internal Flash. Includes also erase commands.
+DFU_UPLOAD - [ 0x02 ]       zero        interface   length      firmware
+    > Requests data transfer from device to Host in order to load content of
+      device internal Flash into a Host file.
+DFU_GETSTATUS - [ 0x03 ]    zero        interface   6           status
+    > Requests device to send status report to the Host (including status
+      resulting from the last request execution and the state the device will
+      enter immediately after this request).
+DFU_CLRSTATUS - [ 0x04 ]    zero        interface   zero        none
+    > Requests device to clear error status and move to next step.
+DFU_GETSTATE - [ 0x05 ]     zero        interface   1           state
+    > Requests the device to send only the state it will enter immediately
+      after this request.
+DFU_ABORT - [ 0x06 ]        zero        interface   zero        none
+    > Requests device to exit the current state/operation and enter idle
+      state immediately.
+
+========= STM32 DFU Commands ==============
+.                       DFU_UPLOAD  DFU_DNLOAD cmd
+.                       wValue      wValue  first byte
+READ MEMORY             > 1
+GET                     0
+WRITE MEMORY                        > 1
+ERASE                               0       0x41
+READ UNPROTECT                      0       0x92
+SET ADDRESS POINTER                 0       0x21
+LEAVE DFU MODE                      0       -- (0 data length)
+
+NOTES
+    > before issuing a DNLOAD request the host should check that the device
+      is in a correct sate dfuIDLE or dfuDNLOAD-IDLE and that there are no
+      errors.  if the device is not in the correct state a DFU_CLRSTATUS must
+      be called
+    > after a command is sent using DFU_DNLOAD, DFU_GETSTATUS must be called
+      to trigger command execution. a second DFU_GETSTATUS is required to
+      check for success (except when writing to the option bytes beacuse device
+      resets immediately after write)
+
+READ COMMAND        DFU_UPLOAD with wValue > 1
+    > host request device send a specified number of data bytes (wLength)
+      where wLength can be 2 to 2048 bytes, for option bytes read size should
+      be the option byte block size
+    > the address to read data from is computed using wBlockNumber (wValue)
+      and the address pointer using the formula:
+        addresss = ((wBlockNum - 2) x wTransferSize) + Address_Pointer
+        where: wTransferSize is the length of the requested data buffer
+    > the address should be previously specified using SET ADDRESS POINTER
+      otherwise the start of internal flash is assumed (0x0800000)
+
+GET COMMAND         DFU_UPLOAD with wValue = 0
+    > host sends DFU_UPLOAD command with wLength = 0, the device will return
+      N bytes representing the command codes where N = 4
+
+WRITE COMMAND       DFU_DNLOAD with wValue > 1
+    > in a write memory operation the write size can be from 2 to 2048 bytes
+      and the start address  must be valid. when writing the option bytes the
+      start address must be the start of the option byte area and the size
+      should cover the entire option byte area
+    > the address is computed using the value of the wBlockNumber (wValue) and
+      the address pointer according the formula:
+        address = ((wBlockNum - 2) x wTransferSize) + Address_Pointer
+        where: wTransferSize is the length of the buffer sent by host
+               wBlockNumber is the value of wValue parameter
+
+SET ADDRESS POINTER - [ 0x21, mem ptr LSB A[7:0], A[8:15], A[23:16], A[31:24] ]
+    > wValue should be zero
+    > after sending the command host must send a DFU_GETSTATUS in order to
+      execute the command.  a second DFU_GETSTATUS is needed to check if the
+      command was correctly executed
+
+ERASE COMMAND       - [ 0x41, page LSB A[7:0], A[15:8], A[23:16], A[31:24] ]
+MASS ERASE          - [ 0x41 ]
+    > this can take a long time to execute so timeout should be long
+
+READ UNPROTECT      - [ 0x92 ]
+
+LEAVE DFU MODE      - DFU_DNLOAD with 0 data length
+    > device disconnect
+    > init registers of peripherals to default reset values
+    > initialize the user application main stack pointer
+    > jumps to memory location programmed in the received 'address pointer + 4'
+      which corresponds to the address of the application's reset handler
+
+    > the address pointer has to be set (using set address pointer) before
+      launching the LEAVE DFU command otherwise the bootloader will jump to the
+      default memory start address (0x0800000)
+
+- see an2606: STM32 microcontroller system memory boot mode
+- see an3156: USB DFU protocol used in the STM32 bootloader
+**************************************************************************/
+
 
 /******************* A T M E L   D F U   C O M M A N D S ******************
 // ---- A L L   D E V I C E S -----------------------------------

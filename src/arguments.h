@@ -114,6 +114,10 @@ enum targets_enum { tar_at89c51snd1c,
                     tar_atxmega128c3,
                     tar_atxmega256c3,
                     tar_atxmega384c3,
+                    tar_stm32f4_B,
+                    tar_stm32f4_C,
+                    tar_stm32f4_E,
+                    tar_stm32f4_G,
                     tar_none };
 
 enum commands_enum { com_none, com_erase, com_flash, com_user, com_eflash,
