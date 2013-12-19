@@ -662,3 +662,29 @@ int32_t intel_validate_buffer( intel_buffer_in_t *buin,
     return invalid_data_region ?
         -1 * invalid_data_region : invalid_outside_data_region;
 }
+
+int32_t intel_flash_prep_buffer( intel_buffer_out_t *bout ) {
+    uint16_t *page;
+    int32_t i;
+
+    // increment pointer by page_size * sizeof(int16) until page_start >= end
+    for( page = bout->data;
+        page < &bout->data[bout->info.valid_end];
+        page = &page[bout->info.page_size] ) {
+        // check if there is valid data on this page
+        for( i = 0; i < bout->info.page_size; i++ ) {
+            if( page[i] <= UINT8_MAX )
+                break;
+            }
+
+        if( bout->info.page_size != i ) {
+            /* There was valid data in the block & we need to make
+            * sure there is no unassigned data.  */
+            for( i = 0; i < bout->info.page_size; i++ ) {
+                if( page[i] > UINT8_MAX )
+                    page[i] = 0xff;     // 0xff is blank
+            }
+        }
+    }
+    return 0;
+}

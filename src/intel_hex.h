@@ -120,4 +120,11 @@ int32_t intel_validate_buffer(  intel_buffer_in_t *buin,
  * not validate, negative number if bytes inside region that do not validate
  */
 
+int32_t intel_flash_prep_buffer( intel_buffer_out_t *bout );
+/* prepare the buffer so that valid data fills each page that contains data.
+ * unassigned data in buffer is given a value of 0xff (blank memory)
+ * the buffer pointer must align with the beginning of a flash page
+ * return 0 on success, -1 if assigning data would extend flash above size
+ */
+
 #endif

@@ -76,13 +76,6 @@ static int32_t stm32_select_page( dfu_device_t *device,
    * is set to the user page will cause an error.
    */
 
-static int32_t stm32_flash_prep_buffer( intel_buffer_out_t *bout );
-  /* prepare the buffer so that valid data fills each page that contains data.
-   * unassigned data in buffer is given a value of 0xff (blank memory)
-   * the buffer pointer must align with the beginning of a flash page
-   * return 0 on success, -1 if assigning data would extend flash above size
-   */
-
 static int32_t __stm32_read_block( dfu_device_t *device,
                    intel_buffer_in_t *buin,
                    const dfu_bool eeprom );
@@ -317,34 +310,6 @@ static int32_t stm32_select_page( dfu_device_t *device,
     return -4;
   }
 
-  return 0;
-}
-
-static int32_t stm32_flash_prep_buffer( intel_buffer_out_t *bout ) {
-  uint16_t *page;
-  int32_t i;
-
-  TRACE( "%s( %p )\n", __FUNCTION__, bout );
-
-  // increment pointer by page_size * sizeof(int16) until page_start >= end
-  for( page = bout->data;
-      page < &bout->data[bout->info.valid_end];
-      page = &page[bout->info.page_size] ) {
-    // check if there is valid data on this page
-    for( i = 0; i < bout->info.page_size; i++ ) {
-      if( page[i] <= UINT8_MAX )
-        break;
-    }
-
-    if( bout->info.page_size != i ) {
-      /* There was valid data in the block & we need to make
-       * sure there is no unassigned data.  */
-      for( i = 0; i < bout->info.page_size; i++ ) {
-        if( page[i] > UINT8_MAX )
-          page[i] = 0xff;     // 0xff is blank
-      }
-    }
-  }
   return 0;
 }
 
@@ -759,7 +724,7 @@ int32_t stm32_write_flash( dfu_device_t *device,
   /* for each page with data, fill unassigned values on the page with 0xFF
    * bout->data[0] always aligns with a flash page boundary irrespective
    * of where valid_start is located */
-  if( 0 != stm32_flash_prep_buffer( bout ) ) {
+  if( 0 != intel_flash_prep_buffer( bout ) ) {
     if( !quiet )
       fprintf( stderr, "Program Error, use debug for more info.\n" );
     return -2;
