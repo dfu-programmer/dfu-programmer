@@ -88,7 +88,7 @@ static int32_t execute_erase( dfu_device_t *device,
            (args->flash_address_top - args->flash_address_bottom) );
 
     if( GRP_STM32 & args->device_type ) {
-        result = stm32_erase_flash( device, STM32_ERASE_ALL, args->quiet );
+        result = stm32_erase_flash( device, mem_st_all, args->quiet );
     } else {
         result = atmel_erase_flash( device, ATMEL_ERASE_ALL, args->quiet );
     }
@@ -107,8 +107,9 @@ static int32_t execute_setsecure( dfu_device_t *device,
     int32_t result;
 
     if( ADC_AVR32 != args->device_type ) {
-        DEBUG( "target doesn't support security bit set.\n" );
-        fprintf( stderr, "target doesn't support security bit set.\n" );
+        fprintf( stderr,  "Operation not supported on %s\n",
+                args->device_type_string );
+        DEBUG( "Target doesn't support security bit set.\n" );
         return -1;
     }
 
@@ -134,6 +135,8 @@ static int32_t serialize_memory_image( intel_buffer_out_t *bout,
     uint32_t target_offset = 0;
     if( args->command == com_user )
         target_offset = ATMEL_USER_PAGE_OFFSET;
+    else if( args->device_type & GRP_STM32 )
+        target_offset = STM32_FLASH_OFFSET;
 
     if ( NULL != args->com_flash_data.serial_data ) {
         int16_t *serial_data = args->com_flash_data.serial_data;
@@ -167,8 +170,13 @@ static int32_t execute_validate( dfu_device_t *device,
     buin.info.data_start = bout->info.valid_start;
     buin.info.data_end = bout->info.valid_end;
 
-    if( 0 !=  (result = atmel_read_flash(device, &buin,
-                                         mem_segment, quiet)) ) {
+    if( device->type & GRP_STM32 ) {
+        result = stm32_read_flash( device, &buin, mem_segment, quiet );
+    } else {
+        result = atmel_read_flash( device, &buin, mem_segment, quiet );
+    }
+
+    if( 0 != result ) {
         DEBUG("ERROR: could not read memory, err %d.\n", result);
         goto error;
     }
@@ -329,7 +337,7 @@ error:
 }
 
 static int32_t execute_flash( dfu_device_t *device,
-                                struct programmer_arguments *args ) {
+                              struct programmer_arguments *args ) {
     int32_t  retval = -1;
     int32_t  result;
     uint32_t  i;
@@ -339,9 +347,12 @@ static int32_t execute_flash( dfu_device_t *device,
     enum atmel_memory_unit_enum mem_type = args->com_flash_data.segment;
     uint32_t target_offset = 0;
 
-    // assign the correct memory size
+    /* assign the correct memory size */
     switch ( mem_type ) {
         case mem_flash:
+            if( args->device_type & GRP_STM32 ) {
+                target_offset = STM32_FLASH_OFFSET;
+            }
             memory_size = args->memory_address_top + 1;
             page_size = args->flash_page_size;
             break;
@@ -466,12 +477,18 @@ static int32_t execute_flash( dfu_device_t *device,
     }
 
     // ------------------ WRITE PROGRAM DATA -------------------------------
-    if ( mem_type == mem_user ) {
+    if( mem_type == mem_user ) {
         result = atmel_user( device, &bout );
     } else {
-        result = atmel_flash(device, &bout,
-                mem_type == mem_eeprom ? true : false,
-                args->com_flash_data.force, args->quiet);
+        if( args->device_type & GRP_STM32 ) {
+            result = stm32_write_flash( device, &bout,
+                    mem_type == mem_eeprom ? true : false,
+                    args->com_flash_data.force, args->quiet );
+        } else {
+            result = atmel_flash(device, &bout,
+                    mem_type == mem_eeprom ? true : false,
+                    args->com_flash_data.force, args->quiet);
+        }
     }
     if( 0 != result ) {
         DEBUG( "Error writing %s data. (err %d)\n", "memory", result );
@@ -487,7 +504,6 @@ static int32_t execute_flash( dfu_device_t *device,
             if( 0 == args->quiet ) print_flash_usage( &bout.info );
     } else
         if( 0 == args->quiet ) print_flash_usage( &bout.info );
-
 
     retval = 0;
 
@@ -517,7 +533,13 @@ static int32_t execute_getfuse( dfu_device_t *device,
     /* Check AVR32 security bit in order to provide a better error message. */
     security_check( device );
 
-    status = atmel_read_fuses( device, &info );
+    if( args->device_type & GRP_STM32 ) {
+        fprintf( stderr, "Operation not supported on %s.\n",
+                args->device_type_string );
+        return -1;
+    } else {
+        status = atmel_read_fuses( device, &info );
+    }
 
     if( 0 != status ) {
         DEBUG( "Error reading %s config information.\n",
@@ -584,7 +606,13 @@ static int32_t execute_get( dfu_device_t *device,
     /* Check AVR32 security bit in order to provide a better error message. */
     security_check( device );
 
-    status = atmel_read_config( device, &info );
+    if( args->device_type & GRP_STM32 ) {
+        fprintf( stderr, "Operation not supported on %s.\n",
+                args->device_type_string );
+        return -1;
+    } else {
+        status = atmel_read_config( device, &info );
+    }
 
     if( 0 != status ) {
         DEBUG( "Error reading %s config information.\n",
@@ -799,17 +827,17 @@ static int32_t execute_setfuse( dfu_device_t *device,
     int32_t name = args->com_setfuse_data.name;
 
     /* only ADC_AVR32 seems to support fuse operation */
-    if( !(ADC_AVR32 & args->device_type) ) {
+    if( !(ADC_AVR32 & args->device_type) || (GRP_STM32 & args->device_type) ) {
+        fprintf( stderr,  "Operation not supported on %s\n",
+                args->device_type_string );
         DEBUG( "target doesn't support fuse set operation.\n" );
-        fprintf( stderr, "target doesn't support fuse set operation.\n" );
         return -1;
     }
 
     /* Check AVR32 security bit in order to provide a better error message. */
     security_check( device );
 
-    if( 0 != atmel_set_fuse(device, name, value) )
-    {
+    if( 0 != atmel_set_fuse(device, name, value) ) {
         DEBUG( "Fuse set failed.\n" );
         fprintf( stderr, "Fuse set failed.\n" );
         security_message();
@@ -825,8 +853,9 @@ static int32_t execute_configure( dfu_device_t *device,
     int32_t name = args->com_configure_data.name;
 
     if( ADC_8051 != args->device_type ) {
+        fprintf( stderr, "Operation not supported on %s\n",
+                args->device_type_string );
         DEBUG( "target doesn't support configure operation.\n" );
-        fprintf( stderr, "target doesn't support configure operation.\n" );
         return -1;
     }
 
