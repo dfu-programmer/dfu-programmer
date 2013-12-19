@@ -40,6 +40,7 @@
 #define TRACE(...)  dfu_debug( __FILE__, __FUNCTION__, __LINE__, STM32_TRACE_THRESHOLD, __VA_ARGS__ )
 
 #define STM32_MAX_TRANSFER_SIZE     0x0800  /* 2048 */
+#define STM32_MIN_SECTOR_BOUND      0x4000  /* 16 kb */
 
 #define SET_ADDR_PTR            0x21
 #define ERASE_CMD               0x41
@@ -66,8 +67,7 @@ static int32_t stm32_set_address_ptr( dfu_device_t *device, uint32_t address );
    */
 
 static int32_t __stm32_flash_block( dfu_device_t *device,
-                  intel_buffer_out_t *bout,
-                  const dfu_bool eeprom );
+                                    intel_buffer_out_t *bout );
   /* flash the contents of memory into a block of memory.  it is assumed that
    * the appropriate page has already been selected.  start and end are the
    * start and end addresses of the flash data.  returns 0 on success,
@@ -76,7 +76,7 @@ static int32_t __stm32_flash_block( dfu_device_t *device,
    */
 
 static int32_t stm32_select_memory_unit( dfu_device_t *device,
-    stm32f4_mem_sectors unit );
+    stm32_mem_sectors unit );
    /* select a memory unit from the following list (enumerated)
     * flash, eeprom, security, configuration, bootloader, signature, user page
     */
@@ -102,16 +102,6 @@ static inline void __print_progress( intel_buffer_info_t *info,
   /* calculate how many progress indicator steps to print and print them
    * update progress value
    */
-
-static void stm32_flash_populate_footer( uint8_t *message, uint8_t *footer,
-                     const uint16_t vendorId,
-                     const uint16_t productId,
-                     const uint16_t bcdFirmware );
-
-static void stm32_flash_populate_header( uint8_t *header,
-                     const uint32_t start,
-                     const uint32_t end,
-                     const dfu_bool eeprom );
 
 
 //___ V A R I A B L E S ______________________________________________________
@@ -142,7 +132,9 @@ static inline int32_t stm32_get_status( dfu_device_t *device ) {
     if( status.bStatus == DFU_STATUS_OK ) {
       DEBUG( "Status OK\n" );
     } else {
-      DEBUG( "Status %u not OK, use DFU_CLRSTATUS\n", status.bStatus );
+      DEBUG( "Status %s not OK, use DFU_CLRSTATUS\n",
+          dfu_status_to_string(status.bStatus) );
+      dfu_clear_status( device );
       return -2;
     }
   } else {
@@ -194,25 +186,14 @@ static int32_t stm32_set_address_ptr( dfu_device_t *device, uint32_t address ) {
 }
 
 static int32_t __stm32_flash_block( dfu_device_t *device,
-                  intel_buffer_out_t *bout,
-                  const dfu_bool eeprom ) {
-  // from doc7618, AT90 / ATmega app note protocol:
+                                    intel_buffer_out_t *bout ) {
+  TRACE( "%s( %p, %p )\n", __FUNCTION__, device, bout );
   const size_t length = bout->info.block_end - bout->info.block_start + 1;
-  uint8_t message[STM32_MAX_FLASH_BUFFER_SIZE];
-  uint8_t *header;
-  uint8_t *data;
-  uint8_t *footer;
-  size_t message_length;
-  int32_t result;
-  dfu_status_t status;
-  int32_t i;
-  size_t control_block_size;  /* USB control block size */
-  size_t alignment;
+  int16_t i;
+  uint8_t message[STM32_MAX_TRANSFER_SIZE];
+  int32_t status;
 
-  TRACE( "%s( %p, %p, %s )\n", __FUNCTION__, device, bout,
-              ((true == eeprom) ? "true" : "false") );
-
-  // check input args
+  /* check input args */
   if( (NULL == device) || (NULL == bout) ) {
     DEBUG( "ERROR: Invalid arguments, device/buffer pointer is NULL.\n" );
     return -1;
@@ -226,75 +207,32 @@ static int32_t __stm32_flash_block( dfu_device_t *device,
     return -1;
   }
 
-  // 0 out the message
-  memset( message, 0, STM32_MAX_FLASH_BUFFER_SIZE );
-
-  if( GRP_AVR32 & device->type ) {
-    control_block_size = STM32_CONTROL_BLOCK_SIZE;
-    alignment = bout->info.block_start % STM32_CONTROL_BLOCK_SIZE;
-  } else {
-    control_block_size = STM32_CONTROL_BLOCK_SIZE;
-    alignment = 0;
-  }
-
-  header = &message[0];
-  data   = &message[control_block_size + alignment];
-  footer = &data[length];
-
-  stm32_flash_populate_header( header,
-      bout->info.block_start % STM32_64KB_PAGE,
-      bout->info.block_end % STM32_64KB_PAGE,
-      eeprom );
-
-
-  // Copy the data
   for( i = 0; i < length; i++ ) {
-    data[i] = (uint8_t) bout->data[bout->info.block_start + i];
+    message[i] = (uint8_t) bout->data[bout->info.block_start + i];
   }
 
-  stm32_flash_populate_footer( message, footer, 0xffff, 0xffff, 0xffff );
-
-  message_length = ((size_t) (footer - header)) + STM32_FOOTER_SIZE;
-
-  result = dfu_download( device, message_length, message );
-
-  if( message_length != result ) {
-    if( -EPIPE == result ) {
-      /* The control pipe stalled - this is an error
-       * caused by the device saying "you can't do that"
-       * which means the device is write protected.
-       */
-      fprintf( stderr, "Device is write protected.\n" );
-      dfu_clear_status( device );
-    } else {
-      DEBUG( "stm32_flash: flash data dfu_download failed.\n" );
-      DEBUG( "Expected message length of %d, got %d.\n",
-          message_length, result );
-    }
-    return -2;
-  }
-
-  // check status
-  if( 0 != dfu_get_status(device, &status) ) {
-    DEBUG( "dfu_get_status failed.\n" );
+  if( length != dfu_download(device, length, message) ) {
+    DEBUG( "dfu_download failed\n" );
     return -3;
   }
 
-  if( DFU_STATUS_OK == status.bStatus ) {
-    DEBUG( "Page write success.\n" );
-  } else {
-    DEBUG( "Page write not unsuccessful (err %s).\n",
-         dfu_status_to_string(status.bStatus) );
-    if ( STATE_DFU_ERROR == status.bState ) {
-      dfu_clear_status( device );
-    }
-    return (int32_t) status.bStatus;
+  /* call dfu get status to trigger command */
+  if( (status = stm32_get_status(device)) ) {
+    DEBUG("Error %d triggering %s\n", status, __FUNCTION__);
+    return -3;
   }
+
+  /* check that the command was successfully executed */
+  if( (status = stm32_get_status(device)) ) {
+    DEBUG("Error %d: %s unsuccessful\n", status, __FUNCTION__);
+    return -4;
+  }
+
   return 0;
 }
 
 static int32_t stm32_select_memory_unit( dfu_device_t *device,
-                stm32f4_mem_sectors unit ) {
+                stm32_mem_sectors unit ) {
   TRACE( "%s( %p, %d )\n", __FUNCTION__, device, unit );
 
   uint8_t command[4] = { 0x06, 0x03, 0x00, (0xFF & unit) };
@@ -463,80 +401,6 @@ static inline void __print_progress( intel_buffer_info_t *info,
       *progress += info->data_end - info->data_start + 1;
     }
   }
-}
-
-static void stm32_flash_populate_footer( uint8_t *message, uint8_t *footer,
-                     const uint16_t vendorId,
-                     const uint16_t productId,
-                     const uint16_t bcdFirmware ) {
-  int32_t crc;
-
-  TRACE( "%s( %p, %p, %u, %u, %u )\n", __FUNCTION__, message, footer,
-       vendorId, productId, bcdFirmware );
-
-  if( (NULL == message) || (NULL == footer) ) {
-    return;
-  }
-
-  /* TODO: Calculate the message CRC */
-  crc = 0;
-
-  /* CRC 4 bytes */
-  footer[0] = 0xff & (crc >> 24);
-  footer[1] = 0xff & (crc >> 16);
-  footer[2] = 0xff & (crc >> 8);
-  footer[3] = 0xff & crc;
-
-  /* Length of DFU suffix - always 16. */
-  footer[4] = 16;
-
-  /* ucdfuSignature - fixed 'DFU'. */
-  footer[5] = 'D';
-  footer[6] = 'F';
-  footer[7] = 'U';
-
-  /* BCD DFU specification number (1.1)*/
-  footer[8] = 0x01;
-  footer[9] = 0x10;
-
-  /* Vendor ID or 0xFFFF */
-  footer[10] = 0xff & (vendorId >> 8);
-  footer[11] = 0xff & vendorId;
-
-  /* Product ID or 0xFFFF */
-  footer[12] = 0xff & (productId >> 8);
-  footer[13] = 0xff & productId;
-
-  /* BCD Firmware release number or 0xFFFF */
-  footer[14] = 0xff & (bcdFirmware >> 8);
-  footer[15] = 0xff & bcdFirmware;
-}
-
-static void stm32_flash_populate_header( uint8_t *header,
-                     const uint32_t start,
-                     const uint32_t end,
-                     const dfu_bool eeprom ) {
-
-  TRACE( "%s( %p, 0x%X, 0x%X, %s )\n", __FUNCTION__, header, start,
-       end, ((true == eeprom) ? "true" : "false") );
-
-  if( NULL == header ) {
-    return;
-  }
-
-  /* Command Identifier */
-  header[0] = 0x01;   /* ld_prog_start */
-
-  /* data[0] */
-  header[1] = ((true == eeprom) ? 0x01 : 0x00);
-
-  /* start_address */
-  header[2] = 0xff & (start >> 8);
-  header[3] = 0xff & start;
-
-  /* end_address */
-  header[4] = 0xff & (end >> 8);
-  header[5] = 0xff & end;
 }
 
 
@@ -740,10 +604,13 @@ int32_t stm32_write_flash( dfu_device_t *device, intel_buffer_out_t *bout,
           ((true == quiet) ? "true" : "false") );
 
   uint32_t i;
-  uint32_t progress = 0;  // keep record of sent progress as bytes * 32
-  uint8_t mem_page = 0;   // tracks the current memory page
-  int32_t result = 0;   // result storage for many function calls
+  uint32_t progress = 0;    // keep record of sent progress as bytes * 32
+  uint32_t address_offset;  // keep record of sent progress as bytes * 32
+  uint8_t  reset_address_flag;  // reset address offset required
+  uint16_t  xfer_size = 0;      // the size of a transfer
+  uint8_t mem_section = 0;   // tracks the current memory page
   int32_t retval = -1;  // the return value for this function
+  int32_t status;
 
   /* check arguments */
   if( (NULL == device) || (NULL == bout) ) {
@@ -812,14 +679,6 @@ int32_t stm32_write_flash( dfu_device_t *device, intel_buffer_out_t *bout,
     return -1;
   }
 
-  // select eeprom/flash as the desired memory target, safe for non GRP_AVR32
-  /*if( 0 != stm32_select_memory_unit(device, mem_page) ) {
-    DEBUG ("Error selecting memory unit.\n");
-    if( !quiet )
-      fprintf( stderr, "Memory access error, use debug for more info.\n" );
-    return -2;
-  }*/
-
   if( !quiet ) {
     if( debug <= STM32_DEBUG_THRESHOLD ) {
       /* NOTE: from here on we should run finally block */
@@ -835,55 +694,64 @@ int32_t stm32_write_flash( dfu_device_t *device, intel_buffer_out_t *bout,
 
   /* program the data */
   bout->info.block_start = bout->info.data_start;
-  mem_page = bout->info.block_start / STM32_64KB_PAGE;
-  if( 0 != (result = stm32_select_page( device, mem_page )) ) {
-    DEBUG( "ERROR selecting 64kB page %d.\n", result );
-    retval = -3;
-    goto finally;
-  }
+  reset_address_flag = 1;
 
-  while (bout->info.block_start <= bout->info.data_end) {
-    // select the memory page if needed (safe for non GRP_AVR32)
-    if ( bout->info.block_start / STM32_64KB_PAGE != mem_page ) {
-      mem_page = bout->info.block_start / STM32_64KB_PAGE;
-      if( 0 != (result = stm32_select_page( device, mem_page )) ) {
-        DEBUG( "ERROR selecting 64kB page %d.\n", result );
+  while( bout->info.block_start <= bout->info.data_end ) {
+    if( reset_address_flag ) {
+      address_offset = bout->info.block_start;
+      if( (status = stm32_set_address_ptr(device,
+              STM32_FLASH_OFFSET + address_offset)) ) {
+        DEBUG("Error setting address 0x%X\n", address_offset);
         retval = -3;
         goto finally;
       }
+      dfu_set_transaction_num( 2 ); /* sets block offset 0 */
+      reset_address_flag = 0;
     }
 
-    // find end address (info.block_end) for data section to write
-    for(bout->info.block_end = bout->info.block_start;
-        bout->info.block_end <= bout->info.data_end;
-        bout->info.block_end++) {
+    /* find end address (info.block_end) for data section to write */
+    mem_section = bout->info.block_start / STM32_MIN_SECTOR_BOUND;
+    for( bout->info.block_end = bout->info.block_start;
+         bout->info.block_end <= bout->info.data_end;
+         bout->info.block_end++ ) {
+      xfer_size = bout->info.block_end - bout->info.block_start + 1;
       // check if the current value is valid
       if( bout->data[bout->info.block_end] > UINT8_MAX ) break;
       // check if the current data packet is too big
-      if( (bout->info.block_end - bout->info.block_start + 1) > STM32_MAX_TRANSFER_SIZE ) break;
-      // check if the current data value is outside of the 64kB flash page
-      if( bout->info.block_end / STM32_64KB_PAGE - mem_page ) break;
+      if( xfer_size > STM32_MAX_TRANSFER_SIZE ) break;
+      // check if the current data value is outside of the memory sector
+      if( bout->info.block_end / STM32_MIN_SECTOR_BOUND - mem_section ) break;
     }
     bout->info.block_end--; // bout->info.block_end was one step beyond the last data value to flash
+    xfer_size--;
+    if( xfer_size != STM32_MAX_TRANSFER_SIZE ) {
+      DEBUG("xfer_size change, need addr reset\n");
+      reset_address_flag = 1;
+    }
 
-    // write the data
-    DEBUG("Program data block: 0x%X to 0x%X (p. %u), 0x%X bytes.\n",
-        bout->info.block_start, bout->info.block_end,
-        bout->info.block_end / STM32_64KB_PAGE,
-        bout->info.block_end - bout->info.block_start + 1);
-    result = __stm32_flash_block( device, bout, eeprom );
-    if( 0 != result ) {
-      DEBUG( "Error flashing the block: err %d.\n", result );
+    /* write the data */
+    DEBUG("Program data block: 0x%X to 0x%X, 0x%X bytes.\n",
+        bout->info.block_start, bout->info.block_end, xfer_size);
+
+    if( (status = __stm32_flash_block( device, bout )) ) {
+      DEBUG( "Error flashing the block: err %d.\n", status );
       retval = -4;
       goto finally;
     }
 
     // incrment bout->info.block_start to the next valid address
-    for(bout->info.block_start = bout->info.block_end + 1;
-        bout->info.block_start <= bout->info.data_end;
-        bout->info.block_start++) {
+    for( bout->info.block_start = bout->info.block_end + 1;
+         bout->info.block_start <= bout->info.data_end;
+         bout->info.block_start++ ) {
       if( (bout->data[bout->info.block_start] <= UINT8_MAX) ) break;
     } // bout->info.block_start is now on the first valid data for the next segment
+
+    if( reset_address_flag == 0 && (bout->info.block_start !=
+        (STM32_MAX_TRANSFER_SIZE * (dfu_get_transaction_num() - 2))
+        + address_offset) ) {
+      DEBUG("block start does not match addr, reset req\n");
+      reset_address_flag = 1;
+    }
 
     // display progress in 32 increments (if not hidden)
     if ( !quiet ) __print_progress( &bout->info, &progress );
