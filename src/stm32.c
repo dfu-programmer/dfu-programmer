@@ -75,22 +75,8 @@ static int32_t __stm32_flash_block( dfu_device_t *device,
    * with device fails.
    */
 
-static int32_t stm32_select_memory_unit( dfu_device_t *device,
-    stm32_mem_sectors unit );
-   /* select a memory unit from the following list (enumerated)
-    * flash, eeprom, security, configuration, bootloader, signature, user page
-    */
-
-static int32_t stm32_select_page( dfu_device_t *device,
-                  const uint16_t mem_page );
-  /* select a page in memory, numbering starts with 0, pages are
-   * 64kb pages (0x10000 bytes).  Select page when the memory unit
-   * is set to the user page will cause an error.
-   */
-
 static int32_t __stm32_read_block( dfu_device_t *device,
-                   intel_buffer_in_t *buin,
-                   const dfu_bool eeprom );
+                   intel_buffer_in_t *buin );
   /* assumes block does not cross 64 b page boundaries and ideally alligs
    * with flash pages. appropriate memory type and 64kb page has already
    * been selected, max transfer size is not violated it updates the buffer
@@ -231,141 +217,19 @@ static int32_t __stm32_flash_block( dfu_device_t *device,
   return 0;
 }
 
-static int32_t stm32_select_memory_unit( dfu_device_t *device,
-                stm32_mem_sectors unit ) {
-  TRACE( "%s( %p, %d )\n", __FUNCTION__, device, unit );
-
-  uint8_t command[4] = { 0x06, 0x03, 0x00, (0xFF & unit) };
-  dfu_status_t status;
-  char *mem_names[] = { STM32_MEM_UNIT_NAMES };
-
-  // input parameter checks
-  if( NULL == device) {
-    DEBUG ( "ERROR: Device pointer is NULL.\n" );
-    return -1;
-  }
-
-  // check compatiblity with various devices
-  if( !(GRP_AVR32 & device->type) ) {
-    DEBUG( "Ignore Select Memory Unit for non GRP_AVR32 device.\n" );
-    return 0;
-  } else if ( (ADC_AVR32 & device->type) && !( unit > mem_st_all ) ) {
-    DEBUG( "%d is not a valid memory unit for AVR32 devices.\n", unit );
-    fprintf( stderr, "Invalid Memory Unit Selection.\n" );
-    return -1;
-  }
-
-  // select memory unit         below is OK bc unit < len(mem_names)
-  DEBUG( "Selecting %s memory unit.\n", mem_names[unit] );
-  if( 4 != dfu_download(device, 4, command) ) {
-    DEBUG( "stm32_select_memory_unit 0x%02X dfu_download failed.\n", unit );
-    return -2;
-  }
-
-  // check that memory section was selected
-  if( 0 != dfu_get_status(device, &status) ) {
-    DEBUG( "DFU_GETSTATUS failed after stm32_select_memory_unit.\n" );
-    return -3;
-  }
-
-  // if error, report and clear
-  if( DFU_STATUS_OK != status.bStatus ) {
-    DEBUG( "Error: status (%s) was not OK.\n",
-      dfu_status_to_string(status.bStatus) );
-    if ( STATE_DFU_ERROR == status.bState ) {
-      dfu_clear_status( device );
-    }
-    return -4;
-  }
-
-  return 0;
-}
-
-static int32_t stm32_select_page( dfu_device_t *device,
-                                  const uint16_t mem_page ) {
-  TRACE( "%s( %p, %u )\n", __FUNCTION__, device, mem_page );
-  dfu_status_t status;
-
-  if( NULL == device ) {
-    DEBUG ( "ERROR: Device pointer is NULL.\n" );
-    return -2;
-  }
-
-  if ( ADC_8051 & device->type ) {
-    DEBUG( "Select page not implemented for 8051 device, ignoring.\n" );
-    return 0;
-  }
-
-  DEBUG( "Selecting page %d, address 0x%X.\n",
-      mem_page, STM32_64KB_PAGE * mem_page );
-
-  if( GRP_AVR32 & device->type ) {
-    uint8_t command[5] = { 0x06, 0x03, 0x01, 0x00, 0x00 };
-    command[3] = 0xff & (mem_page >> 8);
-    command[4] = 0xff & mem_page;
-
-    if( 5 != dfu_download(device, 5, command) ) {
-      DEBUG( "stm32_select_page DFU_DNLOAD failed.\n" );
-      return -1;
-    }
-  } else if( ADC_AVR == device->type ) {    // AVR but not 8051
-    uint8_t command[4] = { 0x06, 0x03, 0x00, 0x00 };
-    command[3] = 0xff & mem_page;
-
-    if( 4 != dfu_download(device, 4, command) ) {
-      DEBUG( "stm32_select_page DFU_DNLOAD failed.\n" );
-      return -1;
-    }
-  }
-
-  // check that page number was set
-  if( 0 != dfu_get_status(device, &status) ) {
-    DEBUG( "stm32_select_page DFU_GETSTATUS failed.\n" );
-    return -3;
-  }
-
-  // if error, report and clear
-  if( DFU_STATUS_OK != status.bStatus ) {
-    DEBUG( "Error: status (%s) was not OK.\n",
-      dfu_status_to_string(status.bStatus) );
-    if ( STATE_DFU_ERROR == status.bState ) {
-      dfu_clear_status( device );
-    }
-    return -4;
-  }
-
-  return 0;
-}
-
 static int32_t __stm32_read_block( dfu_device_t *device,
-                   intel_buffer_in_t *buin,
-                   const dfu_bool eeprom ) {
-  uint8_t command[6] = { 0x03, 0x00, 0x00, 0x00, 0x00, 0x00 };
+                   intel_buffer_in_t *buin ) {
   int32_t result;
 
   if( buin->info.block_end < buin->info.block_start ) {
     // this would cause a problem bc read length could be way off
     DEBUG("ERROR: start address is after end address.\n");
     return -1;
-  } else if( buin->info.block_end - buin->info.block_start + 1 > STM32_MAX_TRANSFER_SIZE ) {
-    // this could cause a read problem
+  } else if( buin->info.block_end - buin->info.block_start + 1
+      > STM32_MAX_TRANSFER_SIZE ) {
+    /* this could cause a read problem */
     DEBUG("ERROR: transfer size must not exceed %d.\n",
         STM32_MAX_TRANSFER_SIZE );
-    return -1;
-  }
-
-  // AVR/8051 requires 0x02 here to read eeprom, XMEGA requires 0x00.
-  if( true == eeprom && (GRP_AVR & device->type) ) {
-    command[1] = 0x02;
-  }
-
-  command[2] = 0xff & (buin->info.block_start >> 8);
-  command[3] = 0xff & (buin->info.block_start);
-  command[4] = 0xff & (buin->info.block_end >> 8);
-  command[5] = 0xff & (buin->info.block_end);
-
-  if( 6 != dfu_download(device, 6, command) ) {
-    DEBUG( "dfu_download failed\n" );
     return -1;
   }
 
@@ -377,8 +241,7 @@ static int32_t __stm32_read_block( dfu_device_t *device,
     DEBUG( "dfu_upload result: %d\n", result );
     if( 0 == dfu_get_status(device, &status) ) {
       if( DFU_STATUS_ERROR_FILE == status.bStatus ) {
-        fprintf( stderr,
-              "The device is read protected.\n" );
+        fprintf( stderr, "The device is read protected.\n" );
       } else {
         fprintf( stderr, "Unknown error. Try enabling debug.\n" );
       }
@@ -447,6 +310,7 @@ int32_t stm32_erase_flash( dfu_device_t *device, stm32_mem_sectors mem,
 
   /* call dfu get status to trigger command */
   if( (status = stm32_get_status(device)) ) {
+    if( !quiet ) fprintf( stderr, "ERROR\n" );
     DEBUG("Error %d triggering %s\n", status, __FUNCTION__);
     return -3;
   }
@@ -454,7 +318,10 @@ int32_t stm32_erase_flash( dfu_device_t *device, stm32_mem_sectors mem,
   /* It can take a while to erase the chip so 10 seconds before giving up */
   if( (status = stm32_get_status(device)) ) {
     DEBUG("Error %d: %s unsuccessful\n", status, __FUNCTION__);
+    if( !quiet ) fprintf( stderr, "ERROR\n" );
     return -4;
+  } else {
+    if( !quiet ) fprintf( stderr, "DONE\n" );
   }
 
   return 0;
@@ -495,14 +362,16 @@ int32_t stm32_start_app( dfu_device_t *device, dfu_bool quiet ) {
 
 int32_t stm32_read_flash( dfu_device_t *device, intel_buffer_in_t *buin,
     const uint8_t mem_segment, const dfu_bool quiet ) {
-  uint8_t mem_page = 0;       // tracks the current memory page
-  uint32_t progress = 0;      // used to indicate progress
-  int32_t result = 0;
-  // TODO : use status instead of result
-  int32_t retval = -1;      // the return value for this function
-
   TRACE( "%s( %p, %p, %u, %s )\n", __FUNCTION__, device, buin,
       mem_segment, ((true == quiet) ? "true" : "false"));
+
+  uint8_t  reset_address_flag;  // reset address offset required
+  uint32_t address_offset;  // keep record of sent progress as bytes * 32
+  uint16_t  xfer_size = 0;      // the size of a transfer
+  uint8_t mem_section = 0;       // tracks the current memory page
+  uint32_t progress = 0;      // used to indicate progress
+  int32_t status;
+  int32_t retval = -1;      // the return value for this function
 
   if( (NULL == buin) || (NULL == device) ) {
     DEBUG( "invalid arguments.\n" );
@@ -511,66 +380,67 @@ int32_t stm32_read_flash( dfu_device_t *device, intel_buffer_in_t *buin,
     return -1;
   }
 
-  // For the AVR32/XMEGA chips, select the flash space. (safe for all parts)
-  if( 0 != stm32_select_memory_unit(device, mem_segment) ) {
-    DEBUG ("Error selecting memory unit.\n");
-    if( !quiet )
-      fprintf( stderr, "Memory access error, use debug for more info.\n" );
-    return -3;
-  }
-
   if( !quiet ) {
     if( debug <= STM32_DEBUG_THRESHOLD ) {
-      // NOTE: From here on we should go to finally on error
+      /* NOTE: From here on we should go to finally on error */
       fprintf( stderr, "[================================] " );
     }
     fprintf( stderr, "Reading 0x%X bytes...\n",
         buin->info.data_end - buin->info.data_start + 1 );
     if( debug <= STM32_DEBUG_THRESHOLD ) {
-      // NOTE: From here on we should go to finally on error
+      /* NOTE: From here on we should go to finally on error */
       fprintf( stderr, "[" );
     }
   }
 
-  // select the first memory page ( not safe for mem_st_user )
   buin->info.block_start = buin->info.data_start;
-  mem_page = buin->info.block_start / STM32_64KB_PAGE;
-  if( 0 != (result = stm32_select_page( device, mem_page )) ) {
-    DEBUG( "ERROR selecting 64kB page %d.\n", result );
-    retval = -3;
-    goto finally;
-  }
+  reset_address_flag = 1;
+  address_offset = buin->info.block_start;
 
-  while (buin->info.block_start <= buin->info.data_end) {
-    // ensure the memory page is correct
-    if ( buin->info.block_start / STM32_64KB_PAGE != mem_page ) {
-      mem_page = buin->info.block_start / STM32_64KB_PAGE;
-      if( 0 != (result = stm32_select_page( device, mem_page )) ) {
-        DEBUG( "ERROR selecting 64kB page %d.\n", result );
+  while( buin->info.block_start <= buin->info.data_end ) {
+    if( reset_address_flag ) {
+      address_offset = buin->info.block_start;
+      if( (status = stm32_set_address_ptr(device,
+              STM32_FLASH_OFFSET + address_offset)) ) {
+        DEBUG("Error setting address 0x%X\n", address_offset);
         retval = -3;
+        goto finally;
       }
-      // check if the entire page is blank ()
+      dfu_set_transaction_num( 2 ); /* sets block offset 0 */
+      reset_address_flag = 0;
     }
 
     // find end value for the current transfer
-    buin->info.block_end = buin->info.block_start +
-      STM32_MAX_TRANSFER_SIZE - 1;
-    if ( buin->info.block_end / STM32_64KB_PAGE > mem_page ) {
-      buin->info.block_end = STM32_64KB_PAGE * mem_page - 1;
+    buin->info.block_end = buin->info.block_start + STM32_MAX_TRANSFER_SIZE - 1;
+    mem_section = buin->info.block_start / STM32_MIN_SECTOR_BOUND;
+    if( buin->info.block_end / STM32_MIN_SECTOR_BOUND > mem_section ) {
+      buin->info.block_end = STM32_MIN_SECTOR_BOUND * mem_section - 1;
     }
-    if ( buin->info.block_end > buin->info.data_end ) {
+    if( buin->info.block_end > buin->info.data_end ) {
       buin->info.block_end = buin->info.data_end;
     }
+    xfer_size = buin->info.block_end - buin->info.block_start + 1;
+    if( xfer_size != STM32_MAX_TRANSFER_SIZE ) {
+      DEBUG("xfer_size change, need addr reset\n");
+      reset_address_flag = 1;
+    }
 
-    if( 0 != (result = __stm32_read_block(device, buin, 0))) {
+    if( (status = __stm32_read_block( device, buin )) ) {
       DEBUG( "Error reading block 0x%X to 0x%X: err %d.\n",
-          buin->info.block_start, buin->info.block_end, result );
+          buin->info.block_start, buin->info.block_end, status );
       retval = -5;
       goto finally;
     }
 
     buin->info.block_start = buin->info.block_end + 1;
-    if ( !quiet ) __print_progress( &buin->info, &progress );
+    if( reset_address_flag == 0 && (buin->info.block_start !=
+        (STM32_MAX_TRANSFER_SIZE * (dfu_get_transaction_num() - 2))
+        + address_offset) ) {
+      DEBUG("block start does not match addr, reset req\n");
+      reset_address_flag = 1;
+    }
+
+    if( !quiet ) __print_progress( &buin->info, &progress );
   }
   retval = 0;
 
