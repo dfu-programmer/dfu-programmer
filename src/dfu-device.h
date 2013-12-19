@@ -103,7 +103,7 @@ GET COMMAND         DFU_UPLOAD with wValue = 0
 
 WRITE COMMAND       DFU_DNLOAD with wValue > 1
     > in a write memory operation the write size can be from 2 to 2048 bytes
-      and the start address  must be valid. when writing the option bytes the
+      and the start address must be valid. when writing the option bytes the
       start address must be the start of the option byte area and the size
       should cover the entire option byte area
     > the address is computed using the value of the wBlockNumber (wValue) and

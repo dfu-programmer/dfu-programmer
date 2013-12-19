@@ -36,23 +36,35 @@
 #define STM32_DEBUG_THRESHOLD   50
 #define STM32_TRACE_THRESHOLD   55
 
-#define DEBUG(...)  dfu_debug( __FILE__, __FUNCTION__, __LINE__, \
-                 STM32_DEBUG_THRESHOLD, __VA_ARGS__ )
-#define TRACE(...)  dfu_debug( __FILE__, __FUNCTION__, __LINE__, \
-                 STM32_TRACE_THRESHOLD, __VA_ARGS__ )
+#define DEBUG(...)  dfu_debug( __FILE__, __FUNCTION__, __LINE__, STM32_DEBUG_THRESHOLD, __VA_ARGS__ )
+#define TRACE(...)  dfu_debug( __FILE__, __FUNCTION__, __LINE__, STM32_TRACE_THRESHOLD, __VA_ARGS__ )
+
+#define STM32_MAX_TRANSFER_SIZE     0x0800  /* 2048 */
+
+#define SET_ADDR_PTR            0x21
+#define ERASE_CMD               0x41
+#define READ_UNPROTECT          0x92
+#define GET_CMD                 0x00
 
 #define STM32_64KB_PAGE             0x10000
-#define STM32_MAX_TRANSFER_SIZE     0x0800
-
 #define STM32_FOOTER_SIZE           16
 #define STM32_CONTROL_BLOCK_SIZE    64
-
-#define STM32_MAX_FLASH_BUFFER_SIZE (STM32_MAX_TRANSFER_SIZE + \
-    2 * STM32_CONTROL_BLOCK_SIZE + STM32_FOOTER_SIZE)
+#define STM32_MAX_FLASH_BUFFER_SIZE (STM32_MAX_TRANSFER_SIZE + 2 * STM32_CONTROL_BLOCK_SIZE + STM32_FOOTER_SIZE)
 
 //___ T Y P E D E F S   ( P R I V A T E ) ____________________________________
 
 //___ P R O T O T Y P E S   ( P R I V A T E ) ________________________________
+static inline int32_t stm32_get_status( dfu_device_t *device );
+  /* run dfu_get_status to get the current status
+   * retrn  0 on status OK, -1 on status req fail, -2 on bad status
+   */
+
+static int32_t stm32_set_address_ptr( dfu_device_t *device, uint32_t address );
+  /* @brief set the address pointer to a certain address
+   * @param the address to set
+   * @retrn 0 on success, negative on failure
+   */
+
 static int32_t __stm32_flash_block( dfu_device_t *device,
                   intel_buffer_out_t *bout,
                   const dfu_bool eeprom );
@@ -105,8 +117,82 @@ static void stm32_flash_populate_header( uint8_t *header,
 //___ V A R I A B L E S ______________________________________________________
 extern int debug;
 
+static const uint32_t stm32_sector_addresses[] = {
+  0x08000000,   /* sector  0,  16 kb */
+  0x08004000,   /* sector  1,  16 kb */
+  0x08008000,   /* sector  2,  16 kb */
+  0x0800C000,   /* sector  3,  16 kb */
+  0x08010000,   /* sector  4,  64 kb */
+  0x08020000,   /* sector  5, 128 kb */
+  0x08040000,   /* sector  6, 128 kb */
+  0x08060000,   /* sector  7, 128 kb */
+  0x08080000,   /* sector  8, 128 kb */
+  0x080A0000,   /* sector  9, 128 kb */
+  0x080C0000,   /* sector 10, 128 kb */
+  0x080E0000,   /* sector 11, 128 kb */
+  0x1FFF0000,   /* system memory, 30 kb */
+  0x1FFF7800,   /* OTP area, 528 bytes */
+  0x1FFFC000,   /* Option bytes, 16 bytes */
+};
 
 //___ F U N C T I O N S   ( P R I V A T E ) __________________________________
+static inline int32_t stm32_get_status( dfu_device_t *device ) {
+  dfu_status_t status;
+  if( 0 == dfu_get_status(device, &status) ) {
+    if( status.bStatus == DFU_STATUS_OK ) {
+      DEBUG( "Status OK\n" );
+    } else {
+      DEBUG( "Status %u not OK, use DFU_CLRSTATUS\n", status.bStatus );
+      return -2;
+    }
+  } else {
+    DEBUG( "DFU_GETSTATUS request failed\n" );
+    return -1;
+  }
+
+  return 0;
+}
+
+static int32_t stm32_set_address_ptr( dfu_device_t *device, uint32_t address ) {
+  TRACE( "%s( 0x%X )\n", __FUNCTION__, address );
+  const uint8_t length = 5;
+  int32_t status;
+
+  uint8_t command[] = {
+    (uint8_t) SET_ADDR_PTR,
+    (uint8_t) address & 0xFF,           /* address LSB */
+    (uint8_t) (address>>8) & 0xFF,
+    (uint8_t) (address>>16) & 0xFF,
+    (uint8_t) (address>>24) & 0xFF      /* address MSB */
+  };
+
+  /* check dfu status for okay to send */
+  if( (status = stm32_get_status(device)) ) {
+    DEBUG("Error %d getting status on start\n", status);
+    return -1;
+  }
+
+  dfu_set_transaction_num( 0 );     /* set wValue to zero */
+  if( length != dfu_download(device, length, command) ) {
+    DEBUG( "dfu_download failed\n" );
+    return -2;
+  }
+
+  /* call dfu get status to trigger command */
+  if( (status = stm32_get_status(device)) ) {
+    DEBUG("Error %d triggering %s\n", status, __FUNCTION__);
+    return -3;
+  }
+
+  /* check command success */
+  if( (status = stm32_get_status(device)) ) {
+    DEBUG("Error %d: %s unsuccessful\n", status, __FUNCTION__);
+    return -4;
+  }
+
+  return 0;
+}
+
 static int32_t __stm32_flash_block( dfu_device_t *device,
                   intel_buffer_out_t *bout,
                   const dfu_bool eeprom ) {
@@ -258,7 +344,7 @@ static int32_t stm32_select_memory_unit( dfu_device_t *device,
 }
 
 static int32_t stm32_select_page( dfu_device_t *device,
-                  const uint16_t mem_page ) {
+                                  const uint16_t mem_page ) {
   TRACE( "%s( %p, %u )\n", __FUNCTION__, device, mem_page );
   dfu_status_t status;
 
@@ -455,17 +541,14 @@ static void stm32_flash_populate_header( uint8_t *header,
 
 
 //___ F U N C T I O N S ______________________________________________________
-int32_t stm32_erase_flash( dfu_device_t *device,
-                           const uint8_t mode,
+int32_t stm32_erase_flash( dfu_device_t *device, stm32_mem_sectors mem,
                            dfu_bool quiet ) {
-  uint8_t command[5] = { 0x41, 0x00, 0x00, 0x00, 0x00 };
+  TRACE( "%s( %p, %d )\n", __FUNCTION__, device, mem );
+  uint8_t command[5] = { ERASE_CMD, 0x00, 0x00, 0x00, 0x00 };
   uint8_t length = 0;
-  dfu_status_t status;
-  int32_t i;
+  int32_t status;
 
-  TRACE( "%s( %p, %d )\n", __FUNCTION__, device, mode );
-
-  switch( mode ) {
+  switch( mem ) {
     case mem_st_all:
       length = 1;
       break;
@@ -477,22 +560,13 @@ int32_t stm32_erase_flash( dfu_device_t *device,
       length = 5;
       break;
     default:
-      DEBUG("Unknown mode %u\n", mode);
+      DEBUG("Unknown mem sector %u\n", mem);
       return -1;
   }
 
   /* check dfu status for ok to send */
-  if( 0 == dfu_get_status(device, &status) ) {
-    if( status.bStatus == DFU_STATUS_OK ) {
-      DEBUG( "Status OK to send command\n" );
-    } else {
-      if( !quiet ) fprintf( stderr, "ERROR\n" );
-      DEBUG( "Status %u not OK, use DFU_CLRSTATUS\n", status.bStatus );
-      return -2;
-    }
-  } else {
-    if( !quiet ) fprintf( stderr, "ERROR\n" );
-    DEBUG( "DFU_GETSTATUS failed\n" );
+  if( (status = stm32_get_status(device)) ) {
+    DEBUG("Error %d getting status on start\n", status);
     return -1;
   }
 
@@ -508,55 +582,33 @@ int32_t stm32_erase_flash( dfu_device_t *device,
   }
 
   /* call dfu get status to trigger command */
-  if( 0 == dfu_get_status(device, &status) ) {
-    if( status.bStatus == DFU_STATUS_OK ) {
-      DEBUG( "Command triggered\n" );
-    } else {
-      if( !quiet ) fprintf( stderr, "ERROR\n" );
-      DEBUG( "Status %u not OK\n", status.bStatus );
-      return -5;
-    }
-  } else {
-    if( !quiet ) fprintf( stderr, "ERROR\n" );
-    DEBUG( "DFU_GETSTATUS failed\n" );
-    return -4;
+  if( (status = stm32_get_status(device)) ) {
+    DEBUG("Error %d triggering %s\n", status, __FUNCTION__);
+    return -3;
   }
 
   /* It can take a while to erase the chip so 10 seconds before giving up */
-  for( i = 0; i < 10; i++ ) {
-    if( 0 == dfu_get_status(device, &status) ) {
-      if( status.bStatus == DFU_STATUS_OK ) {
-        if( !quiet ) fprintf( stderr, "SUCCESS\n" );
-        DEBUG ( "CMD_ERASE status: Erase Done.\n" );
-        return status.bStatus;
-      } else {
-        if( !quiet ) fprintf( stderr, "ERROR\n" );
-        DEBUG( "Status %u not OK\n", status.bStatus );
-        return -6;
-      }
-    } else {
-      DEBUG ( "CMD_ERASE status check %d returned nonzero.\n", i );
-    }
+  if( (status = stm32_get_status(device)) ) {
+    DEBUG("Error %d: %s unsuccessful\n", status, __FUNCTION__);
+    return -4;
   }
-  return -7;
+
+  return 0;
 }
 
 int32_t stm32_start_app( dfu_device_t *device, dfu_bool quiet ) {
   TRACE( "%s( %p )\n", __FUNCTION__, device );
-  dfu_status_t status;
+  int32_t status;
+
+  /* set address pointer (jump target) to start address */
+  if( (status = stm32_set_address_ptr( device, STM32_FLASH_OFFSET )) ) {
+    DEBUG("Error setting address pointer\n");
+    return -1;
+  }
 
   /* check dfu status for ok to send */
-  if( 0 == dfu_get_status(device, &status) ) {
-    if( status.bStatus == DFU_STATUS_OK ) {
-      DEBUG( "Status OK to send command\n" );
-    } else {
-      if( !quiet ) fprintf( stderr, "ERROR\n" );
-      DEBUG( "Status %u not OK, use DFU_CLRSTATUS\n", status.bStatus );
-      return -2;
-    }
-  } else {
-    if( !quiet ) fprintf( stderr, "ERROR\n" );
-    DEBUG( "DFU_GETSTATUS failed\n" );
+  if( (status = stm32_get_status(device)) ) {
+    DEBUG("Error %d getting status on start\n", status);
     return -1;
   }
 
@@ -569,27 +621,16 @@ int32_t stm32_start_app( dfu_device_t *device, dfu_bool quiet ) {
   }
 
   /* call dfu get status to trigger command */
-  if( 0 == dfu_get_status(device, &status) ) {
-    if( status.bStatus == DFU_STATUS_OK ) {
-      DEBUG( "Command triggered\n" );
-    } else {
-      if( !quiet ) fprintf( stderr, "ERROR\n" );
-      DEBUG( "Status %u not OK\n", status.bStatus );
-      return -5;
-    }
-  } else {
-    if( !quiet ) fprintf( stderr, "ERROR\n" );
-    DEBUG( "DFU_GETSTATUS failed\n" );
-    return -4;
+  if( (status = stm32_get_status(device)) ) {
+    DEBUG("Error %d triggering %s\n", status, __FUNCTION__);
+    return -3;
   }
 
   return 0;
 }
 
-int32_t stm32_read_flash( dfu_device_t *device,
-              intel_buffer_in_t *buin,
-              const uint8_t mem_segment,
-              const dfu_bool quiet ) {
+int32_t stm32_read_flash( dfu_device_t *device, intel_buffer_in_t *buin,
+    const uint8_t mem_segment, const dfu_bool quiet ) {
   uint8_t mem_page = 0;       // tracks the current memory page
   uint32_t progress = 0;      // used to indicate progress
   int32_t result = 0;
@@ -692,28 +733,25 @@ finally:
   return retval;
 }
 
-int32_t stm32_write_flash( dfu_device_t *device,
-           intel_buffer_out_t *bout,
-           const dfu_bool eeprom,
-           const dfu_bool force,
-           const dfu_bool quiet ) {
+int32_t stm32_write_flash( dfu_device_t *device, intel_buffer_out_t *bout,
+    const dfu_bool eeprom, const dfu_bool force, const dfu_bool quiet ) {
+  TRACE( "%s( %p, %p, %s, %s )\n", __FUNCTION__, device, bout,
+          ((true == eeprom) ? "true" : "false"),
+          ((true == quiet) ? "true" : "false") );
+
   uint32_t i;
   uint32_t progress = 0;  // keep record of sent progress as bytes * 32
   uint8_t mem_page = 0;   // tracks the current memory page
   int32_t result = 0;   // result storage for many function calls
   int32_t retval = -1;  // the return value for this function
 
-  TRACE( "%s( %p, %p, %s, %s )\n", __FUNCTION__, device, bout,
-          ((true == eeprom) ? "true" : "false"),
-          ((true == quiet) ? "true" : "false") );
-
-  // check arguments
+  /* check arguments */
   if( (NULL == device) || (NULL == bout) ) {
     DEBUG( "ERROR: Invalid arguments, device/buffer pointer is NULL.\n" );
     if( !quiet )
       fprintf( stderr, "Program Error, use debug for more info.\n" );
     return -1;
-  } else if ( bout->info.valid_start > bout->info.valid_end ) {
+  } else if( bout->info.valid_start > bout->info.valid_end ) {
     DEBUG( "ERROR: No valid target memory, end 0x%X before start 0x%X.\n",
         bout->info.valid_end, bout->info.valid_start );
     if( !quiet )
@@ -730,17 +768,17 @@ int32_t stm32_write_flash( dfu_device_t *device,
     return -2;
   }
 
-  // determine the limits of where actual data resides in the buffer
+  /* determine the limits of where actual data resides in the buffer */
   bout->info.data_start = UINT32_MAX;
   for( i = 0; i < bout->info.total_size; i++ ) {
     if( bout->data[i] <= UINT8_MAX ) {
       bout->info.data_end = i;
-      if (bout->info.data_start == UINT32_MAX)
+      if( bout->info.data_start == UINT32_MAX )
         bout->info.data_start = i;
     }
   }
 
-  // debug info about data limits
+  /* debug info about data limits */
   DEBUG("Flash available from 0x%X to 0x%X (64kB p. %u to %u), 0x%X bytes.\n",
       bout->info.valid_start, bout->info.valid_end,
       bout->info.valid_start / STM32_64KB_PAGE,
@@ -760,7 +798,7 @@ int32_t stm32_write_flash( dfu_device_t *device,
       bout->info.page_size,
       bout->info.data_end/STM32_64KB_PAGE - bout->info.data_start/STM32_64KB_PAGE + 1 );
 
-  // more error checking
+  /* more error checking */
   if( (bout->info.data_start < bout->info.valid_start) ||
       (bout->info.data_end > bout->info.valid_end) ) {
     DEBUG( "ERROR: Data exists outside of the valid target flash region.\n" );
@@ -784,18 +822,18 @@ int32_t stm32_write_flash( dfu_device_t *device,
 
   if( !quiet ) {
     if( debug <= STM32_DEBUG_THRESHOLD ) {
-      // NOTE: from here on we need to run finally block
+      /* NOTE: from here on we should run finally block */
       fprintf( stderr, "[================================] " );
     }
     fprintf( stderr, "Programming 0x%X bytes...\n",
         bout->info.data_end - bout->info.data_start + 1 );
     if( debug <= STM32_DEBUG_THRESHOLD ) {
-      // NOTE: from here on we need to run finally block
+      /* NOTE: from here on we need to run finally block */
       fprintf( stderr, "[" );
     }
   }
 
-  // program the data
+  /* program the data */
   bout->info.block_start = bout->info.data_start;
   mem_page = bout->info.block_start / STM32_64KB_PAGE;
   if( 0 != (result = stm32_select_page( device, mem_page )) ) {

@@ -43,14 +43,14 @@ typedef enum {
   mem_st_otp_area,
   mem_st_option_bytes,
   mem_st_all,
-} stm32f4_mem_sectors;
+} stm32_mem_sectors;
 
 #define STM32_MEM_UNIT_NAMES "Sector 0", "Sector 1", "Sector 2", "Sector 3", \
   "Sector 4", "Sector 5", "Sector 6", "Sector 7", "Sector 8", "Sector 9", \
   "Sector 10", "Sector 11", "System Memory", "OTP Area", "Option Bytes", "All"
 
 
-int32_t stm32_erase_flash( dfu_device_t *device, const uint8_t mode,
+int32_t stm32_erase_flash( dfu_device_t *device, stm32_mem_sectors mode,
                            dfu_bool quiet );
   /*  stm32_erase_flash
    *  device  - the usb_dev_handle to communicate with
