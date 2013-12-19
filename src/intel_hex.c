@@ -231,13 +231,15 @@ static void intel_invalid_addr_warning(uint32_t line_count, uint32_t address,
 
 int32_t intel_process_data( intel_buffer_out_t *bout, char value,
         uint32_t target_offset, uint32_t address) {
-    // NOTE : there are some hex program files that contain data in the user
-    // page, which is outside of 'valid' memory.  In this situation, the hex
-    // file is processed and used as normal with a warning message containing
-    // the first line with an invalid address.
+    /* NOTE : there are some hex program files that contain data in the user
+     * page, which is outside of 'valid' memory.  In this situation, the hex
+     * file is processed and used as normal with a warning message containing
+     * the first line with an invalid address.
+     */
     uint32_t raddress;   // relative address = address - target offset
 
-    // The Atmel flash page starts at address 0x80000000, we need to ignore
+    // The Atmel flash page starts at address 0x8000 0000, we need to ignore
+    //             stm32 flash page starts at 0x0800 0000
     // that bit
     target_offset &= 0x7fffffff;
     address &= 0x7fffffff;
@@ -264,7 +266,7 @@ int32_t intel_process_data( intel_buffer_out_t *bout, char value,
 }
 
 int32_t intel_hex_to_buffer( char *filename, intel_buffer_out_t *bout,
-        uint32_t target_offset, dfu_bool quiet ) {
+                             uint32_t target_offset, dfu_bool quiet ) {
     FILE *fp = NULL;
     struct intel_record record;
     // unsigned int count, type, checksum, address; char data[256]
@@ -347,9 +349,9 @@ int32_t intel_hex_to_buffer( char *filename, intel_buffer_out_t *bout,
                                  (((uint32_t) record.data[1]) << 16) |
                                  (((uint32_t) record.data[2]) <<  8) |
                                   ((uint32_t) record.data[3]);
-                /* Note: In AVR32 memory map, FLASH starts at 0x80000000, but the
-                 * ISP places this memory at 0.  The hex file will use 0x8..., so
-                 * mask off that bit. */
+                /* Note: In AVR32 memory map, FLASH starts at 0x80000000, but
+                 * the ISP places this memory at 0. The hex file will use
+                 * 0x8..., so mask off that bit. */
                 address_offset = (0x7fffffff & address_offset);
                 DEBUG( "Address offset set to 0x%x.\n", address_offset );
                 break;

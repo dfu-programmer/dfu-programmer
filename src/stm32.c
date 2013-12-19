@@ -53,14 +53,6 @@
 //___ T Y P E D E F S   ( P R I V A T E ) ____________________________________
 
 //___ P R O T O T Y P E S   ( P R I V A T E ) ________________________________
-static int32_t stm32_read_command( dfu_device_t *device,
-                   const uint8_t data0,
-                   const uint8_t data1 );
-  /* returns 0 - 255 on success, < 0 otherwise
-   *
-   * but what is it used for??
-   */
-
 static int32_t __stm32_flash_block( dfu_device_t *device,
                   intel_buffer_out_t *bout,
                   const dfu_bool eeprom );
@@ -72,7 +64,7 @@ static int32_t __stm32_flash_block( dfu_device_t *device,
    */
 
 static int32_t stm32_select_memory_unit( dfu_device_t *device,
-    stm32_memory_unit_enum unit );
+    stm32f4_mem_sectors unit );
    /* select a memory unit from the following list (enumerated)
     * flash, eeprom, security, configuration, bootloader, signature, user page
     */
@@ -82,16 +74,6 @@ static int32_t stm32_select_page( dfu_device_t *device,
   /* select a page in memory, numbering starts with 0, pages are
    * 64kb pages (0x10000 bytes).  Select page when the memory unit
    * is set to the user page will cause an error.
-   */
-
-static int32_t __stm32_blank_page_check( dfu_device_t *device,
-                     const uint32_t start,
-                     const uint32_t end );
-  /* use to check if a certain address range on the current page is blank
-   * it assumes current page has previously been selected.
-   * returns 0 if the page is blank
-   * returns the first non-blank address + 1 if not blank (no zero!)
-   * returns a negative number if the blank check fails
    */
 
 static int32_t stm32_flash_prep_buffer( intel_buffer_out_t *bout );
@@ -132,73 +114,6 @@ extern int debug;
 
 
 //___ F U N C T I O N S   ( P R I V A T E ) __________________________________
-static int32_t stm32_read_command( dfu_device_t *device,
-                   const uint8_t data0,
-                   const uint8_t data1 ) {
-  intel_buffer_in_t buin;
-  uint8_t buffer[1];
-
-  TRACE( "%s( %p, 0x%02x, 0x%02x )\n", __FUNCTION__, device, data0, data1 );
-
-  // init the necessary parts of buin
-  buin.info.block_start = data1;
-  buin.info.block_end = data1;
-  buin.data = buffer;
-
-  if( NULL == device ) {
-    DEBUG( "invalid arguments.\n" );
-    return -1;
-  }
-
-  if( GRP_AVR32 & device->type ) {
-    //We need to talk to configuration memory.  It comes
-    //in two varieties in this chip.  data0 is the command to
-    //select it. Data1 is the byte of that group we want
-
-    if( 0 != stm32_select_memory_unit(device, mem_st_config) ) {
-      return -3;
-    }
-
-    if( 0 != __stm32_read_block(device, &buin, false) ) {
-      return -5;
-    }
-
-    return (0xff & buffer[0]);
-  } else {
-    uint8_t command[3] = { 0x05, 0x00, 0x00 };
-    uint8_t data[1]  = { 0x00 };
-    dfu_status_t status;
-
-    command[1] = data0;
-    command[2] = data1;
-
-
-    if( 3 != dfu_download(device, 3, command) ) {
-      DEBUG( "dfu_download failed\n" );
-      return -1;
-    }
-
-    if( 0 != dfu_get_status(device, &status) ) {
-      DEBUG( "dfu_get_status failed\n" );
-      return -2;
-    }
-
-    if( DFU_STATUS_OK != status.bStatus ) {
-      DEBUG( "status(%s) was not OK.\n",
-           dfu_status_to_string(status.bStatus) );
-      dfu_clear_status( device );
-      return -3;
-    }
-
-    if( 1 != dfu_upload(device, 1, data) ) {
-      DEBUG( "dfu_upload failed\n" );
-      return -4;
-    }
-
-    return (0xff & data[0]);
-  }
-}
-
 static int32_t __stm32_flash_block( dfu_device_t *device,
                   intel_buffer_out_t *bout,
                   const dfu_bool eeprom ) {
@@ -300,7 +215,7 @@ static int32_t __stm32_flash_block( dfu_device_t *device,
 }
 
 static int32_t stm32_select_memory_unit( dfu_device_t *device,
-                stm32_memory_unit_enum unit ) {
+                stm32f4_mem_sectors unit ) {
   TRACE( "%s( %p, %d )\n", __FUNCTION__, device, unit );
 
   uint8_t command[4] = { 0x06, 0x03, 0x00, (0xFF & unit) };
@@ -317,17 +232,8 @@ static int32_t stm32_select_memory_unit( dfu_device_t *device,
   if( !(GRP_AVR32 & device->type) ) {
     DEBUG( "Ignore Select Memory Unit for non GRP_AVR32 device.\n" );
     return 0;
-  } else if ( (ADC_AVR32 & device->type) && !( unit == mem_st_flash ||
-                         unit == mem_st_security ||
-                         unit == mem_st_config ||
-                         unit == mem_st_boot ||
-                         unit == mem_st_sig ||
-                         unit == mem_st_user ) ) {
+  } else if ( (ADC_AVR32 & device->type) && !( unit > mem_st_all ) ) {
     DEBUG( "%d is not a valid memory unit for AVR32 devices.\n", unit );
-    fprintf( stderr, "Invalid Memory Unit Selection.\n" );
-    return -1;
-  } else if ( unit > mem_st_extdf ) {
-    DEBUG( "Valid Memory Units 0 to 0x%X, not 0x%X.\n", mem_st_extdf, unit );
     fprintf( stderr, "Invalid Memory Unit Selection.\n" );
     return -1;
   }
@@ -411,69 +317,6 @@ static int32_t stm32_select_page( dfu_device_t *device,
     return -4;
   }
 
-  return 0;
-}
-
-static int32_t __stm32_blank_page_check( dfu_device_t *device,
-                       const uint32_t start,
-                       const uint32_t end ) {
-  uint8_t command[6] = { 0x03, 0x01, 0x00, 0x00, 0x00, 0x00 };
-  dfu_status_t status;
-
-  TRACE( "%s( %p, 0x%08x, 0x%08x )\n", __FUNCTION__, device, start, end );
-
-  if( (NULL == device) ) {
-    DEBUG( "ERROR: Invalid arguments, device pointer is NULL.\n" );
-    return -1;
-  } else if ( start > end ) {
-    DEBUG( "ERROR: End address 0x%X before start address 0x%X.\n",
-        end, start );
-    return -1;
-  } else if ( end >= STM32_64KB_PAGE ) {
-    DEBUG( "ERROR: Address out of 64kb (0x10000) byte page range.\n",
-        end );
-    return -1;
-  }
-
-  command[2] = 0xff & (start >> 8);
-  command[3] = 0xff & start;
-  command[4] = 0xff & (end >> 8);
-  command[5] = 0xff & end;
-
-  if( 6 != dfu_download(device, 6, command) ) {
-    DEBUG( "__stm32_blank_page_check DFU_DNLOAD failed.\n" );
-    return -2;
-  }
-
-  if( 0 != dfu_get_status(device, &status) ) {
-    DEBUG( "__stm32_blank_page_check DFU_GETSTATUS failed.\n" );
-    return -3;
-  }
-
-  // check status and proceed accordingly
-  if( DFU_STATUS_OK == status.bStatus ) {
-    DEBUG( "Flash region from 0x%X to 0x%X is blank.\n", start, end );
-  } else if ( DFU_STATUS_ERROR_CHECK_ERASED == status.bStatus ) {
-    // need to DFU upload to get the address
-    DEBUG( "Region is NOT bank.\n" );
-    uint8_t addr[2] = { 0x00, 0x00 };
-    int32_t retval = 0;
-    if ( 2 != dfu_upload(device, 2, addr) ) {
-      DEBUG( "__stm32_blank_page_check DFU_UPLOAD failed.\n" );
-      return -4;
-    } else {
-      retval = (int32_t) ( ( ((uint16_t) addr[0]) << 8 ) + addr[1] );
-      DEBUG( " First non-blank address in region is 0x%X.\n", retval );
-      return retval + 1;
-    }
-  } else {
-    DEBUG( "Error: status (%s) was not OK.\n",
-      dfu_status_to_string(status.bStatus) );
-    if ( STATE_DFU_ERROR == status.bState ) {
-      dfu_clear_status( device );
-    }
-    return -4;
-  }
   return 0;
 }
 
@@ -658,10 +501,10 @@ int32_t stm32_erase_flash( dfu_device_t *device,
   TRACE( "%s( %p, %d )\n", __FUNCTION__, device, mode );
 
   switch( mode ) {
-    case STM32_ERASE_ALL:
+    case mem_st_all:
       length = 1;
       break;
-    case STM32_ERASE_BLOCK_0:
+    case mem_st_sector0:
       command[1] = 0x00;    //  page LSB
       command[2] = 0x00;
       command[3] = 0x00;
@@ -778,296 +621,6 @@ int32_t stm32_start_app( dfu_device_t *device, dfu_bool quiet ) {
   return 0;
 }
 
-int32_t stm32_read_fuses( dfu_device_t *device,
-               stm32_avr32_fuses_t *info ) {
-  intel_buffer_in_t buin;
-  uint8_t buffer[32];
-  int i;
-
-  // init the necessary parts of buin
-  buin.info.block_start = 0;
-  buin.info.block_end = 31;
-  buin.data = buffer;
-
-  if( NULL == device ) {
-    DEBUG( "invalid arguments.\n" );
-    return -1;
-  }
-
-  if( GRP_AVR & device->type ) {
-    DEBUG( "target does not support fuse operation.\n" );
-    fprintf( stderr, "target does not support fuse operation.\n" );
-    return -1;
-  }
-
-  if( 0 != stm32_select_memory_unit(device, mem_st_config) ) {
-    return -3;
-  }
-
-  if( 0 != __stm32_read_block(device, &buin, false) ) {
-      return -5;
-  }
-
-  info->lock = 0;
-  for(i = 0; i < 16; i++) {
-    info->lock = info->lock | (buffer[i] << i);
-  }
-  info->epfl = buffer[16];
-  info->bootprot = (buffer[19] << 2) | (buffer[18] << 1) | (buffer[17] << 0);
-  info->bodlevel = 0;
-  for(i = 20; i < 26; i++) {
-    info->bodlevel = info->bodlevel | (buffer[i] << (i-20));
-  }
-  info->bodhyst = buffer[26];
-  info->boden = (buffer[28] << 1) | (buffer[27] << 0);
-  info->isp_bod_en = buffer[29];
-  info->isp_io_cond_en = buffer[30];
-  info->isp_force = buffer[31];
-
-  return 0;
-}
-
-int32_t stm32_read_config( dfu_device_t *device,
-               stm32_device_info_t *info ) {
-  typedef struct {
-    uint8_t data0;
-    uint8_t data1;
-    uint8_t device_map;
-    size_t  offset;
-  } stm32_read_config_t;
-
-  /* These commands are documented in Appendix A of the
-   * "AT89C5131A USB Bootloader Datasheet" or
-   * "AT90usb128x/AT90usb64x USB DFU Bootloader Datasheet"
-   */
-  static const stm32_read_config_t data[] = {
-    { 0x00, 0x00, (ADC_8051 | ADC_AVR), offsetof(stm32_device_info_t, bootloaderVersion) },
-    { 0x04, 0x00, (ADC_AVR32),      offsetof(stm32_device_info_t, bootloaderVersion) },
-    { 0x00, 0x01, (ADC_8051 | ADC_AVR), offsetof(stm32_device_info_t, bootID1)       },
-    { 0x04, 0x01, (ADC_AVR32),      offsetof(stm32_device_info_t, bootID1)       },
-    { 0x00, 0x02, (ADC_8051 | ADC_AVR), offsetof(stm32_device_info_t, bootID2)       },
-    { 0x04, 0x02, (ADC_AVR32),      offsetof(stm32_device_info_t, bootID2)       },
-    { 0x01, 0x30, (ADC_8051 | ADC_AVR), offsetof(stm32_device_info_t, manufacturerCode)  },
-    { 0x05, 0x00, (ADC_AVR32),      offsetof(stm32_device_info_t, manufacturerCode)  },
-    { 0x01, 0x31, (ADC_8051 | ADC_AVR), offsetof(stm32_device_info_t, familyCode)    },
-    { 0x05, 0x01, (ADC_AVR32),      offsetof(stm32_device_info_t, familyCode)    },
-    { 0x01, 0x60, (ADC_8051 | ADC_AVR), offsetof(stm32_device_info_t, productName)     },
-    { 0x05, 0x02, (ADC_AVR32),      offsetof(stm32_device_info_t, productName)     },
-    { 0x01, 0x61, (ADC_8051 | ADC_AVR), offsetof(stm32_device_info_t, productRevision)   },
-    { 0x05, 0x03, (ADC_AVR32),      offsetof(stm32_device_info_t, productRevision)   },
-    { 0x01, 0x00, ADC_8051,       offsetof(stm32_device_info_t, bsb)         },
-    { 0x01, 0x01, ADC_8051,       offsetof(stm32_device_info_t, sbv)         },
-    { 0x01, 0x05, ADC_8051,       offsetof(stm32_device_info_t, ssb)         },
-    { 0x01, 0x06, ADC_8051,       offsetof(stm32_device_info_t, eb)        },
-    { 0x02, 0x00, ADC_8051,       offsetof(stm32_device_info_t, hsb)         }
-  };
-
-  int32_t result;
-  int32_t retVal = 0;
-  int32_t i = 0;
-
-  TRACE( "%s( %p, %p )\n", __FUNCTION__, device, info );
-
-  if( NULL == device ) {
-    DEBUG( "invalid arguments.\n" );
-    return -1;
-  }
-
-  for( i = 0; i < sizeof(data)/sizeof(stm32_read_config_t); i++ ) {
-    stm32_read_config_t *row = (stm32_read_config_t*) &data[i];
-
-    if( row->device_map & device->type )
-    {
-      int16_t *ptr = row->offset + (void *) info;
-
-      result = stm32_read_command( device, row->data0, row->data1 );
-      if( result < 0 ) {
-        retVal = result;
-      }
-      *ptr = result;
-    }
-  }
-
-  return retVal;
-}
-
-int32_t stm32_set_fuse( dfu_device_t *device,
-            const uint8_t property,
-            const uint32_t value ) {
-  uint16_t buffer[16];
-  int32_t address;
-  int8_t numbytes;
-  int8_t i;
-  intel_buffer_out_t bout;
-
-  if( NULL == device ) {
-    DEBUG( "invalid arguments.\n" );
-    return -1;
-  }
-
-  if( GRP_AVR & device->type ) {
-     DEBUG( "target does not support fuse operation.\n" );
-     fprintf( stderr, "target does not support fuse operation.\n" );
-     return -1;
-  }
-
-  if( 0 != stm32_select_memory_unit(device, mem_st_config) ) {
-    return -3;
-  }
-
-  switch( property ) {
-    case set_lock:
-      for( i = 0; i < 16; i++ ) {
-        buffer[i] = value & (0x0001 << i);
-      }
-      numbytes = 16;
-      address = 0;
-      break;
-    case set_epfl:
-      buffer[0] = value & 0x0001;
-      numbytes = 1;
-      address = 16;
-      break;
-    case set_bootprot:
-      buffer[0] = value & 0x0001;
-      buffer[1] = value & 0x0002;
-      buffer[2] = value & 0x0004;
-      numbytes = 3;
-      address = 17;
-      break;
-    case set_bodlevel:
-#ifdef SUPPORT_SET_BOD_FUSES
-      /* Enable at your own risk - this has not been tested &
-       * may brick your device. */
-      for(i = 20;i < 26; i++){
-        buffer[i] = value & (0x0001 << (i-20));
-      }
-      numbytes = 6;
-      address = 20;
-      break;
-#else
-      DEBUG( "Setting BODLEVEL can break your chip. Operation not performed\n" );
-      DEBUG( "Rebuild with the SUPPORT_SET_BOD_FUSES #define enabled if you really want to do this.\n" );
-      fprintf( stderr, "Setting BODLEVEL can break your chip. Operation not performed.\n" );
-      return -1;
-#endif
-    case set_bodhyst:
-#ifdef SUPPORT_SET_BOD_FUSES
-      /* Enable at your own risk - this has not been tested &
-       * may brick your device. */
-      buffer[0] = value & 0x0001;
-      numbytes = 1;
-      address = 26;
-      break;
-#else
-      DEBUG("Setting BODHYST can break your chip. Operation not performed\n");
-      DEBUG( "Rebuild with the SUPPORT_SET_BOD_FUSES #define enabled if you really want to do this.\n" );
-      fprintf( stderr, "Setting BODHYST can break your chip. Operation not performed.\n");
-      return -1;
-#endif
-    case set_boden:
-#ifdef SUPPORT_SET_BOD_FUSES
-      /* Enable at your own risk - this has not been tested &
-       * may brick your device. */
-      buffer[0] = value & 0x0001;
-      buffer[1] = value & 0x0002;
-      numbytes = 2;
-      address = 27;
-      break;
-#else
-      DEBUG( "Setting BODEN can break your chip. Operation not performed\n" );
-      DEBUG( "Rebuild with the SUPPORT_SET_BOD_FUSES #define enabled if you really want to do this.\n" );
-      fprintf( stderr, "Setting BODEN can break your chip. Operation not performed.\n" );
-      return -1;
-#endif
-    case set_isp_bod_en:
-#ifdef SUPPORT_SET_BOD_FUSES
-      /* Enable at your own risk - this has not been tested &
-       * may brick your device. */
-      buffer[0] = value & 0x0001;
-      numbytes = 1;
-      address = 29;
-      break;
-#else
-      DEBUG( "Setting ISP_BOD_EN can break your chip. Operation not performed\n" );
-      DEBUG( "Rebuild with the SUPPORT_SET_BOD_FUSES #define enabled if you really want to do this.\n" );
-      fprintf( stderr, "Setting ISP_BOD_EN can break your chip. Operation not performed.\n" );
-      return -1;
-#endif
-    case set_isp_io_cond_en:
-      buffer[0] = value & 0x0001;
-      numbytes = 1;
-      address = 30;
-      break;
-    case set_isp_force:
-      buffer[0] = value & 0x0001;
-      numbytes = 1;
-      address = 31;
-      break;
-    default:
-      DEBUG( "Fuse bits unrecognized\n" );
-      fprintf( stderr, "Fuse bits unrecognized.\n" );
-      return -2;
-      break;
-  }
-
-  bout.data = buffer;
-  bout.info.block_start = address;
-  bout.info.block_end = address + numbytes - 1;
-
-  if( 0 != __stm32_flash_block(device, &bout, false) ) {
-    return -6;
-  }
-
-  return 0;
-}
-
-int32_t stm32_set_config( dfu_device_t *device,
-              const uint8_t property,
-              const uint8_t value ) {
-  uint8_t command[4] = { 0x04, 0x01, 0x00, 0x00 };
-  dfu_status_t status;
-
-  TRACE( "%s( %p, %d, 0x%02x )\n", __FUNCTION__, device, property, value );
-
-  switch( property ) {
-    case STM32_SET_CONFIG_BSB:
-      break;
-    case STM32_SET_CONFIG_SBV:
-      command[2] = 0x01;
-      break;
-    case STM32_SET_CONFIG_SSB:
-      command[2] = 0x05;
-      break;
-    case STM32_SET_CONFIG_EB:
-      command[2] = 0x06;
-      break;
-    case STM32_SET_CONFIG_HSB:
-      command[1] = 0x02;
-      break;
-    default:
-      return -1;
-  }
-
-  command[3] = value;
-
-  if( 4 != dfu_download(device, 4, command) ) {
-    DEBUG( "dfu_download failed\n" );
-    return -2;
-  }
-
-  if( 0 != dfu_get_status(device, &status) ) {
-    DEBUG( "dfu_get_status failed\n" );
-    return -3;
-  }
-
-  if( DFU_STATUS_ERROR_WRITE == status.bStatus ) {
-    fprintf( stderr, "Device is write protected.\n" );
-  }
-
-  return status.bStatus;
-}
-
 int32_t stm32_read_flash( dfu_device_t *device,
               intel_buffer_in_t *buin,
               const uint8_t mem_segment,
@@ -1083,13 +636,6 @@ int32_t stm32_read_flash( dfu_device_t *device,
 
   if( (NULL == buin) || (NULL == device) ) {
     DEBUG( "invalid arguments.\n" );
-    if( !quiet )
-      fprintf( stderr, "Program Error, use debug for more info.\n" );
-    return -1;
-  } else if ( mem_segment != mem_st_flash &&
-        mem_segment != mem_st_user &&
-        mem_segment != mem_st_eeprom ) {
-    DEBUG( "Invalid memory segment %d to read.\n", mem_segment );
     if( !quiet )
       fprintf( stderr, "Program Error, use debug for more info.\n" );
     return -1;
@@ -1119,12 +665,10 @@ int32_t stm32_read_flash( dfu_device_t *device,
   // select the first memory page ( not safe for mem_st_user )
   buin->info.block_start = buin->info.data_start;
   mem_page = buin->info.block_start / STM32_64KB_PAGE;
-  if ( mem_segment != mem_st_user ) {
-    if( 0 != (result = stm32_select_page( device, mem_page )) ) {
-      DEBUG( "ERROR selecting 64kB page %d.\n", result );
-      retval = -3;
-      goto finally;
-    }
+  if( 0 != (result = stm32_select_page( device, mem_page )) ) {
+    DEBUG( "ERROR selecting 64kB page %d.\n", result );
+    retval = -3;
+    goto finally;
   }
 
   while (buin->info.block_start <= buin->info.data_end) {
@@ -1148,8 +692,7 @@ int32_t stm32_read_flash( dfu_device_t *device,
       buin->info.block_end = buin->info.data_end;
     }
 
-    if( 0 != (result = __stm32_read_block(device, buin,
-          mem_segment == mem_st_eeprom ? 1 : 0)) ) {
+    if( 0 != (result = __stm32_read_block(device, buin, 0))) {
       DEBUG( "Error reading block 0x%X to 0x%X: err %d.\n",
           buin->info.block_start, buin->info.block_end, result );
       retval = -5;
@@ -1184,203 +727,7 @@ finally:
   return retval;
 }
 
-int32_t stm32_blank_check( dfu_device_t *device,
-               const uint32_t start,
-               const uint32_t end,
-               dfu_bool quiet ) {
-  int32_t result;           // blank_page_check_result
-  uint32_t blank_upto = start;    // up to is not inclusive
-  uint32_t check_until;         // end address of page check
-  uint16_t current_page;        // 64kb page number
-  int32_t retval;
-
-  TRACE( "%s( %p, 0x%08X, 0x%08X )\n", __FUNCTION__, device, start, end );
-
-  if( (NULL == device) ) {
-    DEBUG( "ERROR: Invalid arguments, device pointer is NULL.\n" );
-    return -1;
-  } else if ( start > end ) {
-    DEBUG( "ERROR: End address 0x%X before start address 0x%X.\n",
-        end, start );
-    return -1;
-  }
-
-  // safe to call this with any type of device
-  if( 0 != stm32_select_memory_unit(device, mem_st_flash) ) {
-    return -2;
-  }
-
-  if( !quiet ) {
-    fprintf( stderr, "Checking memory from 0x%X to 0x%X...  ",
-        start, end );
-    // from here need to go to retval on error
-    if( debug > STM32_DEBUG_THRESHOLD ) fprintf( stderr, "\n" );
-  }
-  do {
-    // want to have checks align with pages
-    current_page = blank_upto / STM32_64KB_PAGE;
-    check_until = ( current_page + 1 ) * STM32_64KB_PAGE - 1;
-    check_until = check_until > end ? end : check_until;
-
-    // safe to call with any type of device (just bc end address is
-    // below 0x10000 doesn't mean you are definitely on page 0)
-    if ( 0 != stm32_select_page(device, current_page) ) {
-      DEBUG ("page select error.\n");
-      retval = -3;
-      goto error;
-    }
-
-    // send the 'page' address, not absolute address
-    result = __stm32_blank_page_check( device,
-        blank_upto % STM32_64KB_PAGE,
-        check_until % STM32_64KB_PAGE );
-
-    if ( result == 0 ) {
-      DEBUG ( "Flash blank from 0x%X to 0x%X.\n",
-          start, check_until );
-      blank_upto = check_until + 1;
-    } else if ( result > 0 ) {
-      blank_upto = result - 1 + STM32_64KB_PAGE * current_page;
-      DEBUG ( "Flash NOT blank beginning at 0x%X.\n", blank_upto );
-      retval = blank_upto + 1;
-      goto error;
-    } else {
-      DEBUG ( "Blank check fail err %d. Flash status unknown.\n", result );
-      retval = result;
-      goto error;
-    }
-  } while ( blank_upto < end );
-  retval = 0;
-
-error:
-  if( retval == 0 ) {
-    if( !quiet ) fprintf( stderr, "EMPTY.\n" );
-  } else if ( retval > 0 ) {
-    if( !quiet ) fprintf( stderr, "NOT BLANK at 0x%X.\n", retval );
-  } else {
-    if( !quiet ) fprintf( stderr, "ERROR.\n" );
-  }
-  return retval;
-}
-
-int32_t stm32_start_app_noreset( dfu_device_t *device ) {
-  uint8_t command[5] = { 0x04, 0x03, 0x01, 0x00, 0x00 };
-
-
-  if( 5 != dfu_download(device, 5, command) ) {
-    DEBUG( "dfu_download failed.\n" );
-    return -1;
-  }
-
-  if( 0 != dfu_download(device, 0, NULL) ) {
-    DEBUG( "dfu_download failed.\n" );
-    return -2;
-  }
-
-  return 0;
-}
-
-int32_t stm32_user( dfu_device_t *device, intel_buffer_out_t *bout ) {
-  int32_t result = 0;
-
-  TRACE( "%s( %p, %p )\n", __FUNCTION__, device, bout );
-
-  if( (NULL == bout) || (NULL == device ) ) {
-    DEBUG( "invalid arguments.\n" );
-    return -1;
-  }
-
-  /* Select USER page */
-  if( 0 != stm32_select_memory_unit(device, mem_st_user) ) {
-    DEBUG( "User Page Memory NOT selected.\n" );
-    return -2;
-  } else {
-    DEBUG( "User Page memory selected.\n" );
-  }
-
-  bout->info.block_start = 0;
-  bout->info.block_end = bout->info.page_size - 1;
-
-  //The user block is one flash page, so we'll just do it all in a block.
-  result = __stm32_flash_block( device, bout, false );
-
-  if( result != 0 ) {
-    DEBUG( "error flashing the block: %d\n", result );
-    return -4;
-  }
-
-  return 0;
-}
-
-int32_t stm32_secure( dfu_device_t *device ) {
-  int32_t result = 0;
-  uint16_t buffer[1];
-  intel_buffer_out_t bout;
-  TRACE( "%s( %p )\n", __FUNCTION__, device );
-
-  /* Select SECURITY page */
-  uint8_t command[4] = { 0x06, 0x03, 0x00, 0x02 };
-  if( 4 != dfu_download(device, 4, command) ) {
-    DEBUG( "dfu_download failed.\n" );
-    return -2;
-  }
-
-  bout.info.block_start = 0;
-  bout.info.block_end = 0;
-  bout.data = buffer;
-
-  // The security block is a single byte, so we'll just do it all in a block.
-  buffer[0] = 0x01;   // Non-zero to set security fuse.
-  result = __stm32_flash_block( device, &bout, false );
-
-  if( result != 0 ) {
-    DEBUG( "error flashing security fuse: %d\n", result );
-    return -4;
-  }
-
-  return 0;
-}
-
-int32_t stm32_getsecure( dfu_device_t *device ) {
-  int32_t result = 0;
-  uint8_t buffer[1];
-  TRACE( "%s( %p )\n", __FUNCTION__, device );
-
-  intel_buffer_in_t buin;
-
-  // init the necessary parts of buin
-  buin.info.block_start = 0;
-  buin.info.block_end = 0;
-  buin.data = buffer;
-
-  dfu_clear_status( device );
-
-  // TODO : Probably should use selelect_memory_unit command here
-  /* Select SECURITY page */
-  uint8_t command[4] = { 0x06, 0x03, 0x00, 0x02 };
-  result = dfu_download(device, 4, command);
-  if( 4 != result ) {
-    if( -EIO == result ) {
-      /* This also happens on most access attempts
-       * when the security bit is set. It may be a bug
-       * in the bootloader itself.
-       */
-      return STM32_SECURE_MAYBE;
-    } else {
-      DEBUG( "dfu_download failed.\n" );
-      return -1;
-    }
-  }
-
-  // The security block is a single byte, so we'll just do it all in a block.
-  if( 0 != __stm32_read_block(device, &buin, false) ) {
-      return -2;
-  }
-
-  return( (0 == buffer[0]) ? STM32_SECURE_OFF : STM32_SECURE_ON );
-}
-
-int32_t stm32_flash( dfu_device_t *device,
+int32_t stm32_write_flash( dfu_device_t *device,
            intel_buffer_out_t *bout,
            const dfu_bool eeprom,
            const dfu_bool force,
@@ -1409,9 +756,9 @@ int32_t stm32_flash( dfu_device_t *device,
     return -1;
   }
 
-  // for each page with data, fill unassigned values on the page with 0xFF
-  // bout->data[0] always aligns with a flash page boundary irrespective
-  // of where valid_start is located
+  /* for each page with data, fill unassigned values on the page with 0xFF
+   * bout->data[0] always aligns with a flash page boundary irrespective
+   * of where valid_start is located */
   if( 0 != stm32_flash_prep_buffer( bout ) ) {
     if( !quiet )
       fprintf( stderr, "Program Error, use debug for more info.\n" );
@@ -1460,24 +807,15 @@ int32_t stm32_flash( dfu_device_t *device,
     if( !quiet )
       fprintf( stderr, "Hex file error, use debug for more info.\n" );
     return -1;
-  } else if( !force && 0 != (result = stm32_blank_check(device,
-          bout->info.data_start, bout->info.data_end, quiet)) ) {
-    if ( !quiet )
-      fprintf( stderr,
-          "The target memory for the program is not blank.\n"
-          "Use --force flag to override this error check.\n");
-    DEBUG("The target memory is not blank.\n");
-    return -1;
   }
 
   // select eeprom/flash as the desired memory target, safe for non GRP_AVR32
-  mem_page = eeprom ? mem_st_eeprom : mem_st_flash;
-  if( 0 != stm32_select_memory_unit(device, mem_page) ) {
+  /*if( 0 != stm32_select_memory_unit(device, mem_page) ) {
     DEBUG ("Error selecting memory unit.\n");
     if( !quiet )
       fprintf( stderr, "Memory access error, use debug for more info.\n" );
     return -2;
-  }
+  }*/
 
   if( !quiet ) {
     if( debug <= STM32_DEBUG_THRESHOLD ) {
@@ -1571,25 +909,6 @@ finally:
   }
 
   return retval;
-}
-
-void stm32_print_device_info( FILE *stream, stm32_device_info_t *info ) {
-  fprintf( stream, "%18s: 0x%04x - %d\n", "Bootloader Version", info->bootloaderVersion, info->bootloaderVersion );
-  fprintf( stream, "%18s: 0x%04x - %d\n", "Device boot ID 1", info->bootID1, info->bootID1 );
-  fprintf( stream, "%18s: 0x%04x - %d\n", "Device boot ID 2", info->bootID2, info->bootID2 );
-
-  if( /* device is 8051 based */ 0 ) {
-    fprintf( stream, "%18s: 0x%04x - %d\n", "Device BSB", info->bsb, info->bsb );
-    fprintf( stream, "%18s: 0x%04x - %d\n", "Device SBV", info->sbv, info->sbv );
-    fprintf( stream, "%18s: 0x%04x - %d\n", "Device SSB", info->ssb, info->ssb );
-    fprintf( stream, "%18s: 0x%04x - %d\n", "Device EB", info->eb, info->eb );
-  }
-
-  fprintf( stream, "%18s: 0x%04x - %d\n", "Manufacturer Code", info->manufacturerCode, info->manufacturerCode );
-  fprintf( stream, "%18s: 0x%04x - %d\n", "Family Code", info->familyCode, info->familyCode );
-  fprintf( stream, "%18s: 0x%04x - %d\n", "Product Name", info->productName, info->productName );
-  fprintf( stream, "%18s: 0x%04x - %d\n", "Product Revision", info->productRevision, info->productRevision );
-  fprintf( stream, "%18s: 0x%04x - %d\n", "HWB", info->hsb, info->hsb );
 }
 
 // vim: shiftwidth=2

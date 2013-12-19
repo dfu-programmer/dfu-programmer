@@ -24,76 +24,30 @@
 #include "dfu-device.h"
 #include "intel_hex.h"
 
-#define STM32_USER_PAGE_OFFSET  0x80800000
-
-#define STM32_ERASE_BLOCK_0   0
-#define STM32_ERASE_BLOCK_1   1
-#define STM32_ERASE_BLOCK_2   2
-#define STM32_ERASE_BLOCK_3   3
-#define STM32_ERASE_ALL     4
-
-#define STM32_SET_CONFIG_BSB  0
-#define STM32_SET_CONFIG_SBV  1
-#define STM32_SET_CONFIG_SSB  2
-#define STM32_SET_CONFIG_EB   3
-#define STM32_SET_CONFIG_HSB  4
-
-#define STM32_SECURE_OFF    0     // Security bit is cleared
-#define STM32_SECURE_ON     1     // Security bit is set
-#define STM32_SECURE_MAYBE    2     // Call to check security bit failed
-
-/* All values are valid if in the range of 0-255, invalid otherwise */
-typedef struct {
-  int16_t bootloaderVersion;  // Bootloader Version
-  int16_t bootID1;      // Device boot ID 1
-  int16_t bootID2;      // Device boot ID 2
-  int16_t bsb;        // Boot Status Byte
-  int16_t sbv;        // Software Boot Vector
-  int16_t ssb;        // Software Security Byte
-  int16_t eb;         // Extra Byte
-  int16_t manufacturerCode;   // Manufacturer Code
-  int16_t familyCode;     // Family Code
-  int16_t productName;    // Product Name
-  int16_t productRevision;  // Product Revision
-  int16_t hsb;        // Hardware Security Byte
-} stm32_device_info_t;
-
-typedef struct {
-  int32_t lock;         // Locked region
-  int32_t epfl;         // External Privileged fetch lock
-  int32_t bootprot;       // Bootloader protected area
-  int32_t bodlevel;       // Brown-out detector trigger level
-  int32_t bodhyst;      // BOD hysteresis enable
-  int32_t boden;        // BOD enable state
-  int32_t isp_bod_en;     // Tells the ISP to enable BOD
-  int32_t isp_io_cond_en;   // ISP uses User page to launch bootloader
-  int32_t isp_force;      // Start the ISP no matter what
-} stm32_avr32_fuses_t;
-
+#define STM32_FLASH_OFFSET 0x08000000
 
 typedef enum {
-  mem_st_flash,
-  mem_st_eeprom,
-  mem_st_security,
-  mem_st_config,
-  mem_st_boot,
-  mem_st_sig,
-  mem_st_user,
-  mem_st_ram,
-  mem_st_ext0,
-  mem_st_ext1,
-  mem_st_ext2,
-  mem_st_ext3,
-  mem_st_ext,
-  mem_st_ext5,
-  mem_st_ext6,
-  mem_st_ext7,
-  mem_st_extdf
-} stm32_memory_unit_enum;
+  mem_st_sector0 = 0,
+  mem_st_sector1,
+  mem_st_sector2,
+  mem_st_sector3,
+  mem_st_sector4,
+  mem_st_sector5,
+  mem_st_sector6,
+  mem_st_sector7,
+  mem_st_sector8,
+  mem_st_sector9,
+  mem_st_sector10,
+  mem_st_sector11,
+  mem_st_system,
+  mem_st_otp_area,
+  mem_st_option_bytes,
+  mem_st_all,
+} stm32f4_mem_sectors;
 
-#define STM32_MEM_UNIT_NAMES "flash", "eeprom", "security", "config", \
-  "bootloader", "signature", "user", "int_ram", "ext_cs0", "ext_cs1", \
-  "ext_cs2", "ext_cs3", "ext_cs4", "ext_cs5", "ext_cs6", "ext_cs7", "ext_df"
+#define STM32_MEM_UNIT_NAMES "Sector 0", "Sector 1", "Sector 2", "Sector 3", \
+  "Sector 4", "Sector 5", "Sector 6", "Sector 7", "Sector 8", "Sector 9", \
+  "Sector 10", "Sector 11", "System Memory", "OTP Area", "Option Bytes", "All"
 
 
 int32_t stm32_erase_flash( dfu_device_t *device, const uint8_t mode,
@@ -109,74 +63,51 @@ int32_t stm32_start_app( dfu_device_t *device, dfu_bool quiet );
   /* Reset the registers to default reset values and start application
    */
 
-
-int32_t stm32_read_config( dfu_device_t *device,
-               stm32_device_info_t *info );
-/*  stm32_read_config reads in all of the configuration and Manufacturer
- *  Information into the stm32_device_info data structure for easier use later.
- *
- *  device  - the usb_dev_handle to communicate with
- *  info    - the data structure to populate
- *
- *  returns 0 if successful, < 0 if not
- */
-
-int32_t stm32_read_fuses( dfu_device_t *device,
-              stm32_avr32_fuses_t * info );
-
-int32_t stm32_set_fuse( dfu_device_t *device,
-              const uint8_t property,
-              const uint32_t value );
-
-int32_t stm32_set_config( dfu_device_t *device,
-              const uint8_t property,
-              const uint8_t value );
-
 int32_t stm32_read_flash( dfu_device_t *device,
               intel_buffer_in_t *buin,
               uint8_t mem_segment,
               const dfu_bool quiet);
-/* read the flash from buin->info.data_start to data_end and place
- * in buin.data. mem_segment is the segment of memory from the
- * stm32_memory_unit_enum.
- */
+  /* read the flash from buin->info.data_start to data_end and place
+   * in buin.data. mem_segment is the segment of memory from the
+   * stm32_memory_unit_enum.
+   */
 
-int32_t stm32_blank_check( dfu_device_t *device,
-               const uint32_t start,
-               const uint32_t end,
-               dfu_bool quiet );
-/* check if memory between start byte and end byte (inclusive) is blank
- * returns 0 for success, < 0 for communication errors, > 0 for not blank
- */
+int32_t stm32_write_flash( dfu_device_t *device, intel_buffer_out_t *bout,
+    const dfu_bool eeprom, const dfu_bool force, const dfu_bool hide_progress );
+  /* Flash data from the buffer to the main program memory on the device.
+   * buffer contains the data to flash where buffer[0] is aligned with memory
+   * address zero (which could be inside the bootloader and unavailable).
+   * buffer[start / end] correspond to the start / end of available memory
+   * outside the bootloader.
+   * flash_page_size is the size of flash pages - used for alignment
+   * eeprom bool tells if you want to flash to eeprom or flash memory
+   * hide_progress bool sets whether to display progress
+   */
+
+
+#if 0
+int32_t stm32_read_config( dfu_device_t *device,
+               stm32_device_info_t *info );
+
+int32_t stm32_read_fuses( dfu_device_t *device, stm32_avr32_fuses_t * info );
+
+int32_t stm32_set_fuse( dfu_device_t *device, const uint8_t property,
+    const uint32_t value );
+
+int32_t stm32_set_config( dfu_device_t *device, const uint8_t property,
+    const uint8_t value );
+
+int32_t stm32_blank_check( dfu_device_t *device, const uint32_t start,
+    const uint32_t end, dfu_bool quiet );
 
 int32_t stm32_secure( dfu_device_t *device );
 
 int32_t stm32_getsecure( dfu_device_t *device );
 
-int32_t stm32_flash( dfu_device_t *device,
-           intel_buffer_out_t *bout,
-           const dfu_bool eeprom,
-           const dfu_bool force,
-           const dfu_bool hide_progress );
-/* Flash data from the buffer to the main program memory on the device.
- * buffer contains the data to flash where buffer[0] is aligned with memory
- * address zero (which could be inside the bootloader and unavailable).
- * buffer[start / end] correspond to the start / end of available memory
- * outside the bootloader.
- * flash_page_size is the size of flash pages - used for alignment
- * eeprom bool tells if you want to flash to eeprom or flash memory
- * hide_progress bool sets whether to display progress
- */
-
 int32_t stm32_user( dfu_device_t *device, intel_buffer_out_t *bout );
-/* Flash data to the user page.  Provide the buffer and the size of
- * flash pages for the device (this is the size of the user page).
- * Note that only the entire user page can be flashed because it is
- * deleted before it is flashed to.  Therfore buffer must fill this
- * space (start at zero and contain page_size bytes).
- */
 
 void stm32_print_device_info( FILE *stream, stm32_device_info_t *info );
+#endif
 
 #endif  /* __STM32_H__ */
 
