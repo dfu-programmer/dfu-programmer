@@ -125,6 +125,17 @@ void* rpl_malloc( size_t n ) {
     return malloc( n );
 }
 
+void dfu_set_transaction_num( uint16_t newnum ) {
+    TRACE( "%s( %u )\n", __FUNCTION__, newnum );
+    transaction = newnum;
+}
+
+uint16_t dfu_get_transaction_num( void ) {
+    TRACE( "%s( %u )\n", __FUNCTION__ );
+    return transaction;
+}
+
+
 int32_t dfu_detach( dfu_device_t *device, const int32_t timeout ) {
     int32_t result;
 

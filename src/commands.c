@@ -28,6 +28,7 @@
 #include "commands.h"
 #include "arguments.h"
 #include "intel_hex.h"
+#include "stm32.h"
 #include "atmel.h"
 #include "util.h"
 
@@ -72,8 +73,8 @@ static int32_t execute_erase( dfu_device_t *device,
                               struct programmer_arguments *args ) {
     int32_t result = 0;
 
-    if( !args->com_erase_data.force ) {
-        if ( 0 == atmel_blank_check( device, args->flash_address_bottom,
+    if( !(GRP_STM32 & args->device_type) && !args->com_erase_data.force ) {
+        if( 0 == atmel_blank_check( device, args->flash_address_bottom,
                                              args->flash_address_top,
                                              args->quiet ) ) {
             if ( !args->quiet ) {
@@ -86,9 +87,14 @@ static int32_t execute_erase( dfu_device_t *device,
     DEBUG( "erase 0x%X bytes.\n",
            (args->flash_address_top - args->flash_address_bottom) );
 
-    result = atmel_erase_flash( device, ATMEL_ERASE_ALL, args->quiet );
+    if( GRP_STM32 & args->device_type ) {
+        result = stm32_erase_flash( device, STM32_ERASE_ALL, args->quiet );
+    } else {
+        result = atmel_erase_flash( device, ATMEL_ERASE_ALL, args->quiet );
+    }
 
-    if ( !args->com_erase_data.suppress_validation ) {
+    if( !(GRP_STM32 & args->device_type) &&
+            !args->com_erase_data.suppress_validation ) {
         result = atmel_blank_check( device, args->flash_address_bottom,
                                             args->flash_address_top,
                                             args->quiet );
@@ -842,7 +848,9 @@ static int32_t execute_configure( dfu_device_t *device,
 
 static int32_t execute_launch( dfu_device_t *device,
                                   struct programmer_arguments *args ) {
-    if ( args->com_launch_config.noreset ) {
+    if( args->device_type & GRP_STM32 ) {
+        return stm32_start_app( device, args->quiet );
+    } else if( args->com_launch_config.noreset ) {
         return atmel_start_app_noreset( device );
     } else {
         return atmel_start_app_reset( device );

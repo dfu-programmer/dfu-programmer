@@ -83,6 +83,16 @@ typedef struct {
     uint8_t iString;
 } dfu_status_t;
 
+void dfu_set_transaction_num( uint16_t newnum );
+/* set / reset the wValue parameter to a given value. this number is
+ * significant for stm32 device commands (see dfu-device.h)
+ */
+
+uint16_t dfu_get_transaction_num( void );
+/* get the current transaction number (can be used to calculate address
+ * offset for stm32 devices --- see dfu-device.h)
+ */
+
 int32_t dfu_detach( dfu_device_t *device, const int32_t timeout );
 /*  DFU_DETACH Request (DFU Spec 1.0, Section 5.1)
  *
