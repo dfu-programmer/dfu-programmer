@@ -22,6 +22,7 @@
 #include <stdint.h>
 #include "dfu-bool.h"
 #include "dfu-device.h"
+#include "intel_hex.h"
 
 #define STM32_USER_PAGE_OFFSET  0x80800000
 
@@ -69,27 +70,6 @@ typedef struct {
   int32_t isp_force;      // Start the ISP no matter what
 } stm32_avr32_fuses_t;
 
-typedef struct {
-  size_t total_size;      // the total size of the buffer
-  size_t  page_size;      // the size of a flash page
-  uint32_t block_start;     // the start addr of a transfer
-  uint32_t block_end;     // the end addr of a transfer
-  uint32_t data_start;    // the first valid data addr
-  uint32_t data_end;      // the last valid data addr
-  uint32_t valid_start;     // the first valid memory addr
-  uint32_t valid_end;     // the last valid memory addr
-} stm32_buffer_info_t;
-
-typedef struct {
-  stm32_buffer_info_t info;
-  uint16_t *data;
-} stm32_buffer_out_t;
-
-typedef struct {
-  stm32_buffer_info_t info;
-  uint8_t *data;
-} stm32_buffer_in_t;
-
 
 typedef enum {
   mem_st_flash,
@@ -130,33 +110,6 @@ int32_t stm32_start_app( dfu_device_t *device, dfu_bool quiet );
    */
 
 
-int32_t stm32_init_buffer_out(stm32_buffer_out_t *bout,
-    size_t total_size, size_t page_size );
-/* intialize a buffer used to send data to flash memory
- * the total size and page size must be provided.
- * the data array is filled with 0xFFFF (an invalid memory
- * value) indicating that it is unassigned. data start and
- * data end are initialized with UINT32_MAX indicating there
- * is no valid data in the buffer.  these two values are simply
- * convenience values so the start and end of data do not need
- * to be found multiple times.
- */
-
-int32_t stm32_init_buffer_in(stm32_buffer_in_t *buin,
-    size_t total_size, size_t page_size );
-/* initialize a buffer_in, used for reading the contents of program
- * memory.  total memory size must be provided.  the data array is filled
- * with 0xFF, which is unprogrammed memory.
- */
-
-int32_t stm32_validate_buffer(stm32_buffer_in_t *buin,
-                stm32_buffer_out_t *bout, dfu_bool quiet);
-/* compare the contents of buffer_in with buffer_out to check that a target
- * memory image matches with a memory read.
- * return 0 for full validation, positive number if data bytes outside region do
- * not validate, negative number if bytes inside region that do not validate
- */
-
 int32_t stm32_read_config( dfu_device_t *device,
                stm32_device_info_t *info );
 /*  stm32_read_config reads in all of the configuration and Manufacturer
@@ -180,7 +133,7 @@ int32_t stm32_set_config( dfu_device_t *device,
               const uint8_t value );
 
 int32_t stm32_read_flash( dfu_device_t *device,
-              stm32_buffer_in_t *buin,
+              intel_buffer_in_t *buin,
               uint8_t mem_segment,
               const dfu_bool quiet);
 /* read the flash from buin->info.data_start to data_end and place
@@ -201,7 +154,7 @@ int32_t stm32_secure( dfu_device_t *device );
 int32_t stm32_getsecure( dfu_device_t *device );
 
 int32_t stm32_flash( dfu_device_t *device,
-           stm32_buffer_out_t *bout,
+           intel_buffer_out_t *bout,
            const dfu_bool eeprom,
            const dfu_bool force,
            const dfu_bool hide_progress );
@@ -215,8 +168,7 @@ int32_t stm32_flash( dfu_device_t *device,
  * hide_progress bool sets whether to display progress
  */
 
-int32_t stm32_user( dfu_device_t *device,
-          stm32_buffer_out_t *bout );
+int32_t stm32_user( dfu_device_t *device, intel_buffer_out_t *bout );
 /* Flash data to the user page.  Provide the buffer and the size of
  * flash pages for the device (this is the size of the user page).
  * Note that only the entire user page can be flashed because it is

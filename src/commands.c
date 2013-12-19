@@ -42,7 +42,7 @@ static int security_bit_state;
 
 // ________  P R O T O T Y P E S  _______________________________
 static int32_t execute_validate( dfu_device_t *device,
-                                 atmel_buffer_out_t *bout,
+                                 intel_buffer_out_t *bout,
                                  uint8_t mem_segment,
                                  dfu_bool quiet );
 /* provide an out buffer to validate and whether this is from
@@ -129,7 +129,7 @@ static int32_t execute_setsecure( dfu_device_t *device,
 // otherwise, the secion will end up '\0' unless a page erase is used.. so may
 // need to keep this part of the flash command, but specify that serialize data
 // 'wins' over data from the hex file
-static int32_t serialize_memory_image( atmel_buffer_out_t *bout,
+static int32_t serialize_memory_image( intel_buffer_out_t *bout,
                                      struct programmer_arguments *args ) {
     uint32_t target_offset = 0;
     if( args->command == com_user )
@@ -152,14 +152,14 @@ static int32_t serialize_memory_image( atmel_buffer_out_t *bout,
 }
 
 static int32_t execute_validate( dfu_device_t *device,
-                                 atmel_buffer_out_t *bout,
+                                 intel_buffer_out_t *bout,
                                  uint8_t mem_segment,
                                  const dfu_bool quiet ) {
     int32_t retval = -1;        // return value for this fcn
     int32_t result;             // result of fcn calls
-    atmel_buffer_in_t buin;     // buffer in for storing read mem
+    intel_buffer_in_t buin;     // buffer in for storing read mem
 
-    if( 0 != atmel_init_buffer_in(&buin, bout->info.total_size,
+    if( 0 != intel_init_buffer_in(&buin, bout->info.total_size,
                                             bout->info.page_size ) ) {
         DEBUG("ERROR initializing a buffer.\n");
         goto error;
@@ -173,7 +173,7 @@ static int32_t execute_validate( dfu_device_t *device,
         goto error;
     }
 
-    if( 0 != atmel_validate_buffer( &buin, bout, quiet ) ) {
+    if( 0 != intel_validate_buffer( &buin, bout, quiet ) ) {
         goto error;
     }
 
@@ -190,7 +190,7 @@ error:
     return retval;
 }
 
-static void print_flash_usage( atmel_buffer_info_t *info ) {
+static void print_flash_usage( intel_buffer_info_t *info ) {
     fprintf( stderr,
             "0x%X bytes written into 0x%X bytes memory (%.02f%%).\n",
             info->data_end - info->data_start + 1,
@@ -203,7 +203,7 @@ static int32_t execute_hex2bin( dfu_device_t *device,
         struct programmer_arguments *args ) {
     int32_t  retval = -1;
     uint32_t  i;
-    atmel_buffer_out_t bout;
+    intel_buffer_out_t bout;
     size_t   memory_size;
     size_t   page_size;
     uint32_t target_offset = 0;
@@ -212,7 +212,7 @@ static int32_t execute_hex2bin( dfu_device_t *device,
     page_size = args->flash_page_size;
 
     // ----------------- CONVERT HEX FILE TO BINARY -------------------------
-    if( 0 != atmel_init_buffer_out(&bout, memory_size, page_size) ) {
+    if( 0 != intel_init_buffer_out(&bout, memory_size, page_size) ) {
         DEBUG("ERROR initializing a buffer.\n");
         goto error;
     }
@@ -246,7 +246,7 @@ error:
 static int32_t execute_bin2hex( dfu_device_t *device,
         struct programmer_arguments *args ) {
     int32_t retval = -1;        // return value for this fcn
-    atmel_buffer_in_t buin;     // buffer in for storing read mem
+    intel_buffer_in_t buin;     // buffer in for storing read mem
     enum atmel_memory_unit_enum mem_segment = args->com_convert_data.segment;
     size_t mem_size = 0;
     size_t page_size = 0;
@@ -279,7 +279,7 @@ static int32_t execute_bin2hex( dfu_device_t *device,
             goto error;
     }
 
-    if( 0 != atmel_init_buffer_in(&buin, mem_size, page_size) ) {
+    if( 0 != intel_init_buffer_in(&buin, mem_size, page_size) ) {
         DEBUG("ERROR initializing a buffer.\n");
         goto error;
     }
@@ -333,7 +333,7 @@ static int32_t execute_flash( dfu_device_t *device,
     int32_t  retval = -1;
     int32_t  result;
     uint32_t  i;
-    atmel_buffer_out_t bout;
+    intel_buffer_out_t bout;
     size_t   memory_size;
     size_t   page_size;
     enum atmel_memory_unit_enum mem_type = args->com_flash_data.segment;
@@ -360,16 +360,16 @@ static int32_t execute_flash( dfu_device_t *device,
             target_offset = ATMEL_USER_PAGE_OFFSET;
             if( args->device_type != ADC_AVR32 ){
                 fprintf(stderr, "Flash User only implemented for ADC_AVR32 devices.\n");
-                goto error;
+                return -1;
             }
             break;
         default:
-            memory_size = 0;
-            page_size = 0;
+            DEBUG("Unknown memory type %d\n", mem_type);
+            return -1;
     }
 
     // ----------------- CONVERT HEX FILE TO BINARY -------------------------
-    if( 0 != atmel_init_buffer_out(&bout, memory_size, page_size) ) {
+    if( 0 != intel_init_buffer_out(&bout, memory_size, page_size) ) {
         DEBUG("ERROR initializing a buffer.\n");
         goto error;
     }
@@ -685,7 +685,7 @@ static int32_t execute_dump( dfu_device_t *device,
     int32_t i = 0;
     int32_t retval = -1;        // return value for this fcn
     int32_t result;             // result of fcn calls
-    atmel_buffer_in_t buin;     // buffer in for storing read mem
+    intel_buffer_in_t buin;     // buffer in for storing read mem
     enum atmel_memory_unit_enum mem_segment = args->com_read_data.segment;
     size_t mem_size = 0;
     size_t page_size = 0;
@@ -713,7 +713,7 @@ static int32_t execute_dump( dfu_device_t *device,
             goto error;
     }
 
-    if( 0 != atmel_init_buffer_in(&buin, mem_size, page_size) ) {
+    if( 0 != intel_init_buffer_in(&buin, mem_size, page_size) ) {
         DEBUG("ERROR initializing a buffer.\n");
         goto error;
     }
