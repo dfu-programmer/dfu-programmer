@@ -497,7 +497,7 @@ int32_t intel_hex_from_buffer( atmel_buffer_in_t *buin,
                 } else {
                     if( *line )
                         fprintf( stdout, "%s\n", line );
-                    ihex_clear_record( &record, address - offset_address );
+                    ihex_clear_record( &record, address + i_scan - offset_address );
                 }
                 i += buin->info.page_size - 1;
                 continue;
