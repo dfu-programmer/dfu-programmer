@@ -49,8 +49,6 @@
 #define READ_UNPROTECT          0x92
 #define GET_CMD                 0x00
 
-
-
 //___ T Y P E D E F S   ( P R I V A T E ) ____________________________________
 
 //___ P R O T O T Y P E S   ( P R I V A T E ) ________________________________
@@ -66,8 +64,8 @@ static int32_t stm32_set_address_ptr( dfu_device_t *device, uint32_t address );
    */
 
 static int32_t stm32_write_block( dfu_device_t *device,
-                                    size_t xfer_len,
-                                    intel_buffer_out_t *bout );
+                                  size_t xfer_len,
+                                  uint8_t *buffer );
   /* flash the contents of memory into a block of memory.  it is assumed that
    * the appropriate page has already been selected.  start and end are the
    * start and end addresses of the flash data.  returns 0 on success,
@@ -91,6 +89,8 @@ static inline void print_progress( intel_buffer_info_t *info,
 //___ V A R I A B L E S ______________________________________________________
 extern int debug;
 
+/* FIXME : these should be read from usb device descriptor because they are
+ * device specififc */
 static const uint32_t stm32_sector_addresses[] = {
   0x08000000,   /* sector  0,  16 kb */
   0x08004000,   /* sector  1,  16 kb */
@@ -171,14 +171,12 @@ static int32_t stm32_set_address_ptr( dfu_device_t *device, uint32_t address ) {
 
 static int32_t stm32_write_block( dfu_device_t *device,
                                   size_t xfer_len,
-                                  intel_buffer_out_t *bout ) {
-  TRACE( "%s( %p, %u, %p )\n", __FUNCTION__, device, xfer_len, bout );
-  int16_t i;
-  uint8_t message[STM32_MAX_TRANSFER_SIZE];
+                                  uint8_t *buffer ) {
+  TRACE( "%s( %p, %u, %p )\n", __FUNCTION__, device, xfer_len, buffer );
   int32_t status;
 
   /* check input args */
-  if( (NULL == device) || (NULL == bout) ) {
+  if( (NULL == device) || (NULL == buffer) ) {
     DEBUG( "ERROR: Invalid arguments, device/buffer pointer is NULL.\n" );
     return -1;
   } else if ( xfer_len > STM32_MAX_TRANSFER_SIZE ) {
@@ -188,17 +186,9 @@ static int32_t stm32_write_block( dfu_device_t *device,
   } else if ( xfer_len < 1 ) {
     DEBUG( "ERROR: xfer_len is %u\n", xfer_len );
     return -1;
-  } else if ( bout->info.block_start + xfer_len - 1 != bout->info.block_end ) {
-    DEBUG( "ERROR: xfer_len address mismatch 0x%X + 0x%X - 1 != 0x%X.\n",
-        bout->info.block_start, xfer_len, bout->info.block_end);
-    return -1;
   }
 
-  for( i = 0; i < xfer_len; i++ ) {
-    message[i] = (uint8_t) bout->data[bout->info.block_start + i];
-  }
-
-  if( xfer_len != dfu_download(device, xfer_len, message) ) {
+  if( xfer_len != dfu_download(device, xfer_len, buffer) ) {
     DEBUG( "dfu_download failed\n" );
     return -3;
   }
@@ -283,31 +273,24 @@ int32_t stm32_erase_flash( dfu_device_t *device, stm32_mem_sectors mem,
   uint8_t command[5] = { ERASE_CMD, 0x00, 0x00, 0x00, 0x00 };
   uint8_t length = 0;
   int32_t status;
+  uint32_t address;
 
-  switch( mem ) {
-    case mem_st_all:
-      length = 1;
-      break;
-    case mem_st_sector0:
-      command[1] = 0x00;    //  page LSB
-      command[2] = 0x00;
-      command[3] = 0x00;
-      command[4] = 0x00;    // page MSB
-      length = 5;
-      break;
-    default:
-      DEBUG("Unknown mem sector %u\n", mem);
-      return -1;
-  }
-
-  /* check dfu status for ok to send */
-  if( (status = stm32_get_status(device)) ) {
-    DEBUG("Error %d getting status on start\n", status);
+  if( mem == mem_st_all ) {
+    length = 1;
+  } else if( mem > mem_st_all ) {
+    DEBUG("Invalid memory region %d\n", mem);
     return -1;
+  } else { address = stm32_sector_addresses[mem];
+    command[1] = 0xff & ((uint8_t) address);            //  page LSB
+    command[2] = (uint8_t) (0xff & ((address)>>8));
+    command[3] = (uint8_t) (0xff & ((address)>>16));
+    command[4] = (uint8_t) (0xff & ((address)>>24));    // page MSB
+    length = 5;
   }
 
   if( !quiet ) {
-    fprintf( stderr, "Erasing flash...  " );
+    const char *names[] = {STM32_MEM_UNIT_NAMES};
+    fprintf( stderr, "Erasing %s flash...  ", names[mem] );
     DEBUG("\n");
   }
   dfu_set_transaction_num( 0 );     /* set wValue to zero */
@@ -492,6 +475,7 @@ int32_t stm32_write_flash( dfu_device_t *device, intel_buffer_out_t *bout,
   uint16_t  xfer_size = 0;      // the size of a transfer
   uint8_t mem_section = 0;   // tracks the current memory page
   int32_t retval = -1;  // the return value for this function
+  uint8_t buffer[STM32_MAX_TRANSFER_SIZE];     // buffer holding out data
   int32_t status;
 
   /* check arguments */
@@ -559,6 +543,15 @@ int32_t stm32_write_flash( dfu_device_t *device, intel_buffer_out_t *bout,
     return -1;
   }
 
+  if( !force ) {
+    /* erase memory sections that are going to be written into */
+    i = 0;
+    while( bout->info.data_end + STM32_FLASH_OFFSET > stm32_sector_addresses[i] ) {
+      stm32_erase_flash( device, i, quiet );
+      i++;
+    }
+  }
+
   if( !quiet ) {
     if( debug <= STM32_DEBUG_THRESHOLD ) {
       /* NOTE: from here on we should run finally block */
@@ -591,9 +584,9 @@ int32_t stm32_write_flash( dfu_device_t *device, intel_buffer_out_t *bout,
 
     /* find end address (info.block_end) for data section to write */
     mem_section = bout->info.block_start / STM32_MIN_SECTOR_BOUND;
-    for( bout->info.block_end = bout->info.block_start;
+    for( i = 0, bout->info.block_end = bout->info.block_start;
          bout->info.block_end <= bout->info.data_end;
-         bout->info.block_end++ ) {
+         bout->info.block_end++, i++ ) {
       xfer_size = bout->info.block_end - bout->info.block_start + 1;
       // check if the current value is valid
       if( bout->data[bout->info.block_end] > UINT8_MAX ) break;
@@ -601,6 +594,8 @@ int32_t stm32_write_flash( dfu_device_t *device, intel_buffer_out_t *bout,
       if( xfer_size > STM32_MAX_TRANSFER_SIZE ) break;
       // check if the current data value is outside of the memory sector
       if( bout->info.block_end / STM32_MIN_SECTOR_BOUND - mem_section ) break;
+
+      buffer[i] = (uint8_t) bout->data[bout->info.block_end];
     }
     bout->info.block_end--; // bout->info.block_end was one step beyond the last data value to flash
     xfer_size = bout->info.block_end - bout->info.block_start + 1;
@@ -614,7 +609,7 @@ int32_t stm32_write_flash( dfu_device_t *device, intel_buffer_out_t *bout,
     DEBUG("Program data block: 0x%X to 0x%X, 0x%X bytes.\n",
         bout->info.block_start, bout->info.block_end, xfer_size);
 
-    if( (status = stm32_write_block( device, xfer_size, bout )) ) {
+    if( (status = stm32_write_block( device, xfer_size, buffer )) ) {
       DEBUG( "Error flashing the block: err %d.\n", status );
       retval = -4;
       goto finally;

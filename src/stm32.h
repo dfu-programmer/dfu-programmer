@@ -48,7 +48,7 @@ typedef enum {
 
 #define STM32_MEM_UNIT_NAMES "Sector 0", "Sector 1", "Sector 2", "Sector 3", \
   "Sector 4", "Sector 5", "Sector 6", "Sector 7", "Sector 8", "Sector 9", \
-  "Sector 10", "Sector 11", "System Memory", "OTP Area", "Option Bytes", "All"
+  "Sector 10", "Sector 11", "System Memory", "OTP Area", "Option Bytes", "all"
 
 #define STM32_READ_PROT_ERROR   -10
 
