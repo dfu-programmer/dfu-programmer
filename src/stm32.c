@@ -267,32 +267,58 @@ static inline void print_progress( intel_buffer_info_t *info,
 
 
 //___ F U N C T I O N S ______________________________________________________
-int32_t stm32_erase_flash( dfu_device_t *device, stm32_mem_sectors mem,
-                           dfu_bool quiet ) {
-  TRACE( "%s( %p, %d )\n", __FUNCTION__, device, mem );
-  uint8_t command[5] = { ERASE_CMD, 0x00, 0x00, 0x00, 0x00 };
-  uint8_t length = 0;
+int32_t stm32_erase_flash( dfu_device_t *device, dfu_bool quiet ) {
+  TRACE( "%s( %p, %s )\n", __FUNCTION__, device, quiet ? "ture" : "false" );
+  uint8_t command[] = { ERASE_CMD };
+  uint8_t length = 1;
   int32_t status;
-  uint32_t address;
-
-  if( mem == mem_st_all ) {
-    length = 1;
-  } else if( mem > mem_st_all ) {
-    DEBUG("Invalid memory region %d\n", mem);
-    return -1;
-  } else { address = stm32_sector_addresses[mem];
-    command[1] = 0xff & ((uint8_t) address);            //  page LSB
-    command[2] = (uint8_t) (0xff & ((address)>>8));
-    command[3] = (uint8_t) (0xff & ((address)>>16));
-    command[4] = (uint8_t) (0xff & ((address)>>24));    // page MSB
-    length = 5;
-  }
 
   if( !quiet ) {
-    const char *names[] = {STM32_MEM_UNIT_NAMES};
-    fprintf( stderr, "Erasing %s flash...  ", names[mem] );
+    fprintf( stderr, "Erasing flash...  " );
     DEBUG("\n");
   }
+
+  dfu_set_transaction_num( 0 );     /* set wValue to zero */
+  if( length != dfu_download(device, length, command) ) {
+    if( !quiet ) fprintf( stderr, "ERROR\n" );
+    DEBUG( "dfu_download failed\n" );
+    return -3;
+  }
+
+  /* call dfu get status to trigger command */
+  if( (status = stm32_get_status(device)) ) {
+    if( !quiet ) fprintf( stderr, "ERROR\n" );
+    DEBUG("Error %d triggering %s\n", status, __FUNCTION__);
+    return -3;
+  }
+
+  /* It can take a while to erase the chip so 10 seconds before giving up */
+  if( (status = stm32_get_status(device)) ) {
+    DEBUG("Error %d: %s unsuccessful\n", status, __FUNCTION__);
+    if( !quiet ) fprintf( stderr, "ERROR\n" );
+    return -4;
+  } else {
+    if( !quiet ) fprintf( stderr, "DONE\n" );
+  }
+
+  return 0;
+}
+
+int32_t stm32_page_erase( dfu_device_t *device, uint32_t address,
+                           dfu_bool quiet ) {
+  TRACE( "%s( %p, 0x%X, %s )\n", __FUNCTION__, device, address,
+      quiet ? "ture" : "false" );
+  uint8_t length = 5;
+  int32_t status;
+
+  uint8_t command[5] = {
+    ERASE_CMD,
+    (uint8_t) (0xff & address),             //  page LSB
+    (uint8_t) (0xff & ((address)>>8)),
+    (uint8_t) (0xff & ((address)>>16)),
+    (uint8_t) (0xff & ((address)>>24))      // page MSB
+  };
+
   dfu_set_transaction_num( 0 );     /* set wValue to zero */
   if( length != dfu_download(device, length, command) ) {
     if( !quiet ) fprintf( stderr, "ERROR\n" );
@@ -543,15 +569,6 @@ int32_t stm32_write_flash( dfu_device_t *device, intel_buffer_out_t *bout,
     return -1;
   }
 
-  if( !force ) {
-    /* erase memory sections that are going to be written into */
-    i = 0;
-    while( bout->info.data_end + STM32_FLASH_OFFSET > stm32_sector_addresses[i] ) {
-      stm32_erase_flash( device, i, quiet );
-      i++;
-    }
-  }
-
   if( !quiet ) {
     if( debug <= STM32_DEBUG_THRESHOLD ) {
       /* NOTE: from here on we should run finally block */
@@ -731,5 +748,41 @@ int32_t stm32_get_configuration( dfu_device_t *device ) {
   return 0;
 }
 
+int32_t stm32_read_unprotect( dfu_device_t *device ) {
+  TRACE("%s( %p )\n", __FUNCTION__, device);
+  uint8_t command[] = { READ_UNPROTECT };
+  uint8_t length = 1;
+  int32_t status;
+
+  if( !quiet ) {
+    fprintf( stderr, "Read Unprotect, Erasing flash...  " );
+    DEBUG("\n");
+  }
+
+  dfu_set_transaction_num( 0 );     /* set wValue to zero */
+  if( length != dfu_download(device, length, command) ) {
+    if( !quiet ) fprintf( stderr, "ERROR\n" );
+    DEBUG( "dfu_download failed\n" );
+    return -3;
+  }
+
+  /* call dfu get status to trigger command */
+  if( (status = stm32_get_status(device)) ) {
+    if( !quiet ) fprintf( stderr, "ERROR\n" );
+    DEBUG("Error %d triggering %s\n", status, __FUNCTION__);
+    return -3;
+  }
+
+  /* It can take a while to erase the chip so 10 seconds before giving up */
+  if( (status = stm32_get_status(device)) ) {
+    DEBUG("Error %d: %s unsuccessful\n", status, __FUNCTION__);
+    if( !quiet ) fprintf( stderr, "ERROR\n" );
+    return -4;
+  } else {
+    if( !quiet ) fprintf( stderr, "DONE\n" );
+  }
+
+  return 0;
+}
 
 // vim: shiftwidth=2

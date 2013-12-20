@@ -88,7 +88,7 @@ static int32_t execute_erase( dfu_device_t *device,
            (args->flash_address_top - args->flash_address_bottom) );
 
     if( GRP_STM32 & args->device_type ) {
-        result = stm32_erase_flash( device, mem_st_all, args->quiet );
+        result = stm32_erase_flash( device, args->quiet );
     } else {
         result = atmel_erase_flash( device, ATMEL_ERASE_ALL, args->quiet );
     }

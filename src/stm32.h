@@ -53,14 +53,15 @@ typedef enum {
 #define STM32_READ_PROT_ERROR   -10
 
 
-int32_t stm32_erase_flash( dfu_device_t *device, stm32_mem_sectors mode,
-                           dfu_bool quiet );
-  /*  stm32_erase_flash
+int32_t stm32_erase_flash( dfu_device_t *device, dfu_bool quiet );
+  /*  mass erase flash
    *  device  - the usb_dev_handle to communicate with
-   *  mode    - the mode to use when erasing flash
-   *        STM32_ERASE_ALL
    *  returns status DFU_STATUS_OK if ok, anything else on error
    */
+
+int32_t stm32_page_erase( dfu_device_t *device, uint32_t address,
+    dfu_bool quiet );
+  /* erase a page of memory (provide the page address) */
 
 int32_t stm32_start_app( dfu_device_t *device, dfu_bool quiet );
   /* Reset the registers to default reset values and start application
@@ -98,6 +99,13 @@ int32_t stm32_get_configuration( dfu_device_t *device );
    * @param device pointer
    * @retrn 0 on success, negative for error
    */
+
+int32_t stm32_read_unprotect( dfu_device_t *device );
+  /* @brief unprotect the device (triggers a mass erase)
+   * @param device pointer
+   * @retrn 0 on success
+   */
+
 
 
 #if 0
