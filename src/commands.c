@@ -725,7 +725,11 @@ static int32_t execute_dump( dfu_device_t *device,
         case mem_flash:
             mem_size = args->memory_address_top + 1;
             page_size = args->flash_page_size;
-            if( ADC_AVR32 == args->device_type ) target_offset = 0x80000000;
+            if( ADC_AVR32 == args->device_type ) {
+                target_offset = 0x80000000;
+            } else if( GRP_STM32 & args->device_type ) {
+                target_offset = STM32_FLASH_OFFSET;
+            }
             break;
         case mem_eeprom:
             mem_size = args->eeprom_memory_size;
@@ -751,11 +755,15 @@ static int32_t execute_dump( dfu_device_t *device,
         buin.info.data_end = args->flash_address_top;
     }
 
-    /* Check AVR32 security bit in order to provide a better error message. */
-    security_check( device );   // avr32 has no eeprom, but OK
+    if( args->device_type & GRP_STM32 ) {
+        result = stm32_read_flash(device, &buin, mem_segment, args->quiet);
+    } else {
+        /* Check AVR32 security bit in order to provide a better error message */
+        security_check( device );   // avr32 has no eeprom, but OK
+        result = atmel_read_flash(device, &buin, mem_segment, args->quiet);
+    }
 
-    if( 0 != (result = atmel_read_flash(device, &buin,
-                    mem_segment, args->quiet)) ) {
+    if( 0 != result ) {
         DEBUG("ERROR: could not read memory, err %d.\n", result);
         security_message();
         goto error;

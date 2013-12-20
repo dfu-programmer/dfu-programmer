@@ -41,16 +41,15 @@
 
 #define STM32_MAX_TRANSFER_SIZE     0x0800  /* 2048 */
 #define STM32_MIN_SECTOR_BOUND      0x4000  /* 16 kb */
+#define STM32_OTP_BYTES_SIZE        528     /* number of OTP bytes (0x210) */
+#define STM32_OPTION_BYTES_SIZE     16      /* number option bytes */
 
 #define SET_ADDR_PTR            0x21
 #define ERASE_CMD               0x41
 #define READ_UNPROTECT          0x92
 #define GET_CMD                 0x00
 
-#define STM32_64KB_PAGE             0x10000
-#define STM32_FOOTER_SIZE           16
-#define STM32_CONTROL_BLOCK_SIZE    64
-#define STM32_MAX_FLASH_BUFFER_SIZE (STM32_MAX_TRANSFER_SIZE + 2 * STM32_CONTROL_BLOCK_SIZE + STM32_FOOTER_SIZE)
+
 
 //___ T Y P E D E F S   ( P R I V A T E ) ____________________________________
 
@@ -66,7 +65,8 @@ static int32_t stm32_set_address_ptr( dfu_device_t *device, uint32_t address );
    * @retrn 0 on success, negative on failure
    */
 
-static int32_t __stm32_flash_block( dfu_device_t *device,
+static int32_t stm32_write_block( dfu_device_t *device,
+                                    size_t xfer_len,
                                     intel_buffer_out_t *bout );
   /* flash the contents of memory into a block of memory.  it is assumed that
    * the appropriate page has already been selected.  start and end are the
@@ -75,15 +75,13 @@ static int32_t __stm32_flash_block( dfu_device_t *device,
    * with device fails.
    */
 
-static int32_t __stm32_read_block( dfu_device_t *device,
-                   intel_buffer_in_t *buin );
-  /* assumes block does not cross 64 b page boundaries and ideally alligs
-   * with flash pages. appropriate memory type and 64kb page has already
-   * been selected, max transfer size is not violated it updates the buffer
-   * data between data_start and data_end
+static int32_t stm32_read_block( dfu_device_t *device,
+                                   size_t xfer_len,
+                                   uint8_t *buffer );
+  /* read a block of memory, assumes address pointer is already set
    */
 
-static inline void __print_progress( intel_buffer_info_t *info,
+static inline void print_progress( intel_buffer_info_t *info,
                     uint32_t *progress );
   /* calculate how many progress indicator steps to print and print them
    * update progress value
@@ -171,10 +169,10 @@ static int32_t stm32_set_address_ptr( dfu_device_t *device, uint32_t address ) {
   return 0;
 }
 
-static int32_t __stm32_flash_block( dfu_device_t *device,
-                                    intel_buffer_out_t *bout ) {
-  TRACE( "%s( %p, %p )\n", __FUNCTION__, device, bout );
-  const size_t length = bout->info.block_end - bout->info.block_start + 1;
+static int32_t stm32_write_block( dfu_device_t *device,
+                                  size_t xfer_len,
+                                  intel_buffer_out_t *bout ) {
+  TRACE( "%s( %p, %u, %p )\n", __FUNCTION__, device, xfer_len, bout );
   int16_t i;
   uint8_t message[STM32_MAX_TRANSFER_SIZE];
   int32_t status;
@@ -183,21 +181,24 @@ static int32_t __stm32_flash_block( dfu_device_t *device,
   if( (NULL == device) || (NULL == bout) ) {
     DEBUG( "ERROR: Invalid arguments, device/buffer pointer is NULL.\n" );
     return -1;
-  } else if ( bout->info.block_start > bout->info.block_end ) {
-    DEBUG( "ERROR: End address 0x%X before start address 0x%X.\n",
-        bout->info.block_end, bout->info.block_start );
-    return -1;
-  } else if ( length > STM32_MAX_TRANSFER_SIZE ) {
+  } else if ( xfer_len > STM32_MAX_TRANSFER_SIZE ) {
     DEBUG( "ERROR: 0x%X byte message > MAX TRANSFER SIZE (0x%X).\n",
-        length, STM32_MAX_TRANSFER_SIZE );
+        xfer_len, STM32_MAX_TRANSFER_SIZE );
+    return -1;
+  } else if ( xfer_len < 1 ) {
+    DEBUG( "ERROR: xfer_len is %u\n", xfer_len );
+    return -1;
+  } else if ( bout->info.block_start + xfer_len - 1 != bout->info.block_end ) {
+    DEBUG( "ERROR: xfer_len address mismatch 0x%X + 0x%X - 1 != 0x%X.\n",
+        bout->info.block_start, xfer_len, bout->info.block_end);
     return -1;
   }
 
-  for( i = 0; i < length; i++ ) {
+  for( i = 0; i < xfer_len; i++ ) {
     message[i] = (uint8_t) bout->data[bout->info.block_start + i];
   }
 
-  if( length != dfu_download(device, length, message) ) {
+  if( xfer_len != dfu_download(device, xfer_len, message) ) {
     DEBUG( "dfu_download failed\n" );
     return -3;
   }
@@ -217,36 +218,44 @@ static int32_t __stm32_flash_block( dfu_device_t *device,
   return 0;
 }
 
-static int32_t __stm32_read_block( dfu_device_t *device,
-                   intel_buffer_in_t *buin ) {
+static int32_t stm32_read_block( dfu_device_t *device,
+                                   size_t xfer_len,
+                                   uint8_t *buffer ) {
+  TRACE( "%s( %p, %u, %p )\n", __FUNCTION__, device, xfer_len, buffer );
   int32_t result;
 
-  if( buin->info.block_end < buin->info.block_start ) {
-    // this would cause a problem bc read length could be way off
-    DEBUG("ERROR: start address is after end address.\n");
+  if( buffer == NULL ) {
+    DEBUG("ERROR: buffer ptr is NULL\n");
     return -1;
-  } else if( buin->info.block_end - buin->info.block_start + 1
-      > STM32_MAX_TRANSFER_SIZE ) {
+  } else if( xfer_len > STM32_MAX_TRANSFER_SIZE ) {
     /* this could cause a read problem */
-    DEBUG("ERROR: transfer size must not exceed %d.\n",
-        STM32_MAX_TRANSFER_SIZE );
+    DEBUG("ERROR: transfer size %d exceeds max %d.\n",
+        xfer_len, STM32_MAX_TRANSFER_SIZE );
     return -1;
   }
 
-  result = dfu_upload( device, buin->info.block_end - buin->info.block_start + 1,
-                &buin->data[buin->info.block_start] );
+  /* check status before read */
+  if( (result = stm32_get_status(device)) ) {
+    DEBUG("Status Error %d before read\n", result );
+    return -2;
+  }
+
+  result = dfu_upload( device, xfer_len, buffer );
   if( result < 0) {
     dfu_status_t status;
 
-    DEBUG( "dfu_upload result: %d\n", result );
+    DEBUG( "ERROR: dfu_upload result: %d\n", result );
     if( 0 == dfu_get_status(device, &status) ) {
-      if( DFU_STATUS_ERROR_FILE == status.bStatus ) {
-        fprintf( stderr, "The device is read protected.\n" );
-      } else {
-        fprintf( stderr, "Unknown error. Try enabling debug.\n" );
+      DEBUG( "Error Status %s, state %s\n",
+          dfu_status_to_string(status.bStatus),
+          dfu_state_to_string(status.bState) );
+      if( status.bStatus == DFU_STATUS_ERROR_VENDOR ) {
+        /* status = dfuERROR and state = errVENDOR */
+        DEBUG("Device is read protected\n");
+        return STM32_READ_PROT_ERROR;
       }
     } else {
-      fprintf( stderr, "Device is unresponsive.\n" );
+      DEBUG("DFU GET_STATUS fail\n");
     }
     dfu_clear_status( device );
 
@@ -256,8 +265,8 @@ static int32_t __stm32_read_block( dfu_device_t *device,
   return 0;
 }
 
-static inline void __print_progress( intel_buffer_info_t *info,
-                    uint32_t *progress ) {
+static inline void print_progress( intel_buffer_info_t *info,
+                                     uint32_t *progress ) {
   if ( !(debug > STM32_DEBUG_THRESHOLD) ) {
     while ( ((info->block_end - info->data_start + 1) * 32) > *progress ) {
       fprintf( stderr, ">" );
@@ -343,7 +352,7 @@ int32_t stm32_start_app( dfu_device_t *device, dfu_bool quiet ) {
     return -1;
   }
 
-  if( !quiet ) fprintf( stderr, "Launching program...  " );
+  if( !quiet ) fprintf( stderr, "Launching program...  \n" );
   dfu_set_transaction_num( 0 );     /* set wValue to zero */
   if( 0 != dfu_download(device, 0, NULL) ) {
     if( !quiet ) fprintf( stderr, "ERROR\n" );
@@ -393,8 +402,9 @@ int32_t stm32_read_flash( dfu_device_t *device, intel_buffer_in_t *buin,
     }
   }
 
+  /* read the data */
   buin->info.block_start = buin->info.data_start;
-  reset_address_flag = 1;
+  reset_address_flag = 0;
   address_offset = buin->info.block_start;
 
   while( buin->info.block_start <= buin->info.data_end ) {
@@ -425,10 +435,12 @@ int32_t stm32_read_flash( dfu_device_t *device, intel_buffer_in_t *buin,
       reset_address_flag = 1;
     }
 
-    if( (status = __stm32_read_block( device, buin )) ) {
+    if( (status = stm32_read_block( device, xfer_size,
+            &buin->data[buin->info.block_start] )) ) {
       DEBUG( "Error reading block 0x%X to 0x%X: err %d.\n",
           buin->info.block_start, buin->info.block_end, status );
-      retval = -5;
+      retval = ( status == -10 ) ? -10 : -5;
+      /* read protect error code in read_block is -10 */
       goto finally;
     }
 
@@ -436,11 +448,11 @@ int32_t stm32_read_flash( dfu_device_t *device, intel_buffer_in_t *buin,
     if( reset_address_flag == 0 && (buin->info.block_start !=
         (STM32_MAX_TRANSFER_SIZE * (dfu_get_transaction_num() - 2))
         + address_offset) ) {
-      DEBUG("block start does not match addr, reset req\n");
+      DEBUG("block start & address mismatch, reset req\n");
       reset_address_flag = 1;
     }
 
-    if( !quiet ) __print_progress( &buin->info, &progress );
+    if( !quiet ) print_progress( &buin->info, &progress );
   }
   retval = 0;
 
@@ -516,24 +528,22 @@ int32_t stm32_write_flash( dfu_device_t *device, intel_buffer_out_t *bout,
   }
 
   /* debug info about data limits */
-  DEBUG("Flash available from 0x%X to 0x%X (64kB p. %u to %u), 0x%X bytes.\n",
+  DEBUG("Flash available from 0x%X to 0x%X, 0x%X bytes.\n",
       bout->info.valid_start, bout->info.valid_end,
-      bout->info.valid_start / STM32_64KB_PAGE,
-      bout->info.valid_end / STM32_64KB_PAGE,
       bout->info.valid_end - bout->info.valid_start + 1); // bytes inclusive so +1
-  DEBUG("Data start @ 0x%X: 64kB p %u; %uB p 0x%X + 0x%X offset.\n",
-      bout->info.data_start, bout->info.data_start / STM32_64KB_PAGE,
-      bout->info.page_size, bout->info.data_start / bout->info.page_size,
+  DEBUG("Data start @ 0x%X; %uB p 0x%X + 0x%X offset.\n",
+      bout->info.data_start, bout->info.page_size,
+      bout->info.data_start / bout->info.page_size,
       bout->info.data_start % bout->info.page_size);
-  DEBUG("Data end @ 0x%X: 64kB p %u; %uB p 0x%X + 0x%X offset.\n",
-      bout->info.data_end, bout->info.data_end / STM32_64KB_PAGE,
-      bout->info.page_size, bout->info.data_end / bout->info.page_size,
+  DEBUG("Data end @ 0x%X; %uB p 0x%X + 0x%X offset.\n",
+      bout->info.data_end, bout->info.page_size,
+      bout->info.data_end / bout->info.page_size,
       bout->info.data_end % bout->info.page_size);
-  DEBUG("Totals: 0x%X bytes, %u %uB pages, %u 64kB byte pages.\n",
+  DEBUG("Totals: 0x%X bytes, %u %uB pages.\n",
       bout->info.data_end - bout->info.data_start + 1,
-      bout->info.data_end/bout->info.page_size - bout->info.data_start/bout->info.page_size + 1,
-      bout->info.page_size,
-      bout->info.data_end/STM32_64KB_PAGE - bout->info.data_start/STM32_64KB_PAGE + 1 );
+      bout->info.data_end / bout->info.page_size \
+        - bout->info.data_start/bout->info.page_size + 1,
+      bout->info.page_size );
 
   /* more error checking */
   if( (bout->info.data_start < bout->info.valid_start) ||
@@ -593,9 +603,10 @@ int32_t stm32_write_flash( dfu_device_t *device, intel_buffer_out_t *bout,
       if( bout->info.block_end / STM32_MIN_SECTOR_BOUND - mem_section ) break;
     }
     bout->info.block_end--; // bout->info.block_end was one step beyond the last data value to flash
-    xfer_size--;
+    xfer_size = bout->info.block_end - bout->info.block_start + 1;
     if( xfer_size != STM32_MAX_TRANSFER_SIZE ) {
-      DEBUG("xfer_size change, need addr reset\n");
+      DEBUG("xfer_size %u not max %u, need addr reset\n",
+          xfer_size, STM32_MAX_TRANSFER_SIZE);
       reset_address_flag = 1;
     }
 
@@ -603,7 +614,7 @@ int32_t stm32_write_flash( dfu_device_t *device, intel_buffer_out_t *bout,
     DEBUG("Program data block: 0x%X to 0x%X, 0x%X bytes.\n",
         bout->info.block_start, bout->info.block_end, xfer_size);
 
-    if( (status = __stm32_flash_block( device, bout )) ) {
+    if( (status = stm32_write_block( device, xfer_size, bout )) ) {
       DEBUG( "Error flashing the block: err %d.\n", status );
       retval = -4;
       goto finally;
@@ -624,7 +635,7 @@ int32_t stm32_write_flash( dfu_device_t *device, intel_buffer_out_t *bout,
     }
 
     // display progress in 32 increments (if not hidden)
-    if ( !quiet ) __print_progress( &bout->info, &progress );
+    if ( !quiet ) print_progress( &bout->info, &progress );
   }
   retval = 0;
 
@@ -651,5 +662,79 @@ finally:
 
   return retval;
 }
+
+int32_t stm32_get_commands( dfu_device_t *device ) {
+  TRACE("%s( %p )\n", __FUNCTION__, device);
+  int32_t result;
+  uint8_t i;
+  const size_t xfer_len = 80;
+  uint8_t buffer[xfer_len];
+
+  /* check status before read */
+  if( (result = stm32_get_status(device)) ) {
+    DEBUG("Status Error %d before read\n", result );
+    return -2;
+  }
+
+  dfu_set_transaction_num( 0 );
+  result = dfu_upload( device, xfer_len, buffer );
+  if( result < 0) {
+    dfu_status_t status;
+
+    DEBUG( "dfu_upload result: %d\n", result );
+    if( 0 == dfu_get_status(device, &status) ) {
+      if( status.bStatus == DFU_STATUS_OK ) {
+        DEBUG("DFU Status OK, state %d\n", status.bState);
+      } else if( status.bStatus == DFU_STATUS_ERROR_VENDOR ) {
+        DEBUG("Device is read protected\n");
+        /* status = dfuERROR and state = errVENDOR */
+      } else {
+        DEBUG("Unknown error status %d / state %d\n",
+            status.bStatus, status.bState );
+      }
+    } else {
+      DEBUG("DFU GET_STATUS fail\n");
+    }
+    dfu_clear_status( device );
+
+    return result;
+  }
+
+  fprintf( stdout, "There are %d commands:\n", result );
+  for( i = 0; i < result; i++ ) {
+    fprintf( stdout, "  0x%02X\n", buffer[i] );
+  }
+
+  return 0;
+}
+
+int32_t stm32_get_configuration( dfu_device_t *device ) {
+  TRACE("%s( %p )\n", __FUNCTION__, device);
+  int32_t status;
+  uint8_t i;
+  uint8_t buffer[STM32_OPTION_BYTES_SIZE];
+
+  if( (status = stm32_set_address_ptr(device,
+          stm32_sector_addresses[mem_st_option_bytes])) ) {
+    DEBUG("Error (%d) setting address 0x%X\n",
+        status, stm32_sector_addresses[mem_st_option_bytes]);
+    return -1;
+  }
+
+  if( (status = stm32_read_block(device, STM32_OPTION_BYTES_SIZE, buffer)) ) {
+    DEBUG("Error (%d) reading option buffer block\n", status );
+    return -2;
+  }
+
+  fprintf( stdout, "There are %d option bytes:\n", STM32_OPTION_BYTES_SIZE );
+  fprintf( stdout, "0x%02X", buffer[0] );
+  for( i = 1; i < STM32_OPTION_BYTES_SIZE; i++ ) {
+    fprintf( stdout, ", 0x%02X", buffer[i] );
+  }
+  fprintf( stdout, "\n" );
+
+  return 0;
+}
+
 
 // vim: shiftwidth=2

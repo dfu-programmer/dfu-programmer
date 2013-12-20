@@ -128,13 +128,13 @@ void* rpl_malloc( size_t n ) {
 void dfu_set_transaction_num( uint16_t newnum ) {
     TRACE( "%s( %u )\n", __FUNCTION__, newnum );
     transaction = newnum;
+    DEBUG("wValue set to %d\n", transaction);
 }
 
 uint16_t dfu_get_transaction_num( void ) {
     TRACE( "%s( %u )\n", __FUNCTION__ );
     return transaction;
 }
-
 
 int32_t dfu_detach( dfu_device_t *device, const int32_t timeout ) {
     int32_t result;
@@ -188,9 +188,6 @@ int32_t dfu_download( dfu_device_t *device,
     dfu_msg_response_output( __FUNCTION__, result );
 
     return result;
-// TODO : consider adding dfu_get_status here and returning status instead of
-// the length of the download? if there is a length mismatch on the download it
-// can be returned as -1.. this should simplify all calls to dfu_ from atmel_
 }
 
 int32_t dfu_upload( dfu_device_t *device, const size_t length, uint8_t* data ) {
@@ -811,6 +808,47 @@ static void dfu_msg_response_output( const char *function,
         msg = "No error.";
     } else {
         switch( result ) {
+#ifdef HAVE_LIBUSB_1_0
+            case LIBUSB_ERROR_IO :
+                msg = "LIBUSB_ERROR_IO: Input/output error.";
+                break;
+            case LIBUSB_ERROR_INVALID_PARAM :
+                msg = "LIBUSB_ERROR_INVALID_PARAM: Invalid parameter.";
+                break;
+            case LIBUSB_ERROR_ACCESS :
+                msg = "LIBUSB_ERROR_ACCESS: Access denied (insufficient permissions)";
+                break;
+            case LIBUSB_ERROR_NO_DEVICE :
+                msg = "LIBUSB_ERROR_NO_DEVICE: No such device (it may have been disconnected)";
+                break;
+            case LIBUSB_ERROR_NOT_FOUND :
+                msg = "LIBUSB_ERROR_NOT_FOUND: Entity not found.";
+                break;
+            case LIBUSB_ERROR_BUSY :
+                msg = "LIBUSB_ERROR_BUSY: Resource busy.";
+                break;
+            case LIBUSB_ERROR_TIMEOUT :
+                msg = "LIBUSB_ERROR_TIMEOUT: Operation timed out.";
+                break;
+            case LIBUSB_ERROR_OVERFLOW :
+                msg = "LIBUSB_ERROR_OVERFLOW: Overflow.";
+                break;
+            case LIBUSB_ERROR_PIPE :
+                msg = "LIBUSB_ERROR_PIPE: Pipe error.";
+                break;
+            case LIBUSB_ERROR_INTERRUPTED :
+                msg = "LIBUSB_ERROR_INTERRUPTED: System call interrupted (perhaps due to signal)";
+                break;
+            case LIBUSB_ERROR_NO_MEM :
+                msg = "LIBUSB_ERROR_NO_MEM: Insufficient memory.";
+                break;
+            case LIBUSB_ERROR_NOT_SUPPORTED :
+                msg = "LIBUSB_ERROR_NOT_SUPPORTED: Operation not supported or unimplemented on this platform.";
+                break;
+            case LIBUSB_ERROR_OTHER :
+                msg = "LIBUSB_ERROR_OTHER: Other error.";
+                break;
+#else   /* HAVE_LIBUSB_1_0 */
             case -ENOENT:
                 msg = "-ENOENT: URB was canceled by unlink_urb";
                 break;
@@ -829,7 +867,6 @@ static void dfu_msg_response_output( const char *function,
                 msg = "-EILSEQ: CRC mismatch";
                 break;
             case -EPIPE:
-                // think that in libusb, -9 is LIBUSB_ERROR_PIPE
                 msg = "-EPIPE: a) Babble detect or b) Endpoint stalled";
                 break;
 #ifdef ETIMEDOUT
@@ -855,11 +892,11 @@ static void dfu_msg_response_output( const char *function,
             case -EINVAL:
                 msg = "-EINVAL: ISO madness, if this happens: Log off and go home";
                 break;
+#endif  /* HAVE_LIBUSB_1_0 */
             default:
                 msg = "Unknown error";
                 break;
         }
-
-        DEBUG( "%s 0x%08x (%d)\n", msg, result, result );
+        DEBUG( "%s ERR: %s 0x%08x (%d)\n", function, msg, result, result );
     }
 }

@@ -45,9 +45,12 @@ typedef enum {
   mem_st_all,
 } stm32_mem_sectors;
 
+
 #define STM32_MEM_UNIT_NAMES "Sector 0", "Sector 1", "Sector 2", "Sector 3", \
   "Sector 4", "Sector 5", "Sector 6", "Sector 7", "Sector 8", "Sector 9", \
   "Sector 10", "Sector 11", "System Memory", "OTP Area", "Option Bytes", "All"
+
+#define STM32_READ_PROT_ERROR   -10
 
 
 int32_t stm32_erase_flash( dfu_device_t *device, stm32_mem_sectors mode,
@@ -82,6 +85,18 @@ int32_t stm32_write_flash( dfu_device_t *device, intel_buffer_out_t *bout,
    * flash_page_size is the size of flash pages - used for alignment
    * eeprom bool tells if you want to flash to eeprom or flash memory
    * hide_progress bool sets whether to display progress
+   */
+
+int32_t stm32_get_commands( dfu_device_t *device );
+  /* @brief get the commands list, should be length 4
+   * @param device pointer
+   * @retrn 0 on success
+   */
+
+int32_t stm32_get_configuration( dfu_device_t *device );
+  /* @brief get the configuration structure
+   * @param device pointer
+   * @retrn 0 on success, negative for error
    */
 
 
