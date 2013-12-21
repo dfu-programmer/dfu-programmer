@@ -181,7 +181,7 @@ struct programmer_arguments {
 
         struct com_read_struct {
             dfu_bool bin;
-            dfu_bool force;
+            dfu_bool force;             /* do not remove blank pages */
             enum atmel_memory_unit_enum segment;
         } com_read_data;
 
@@ -211,7 +211,9 @@ struct programmer_arguments {
         struct com_convert_struct {
             size_t bin_offset;          // where the bin data starts
             char original_first_char;
+            dfu_bool force;             /* do not remove blank pages */
             char *file;                 // for bin2hex / hex2bin conversions
+            enum atmel_memory_unit_enum segment;    // to auto-select offset
         } com_convert_data;
 
         struct com_get_struct {

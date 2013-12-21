@@ -498,6 +498,9 @@ static int32_t assign_global_options( struct programmer_arguments *args,
                 case com_user:
                     args->com_flash_data.segment = mem_user;
                     break;
+                case com_bin2hex:
+                    args->com_convert_data.segment = mem_user;
+                    break;
                 default:
                     /* not supported. */
                     return -1;
@@ -518,6 +521,9 @@ static int32_t assign_global_options( struct programmer_arguments *args,
                 case com_flash:
                 case com_user:
                     args->com_flash_data.segment = mem_eeprom;
+                    break;
+                case com_bin2hex:
+                    args->com_convert_data.segment = mem_eeprom;
                     break;
                 default:
                     /* not supported. */
@@ -591,7 +597,7 @@ static int32_t assign_global_options( struct programmer_arguments *args,
 
     /* Find '--serial=<hexdigit+>:<offset>' */
     for( i = 0; i < argc; i++ ) {
-      if( 0 == strncmp("--serial=", argv[i], 9) ) {
+        if( 0 == strncmp("--serial=", argv[i], 9) ) {
             *argv[i] = '\0';
 
             switch( args->command ) {
@@ -950,6 +956,26 @@ int32_t parse_arguments( struct programmer_arguments *args,
     *argv[0] = '\0';
     *argv[1] = '\0';
     *argv[2] = '\0';
+
+    /* assign command specific default values */
+    switch( args->command ) {
+        case com_flash :
+            args->com_flash_data.force = 0;
+            args->com_flash_data.segment = mem_flash;
+            break;
+        case com_launch :
+            args->com_launch_config.noreset = 0;
+            break;
+        case com_dump :
+            args->com_read_data.segment = mem_flash;
+            args->com_flash_data.force = 0;
+            break;
+        case com_bin2hex :
+            args->com_convert_data.segment = mem_flash;
+            break;
+        default :
+            break;
+    }
 
     if( 0 != assign_global_options(args, argc, argv) ) {
         status = -5;
