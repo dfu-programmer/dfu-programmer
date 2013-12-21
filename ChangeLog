@@ -1,3 +1,7 @@
+2013-12-19 Walker Inman
+    * update command structure, bugfix flash user, add stm32 devices, update
+      the flash algorithm, add dump hex
+
 2013-07-18 Simon Large
     * src/arguments.c
       Ignore "No device found" errors due to reporting the wrong interface
