@@ -119,7 +119,8 @@ enum targets_enum { tar_at89c51snd1c,
 enum commands_enum { com_none, com_erase, com_flash, com_user, com_eflash,
                      com_configure, com_get, com_getfuse, com_dump, com_edump,
                      com_udump, com_setfuse, com_setsecure, com_start_app,
-                     com_version, com_reset, com_launch, com_read };
+                     com_version, com_reset, com_launch, com_read, com_hex2bin,
+                     com_bin2hex };
 
 enum configure_enum { conf_BSB = ATMEL_SET_CONFIG_BSB,
                       conf_SBV = ATMEL_SET_CONFIG_SBV,
@@ -180,7 +181,7 @@ struct programmer_arguments {
 
         struct com_read_struct {
             dfu_bool bin;
-            dfu_bool force;
+            dfu_bool force;             /* do not remove blank pages */
             enum atmel_memory_unit_enum segment;
         } com_read_data;
 
@@ -206,6 +207,14 @@ struct programmer_arguments {
                                      bootloader - force overwrite required */
             enum atmel_memory_unit_enum segment;
         } com_flash_data;
+
+        struct com_convert_struct {
+            size_t bin_offset;          // where the bin data starts
+            char original_first_char;
+            dfu_bool force;             /* do not remove blank pages */
+            char *file;                 // for bin2hex / hex2bin conversions
+            enum atmel_memory_unit_enum segment;    // to auto-select offset
+        } com_convert_data;
 
         struct com_get_struct {
             enum get_enum name;

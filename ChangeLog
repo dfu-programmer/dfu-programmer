@@ -1,6 +1,7 @@
 2013-12-19 Walker Inman
     * update command structure, bugfix flash user, add stm32 devices, update
-      the flash algorithm, add dump hex
+      the flash algorithm, add dump hex, add (internal) command for converting
+      bin2hex or hex2bin
 
 2013-07-18 Simon Large
     * src/arguments.c
