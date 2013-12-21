@@ -82,16 +82,18 @@ int main( int argc, char **argv )
 #endif
     }
 
-    device = dfu_device_init( args.vendor_id, args.chip_id,
-                              args.bus_id, args.device_address,
-                              &dfu_device,
-                              args.initial_abort,
-                              args.honor_interfaceclass );
+    if( !(args.command == com_bin2hex || args.command == com_hex2bin) ) {
+        device = dfu_device_init( args.vendor_id, args.chip_id,
+                                args.bus_id, args.device_address,
+                                &dfu_device,
+                                args.initial_abort,
+                                args.honor_interfaceclass );
 
-    if( NULL == device ) {
-        fprintf( stderr, "%s: no device present.\n", progname );
-        retval = 1;
-        goto error;
+        if( NULL == device ) {
+            fprintf( stderr, "%s: no device present.\n", progname );
+            retval = 1;
+            goto error;
+        }
     }
 
     if( 0 != execute_command(&dfu_device, &args) ) {
@@ -116,7 +118,8 @@ error:
            reset in the attached device. In any event, since reset causes a USB detach
            this should not matter, so there is no point in raising an alarm.
         */
-        if( 0 != rv && com_reset != args.command ) {
+        if( 0 != rv && !(com_launch == args.command &&
+                args.com_launch_config.noreset == 0) ) {
             fprintf( stderr, "%s: failed to release interface %d.\n",
                              progname, dfu_device.interface );
             retval = 1;

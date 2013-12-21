@@ -34,6 +34,7 @@
  *  erase [--suppress-validation, --quiet, --debug level]
  *  flash [--suppress-validation, --quiet, --debug level] file
  *  get {bootloader-version|ID1|ID2|BSB|SBV|SSB|EB|manufacturer|family|product-name|product-revision|HSB} [--quiet, --debug level]
+ *  launch [--no-reset]
  */
 
 extern int debug;
@@ -113,12 +114,17 @@ enum targets_enum { tar_at89c51snd1c,
                     tar_atxmega128c3,
                     tar_atxmega256c3,
                     tar_atxmega384c3,
+                    tar_stm32f4_B,
+                    tar_stm32f4_C,
+                    tar_stm32f4_E,
+                    tar_stm32f4_G,
                     tar_none };
 
 enum commands_enum { com_none, com_erase, com_flash, com_user, com_eflash,
                      com_configure, com_get, com_getfuse, com_dump, com_edump,
-                     com_udump, com_setfuse, com_setsecure,
-                     com_start_app, com_version, com_reset };
+                     com_udump, com_setfuse, com_setsecure, com_start_app,
+                     com_version, com_reset, com_launch, com_read, com_hex2bin,
+                     com_bin2hex };
 
 enum configure_enum { conf_BSB = ATMEL_SET_CONFIG_BSB,
                       conf_SBV = ATMEL_SET_CONFIG_SBV,
@@ -144,17 +150,17 @@ struct programmer_arguments {
     uint16_t vendor_id;
     uint16_t chip_id;
     uint16_t bus_id;            /* if non-zero, use bus_id and device_address */
-    uint16_t device_address;        /* to identify the specific target device. */
+    uint16_t device_address;    /* to identify the specific target device.    */
     atmel_device_class_t device_type;
     char device_type_string[DEVICE_TYPE_STRING_MAX_LENGTH];
-    uint32_t memory_address_top;        /* the maximum memory address */
-    uint32_t memory_address_bottom;     /* the minimum memory address */
-    uint32_t flash_address_top;         /* the maximum flash-able address */
-    uint32_t flash_address_bottom;      /* the minimum flash-able address */
-    uint32_t bootloader_top;            /* the top of the bootloader code */
-    uint32_t bootloader_bottom;         /* the bottom of the bootloader code */
+    uint32_t memory_address_top;        /* the maximum flash memory addr.  */
+    uint32_t memory_address_bottom;     /*    including bootloader region  */
+    uint32_t flash_address_top;         /* the maximum flash-able address  */
+    uint32_t flash_address_bottom;      /*     excludes bootloader region  */
+    uint32_t bootloader_top;            /* top of the bootloader region    */
+    uint32_t bootloader_bottom;         /* bottom of the bootloader region */
     dfu_bool bootloader_at_highmem;
-    size_t flash_page_size;
+    size_t flash_page_size;             /* size of a page in bytes         */
     dfu_bool initial_abort;
     dfu_bool honor_interfaceclass;
     size_t eeprom_memory_size;
@@ -177,11 +183,20 @@ struct programmer_arguments {
             int32_t value;
         } com_setfuse_data;
 
-        /* No special data needed for 'dump' */
+        struct com_read_struct {
+            dfu_bool bin;
+            dfu_bool force;             /* do not remove blank pages */
+            enum atmel_memory_unit_enum segment;
+        } com_read_data;
 
         struct com_erase_struct {
+            dfu_bool force;
             int32_t suppress_validation;
         } com_erase_data;
+
+        struct com_launch_struct {
+            dfu_bool noreset;
+        } com_launch_config;
 
         struct com_flash_struct {
             int32_t suppress_validation;
@@ -190,7 +205,20 @@ struct programmer_arguments {
             int16_t *serial_data; /* serial number or other device specific bytes */
             size_t serial_offset; /* where the serial_data should be written */
             size_t serial_length; /* how many bytes to write */
+            dfu_bool force;       /* bootloader configuration for UC3 devices
+                                     is on last one or two words in the user
+                                     page depending on the version of the
+                                     bootloader - force overwrite required */
+            enum atmel_memory_unit_enum segment;
         } com_flash_data;
+
+        struct com_convert_struct {
+            size_t bin_offset;          // where the bin data starts
+            char original_first_char;
+            dfu_bool force;             /* do not remove blank pages */
+            char *file;                 // for bin2hex / hex2bin conversions
+            enum atmel_memory_unit_enum segment;    // to auto-select offset
+        } com_convert_data;
 
         struct com_get_struct {
             enum get_enum name;

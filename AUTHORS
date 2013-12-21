@@ -51,6 +51,16 @@ Contributors:
         - patch to enable atmega8u2
     - Martin Guy
         - patch to enable automotive AVR32 flashing without a timeout
+    - Walker Inman
+        - bugfix flash user page for avr32
+        - add stm32 devices
+        - add progress bar
+        - update algorithm for converting hex and sending program
+        - simplify command structure
+        - add ability to dump to hex file (and hex2bin / bin2hex)
+        - svn -> git migration
+        - update --help -h text
+        - also a lot of formatting updates (sorry)
     - Simon Large
         - fix atmel_reset function
         - get rid of compiler warnings around fprintf statements

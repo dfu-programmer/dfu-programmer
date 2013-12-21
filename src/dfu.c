@@ -70,6 +70,7 @@
 
 static uint16_t transaction = 0;
 
+// ________  P R O T O T Y P E S  _______________________________
 #ifdef HAVE_LIBUSB_1_0
 static int32_t dfu_find_interface( struct libusb_device *device,
                                    const dfu_bool honor_interfaceclass,
@@ -78,7 +79,22 @@ static int32_t dfu_find_interface( struct libusb_device *device,
 static int32_t dfu_find_interface( const struct usb_device *device,
                                    const dfu_bool honor_interfaceclass );
 #endif
+/*  Used to find the dfu interface for a device if there is one.
+ *
+ *  device - the device to search
+ *  honor_interfaceclass - if the actual interface class information
+ *                         should be checked, or ignored (bug in device DFU code)
+ *
+ *  returns the interface number if found, < 0 otherwise
+ */
+
 static int32_t dfu_make_idle( dfu_device_t *device, const dfu_bool initial_abort );
+/*  Gets the device into the dfuIDLE state if possible.
+ *
+ *  device    - the dfu device to commmunicate with
+ *
+ *  returns 0 on success, 1 if device was reset, error otherwise
+ */
 
 static int32_t dfu_transfer_out( dfu_device_t *device,
                                  uint8_t request,
@@ -93,11 +109,15 @@ static int32_t dfu_transfer_in( dfu_device_t *device,
                                 const size_t length );
 
 static void dfu_msg_response_output( const char *function, const int32_t result );
+/*  Used to output the response from our USB request in a human reable
+ *  form.
+ *
+ *  function - the calling function to output on behalf of
+ *  result   - the result to interpret
+ */
 
-/* Allocate an N-byte block of memory from the heap.
- *    If N is zero, allocate a 1-byte block.  */
-void* rpl_malloc( size_t n )
-{
+// ________  F U N C T I O N S  _______________________________
+void* rpl_malloc( size_t n ) {
     if( 0 == n ) {
         n = 1;
     }
@@ -105,18 +125,18 @@ void* rpl_malloc( size_t n )
     return malloc( n );
 }
 
+void dfu_set_transaction_num( uint16_t newnum ) {
+    TRACE( "%s( %u )\n", __FUNCTION__, newnum );
+    transaction = newnum;
+    DEBUG("wValue set to %d\n", transaction);
+}
 
-/*
- *  DFU_DETACH Request (DFU Spec 1.0, Section 5.1)
- *
- *  device    - the dfu device to commmunicate with
- *  timeout   - the timeout in ms the USB device should wait for a pending
- *              USB reset before giving up and terminating the operation
- *
- *  returns 0 or < 0 on error
- */
-int32_t dfu_detach( dfu_device_t *device, const int32_t timeout )
-{
+uint16_t dfu_get_transaction_num( void ) {
+    TRACE( "%s( %u )\n", __FUNCTION__ );
+    return transaction;
+}
+
+int32_t dfu_detach( dfu_device_t *device, const int32_t timeout ) {
     int32_t result;
 
     TRACE( "%s( %p, %d )\n", __FUNCTION__, device, timeout );
@@ -133,19 +153,9 @@ int32_t dfu_detach( dfu_device_t *device, const int32_t timeout )
     return result;
 }
 
-
-/*
- *  DFU_DNLOAD Request (DFU Spec 1.0, Section 6.1.1)
- *
- *  device    - the dfu device to commmunicate with
- *  length    - the total number of bytes to transfer to the USB
- *              device - must be less than wTransferSize
- *  data      - the data to transfer
- *
- *  returns the number of bytes written or < 0 on error
- */
-int32_t dfu_download( dfu_device_t *device, const size_t length, uint8_t* data )
-{
+int32_t dfu_download( dfu_device_t *device,
+                      const size_t length,
+                      uint8_t* data ) {
     int32_t result;
 
     TRACE( "%s( %p, %u, %p )\n", __FUNCTION__, device, length, data );
@@ -166,7 +176,6 @@ int32_t dfu_download( dfu_device_t *device, const size_t length, uint8_t* data )
         return -3;
     }
 
-
     {
         size_t i;
         for( i = 0; i < length; i++ ) {
@@ -181,19 +190,7 @@ int32_t dfu_download( dfu_device_t *device, const size_t length, uint8_t* data )
     return result;
 }
 
-
-/*
- *  DFU_UPLOAD Request (DFU Spec 1.0, Section 6.2)
- *
- *  device    - the dfu device to commmunicate with
- *  length    - the maximum number of bytes to receive from the USB
- *              device - must be less than wTransferSize
- *  data      - the buffer to put the received data in
- *
- *  returns the number of bytes received or < 0 on error
- */
-int32_t dfu_upload( dfu_device_t *device, const size_t length, uint8_t* data )
-{
+int32_t dfu_upload( dfu_device_t *device, const size_t length, uint8_t* data ) {
     int32_t result;
 
     TRACE( "%s( %p, %u, %p )\n", __FUNCTION__, device, length, data );
@@ -216,17 +213,7 @@ int32_t dfu_upload( dfu_device_t *device, const size_t length, uint8_t* data )
     return result;
 }
 
-
-/*
- *  DFU_GETSTATUS Request (DFU Spec 1.0, Section 6.1.2)
- *
- *  device    - the dfu device to commmunicate with
- *  status    - the data structure to be populated with the results
- *
- *  return the 0 if successful or < 0 on an error
- */
-int32_t dfu_get_status( dfu_device_t *device, dfu_status_t *status )
-{
+int32_t dfu_get_status( dfu_device_t *device, dfu_status_t *status ) {
     uint8_t buffer[6];
     int32_t result;
 
@@ -259,7 +246,7 @@ int32_t dfu_get_status( dfu_device_t *device, dfu_status_t *status )
         DEBUG( "==============================\n" );
         DEBUG( "status->bStatus: %s (0x%02x)\n",
                dfu_status_to_string(status->bStatus), status->bStatus );
-        DEBUG( "status->bwPollTimeout: 0x%04x\n", status->bwPollTimeout );
+        DEBUG( "status->bwPollTimeout: 0x%04x ms\n", status->bwPollTimeout );
         DEBUG( "status->bState: %s (0x%02x)\n",
                dfu_state_to_string(status->bState), status->bState );
         DEBUG( "status->iString: 0x%02x\n", status->iString );
@@ -275,16 +262,7 @@ int32_t dfu_get_status( dfu_device_t *device, dfu_status_t *status )
     return 0;
 }
 
-
-/*
- *  DFU_CLRSTATUS Request (DFU Spec 1.0, Section 6.1.3)
- *
- *  device    - the dfu device to commmunicate with
- *
- *  return 0 or < 0 on an error
- */
-int32_t dfu_clear_status( dfu_device_t *device )
-{
+int32_t dfu_clear_status( dfu_device_t *device ) {
     int32_t result;
 
     TRACE( "%s( %p )\n", __FUNCTION__, device );
@@ -301,16 +279,7 @@ int32_t dfu_clear_status( dfu_device_t *device )
     return result;
 }
 
-
-/*
- *  DFU_GETSTATE Request (DFU Spec 1.0, Section 6.1.5)
- *
- *  device    - the dfu device to commmunicate with
- *
- *  returns the state or < 0 on error
- */
-int32_t dfu_get_state( dfu_device_t *device )
-{
+int32_t dfu_get_state( dfu_device_t *device ) {
     int32_t result;
     uint8_t buffer[1];
 
@@ -334,16 +303,7 @@ int32_t dfu_get_state( dfu_device_t *device )
     return buffer[0];
 }
 
-
-/*
- *  DFU_ABORT Request (DFU Spec 1.0, Section 6.1.4)
- *
- *  device    - the dfu device to commmunicate with
- *
- *  returns 0 or < 0 on an error
- */
-int32_t dfu_abort( dfu_device_t *device )
-{
+int32_t dfu_abort( dfu_device_t *device ) {
     int32_t result;
 
     TRACE( "%s( %p )\n", __FUNCTION__, device );
@@ -360,17 +320,6 @@ int32_t dfu_abort( dfu_device_t *device )
     return result;
 }
 
-
-/*
- *  dfu_device_init is designed to find one of the usb devices which match
- *  the vendor and product parameters passed in.
- *
- *  vendor  - the vender number of the device to look for
- *  product - the product number of the device to look for
- *  [out] device - the dfu device to commmunicate with
- *
- *  return a pointer to the usb_device if found, or NULL otherwise
- */
 #ifdef HAVE_LIBUSB_1_0
 struct libusb_device *dfu_device_init( const uint32_t vendor,
                                        const uint32_t product,
@@ -378,8 +327,7 @@ struct libusb_device *dfu_device_init( const uint32_t vendor,
                                        const uint32_t device_address,
                                        dfu_device_t *dfu_device,
                                        const dfu_bool initial_abort,
-                                       const dfu_bool honor_interfaceclass )
-{
+                                       const dfu_bool honor_interfaceclass ) {
     libusb_device **list;
     size_t i,devicecount;
     extern libusb_context *usbcontext;
@@ -472,8 +420,7 @@ struct usb_device *dfu_device_init( const uint32_t vendor,
                                     const uint32_t device_address,
                                     dfu_device_t *dfu_device,
                                     const dfu_bool initial_abort,
-                                    const dfu_bool honor_interfaceclass )
-{
+                                    const dfu_bool honor_interfaceclass ) {
     struct usb_bus *usb_bus;
     struct usb_device *device;
     int32_t retries = 4;
@@ -483,7 +430,6 @@ struct usb_device *dfu_device_init( const uint32_t vendor,
            ((true == honor_interfaceclass) ? "true" : "false") );
 
 retry:
-
     if( 0 < retries ) {
         usb_find_busses();
         usb_find_devices();
@@ -550,16 +496,7 @@ retry:
 }
 #endif
 
-
-/*
- *  Used to convert the DFU state to a string.
- *
- *  state - the state to convert
- *
- *  returns the state name or "unknown state"
- */
-char* dfu_state_to_string( const int32_t state )
-{
+char* dfu_state_to_string( const int32_t state ) {
     char *message = "unknown state";
 
     switch( state ) {
@@ -601,16 +538,7 @@ char* dfu_state_to_string( const int32_t state )
     return message;
 }
 
-
-/*
- *  Used to convert the DFU status to a string.
- *
- *  status - the status to convert
- *
- *  returns the status name or "unknown status"
- */
-char* dfu_status_to_string( const int32_t status )
-{
+char* dfu_status_to_string( const int32_t status ) {
     char *message = "unknown status";
 
     switch( status ) {
@@ -662,27 +590,14 @@ char* dfu_status_to_string( const int32_t status )
         case DFU_STATUS_ERROR_STALLEDPKT:
             message = "errSTALLEDPKT";
             break;
-
     }
-
     return message;
 }
 
-
-/*
- *  Used to find the dfu interface for a device if there is one.
- *
- *  device - the device to search
- *  honor_interfaceclass - if the actual interface class information
- *                         should be checked, or ignored (bug in device DFU code)
- *
- *  returns the interface number if found, < 0 otherwise
- */
 #ifdef HAVE_LIBUSB_1_0
 static int32_t dfu_find_interface( struct libusb_device *device,
                                    const dfu_bool honor_interfaceclass,
-                                   const uint8_t bNumConfigurations)
-{
+                                   const uint8_t bNumConfigurations) {
     int32_t c,i,s;
 
     TRACE( "%s()\n", __FUNCTION__ );
@@ -737,8 +652,7 @@ static int32_t dfu_find_interface( struct libusb_device *device,
 }
 #else
 static int32_t dfu_find_interface( const struct usb_device *device,
-                                   const dfu_bool honor_interfaceclass )
-{
+                                   const dfu_bool honor_interfaceclass ) {
     int32_t c, i;
     struct usb_config_descriptor *config;
     struct usb_interface_descriptor *interface;
@@ -772,16 +686,8 @@ static int32_t dfu_find_interface( const struct usb_device *device,
 }
 #endif
 
-/*
- *  Gets the device into the dfuIDLE state if possible.
- *
- *  device    - the dfu device to commmunicate with
- *
- *  returns 0 on success, 1 if device was reset, error otherwise
- */
 static int32_t dfu_make_idle( dfu_device_t *device,
-                              const dfu_bool initial_abort )
-{
+                              const dfu_bool initial_abort ) {
     dfu_status_t status;
     int32_t retries = 4;
 
@@ -842,13 +748,11 @@ static int32_t dfu_make_idle( dfu_device_t *device,
     return -2;
 }
 
-
 static int32_t dfu_transfer_out( dfu_device_t *device,
                                  uint8_t request,
                                  const int32_t value,
                                  uint8_t* data,
-                                 const size_t length )
-{
+                                 const size_t length ) {
 #ifdef HAVE_LIBUSB_1_0
     return libusb_control_transfer( device->handle,
                 /* bmRequestType */ LIBUSB_ENDPOINT_OUT | LIBUSB_REQUEST_TYPE_CLASS | LIBUSB_RECIPIENT_INTERFACE,
@@ -874,8 +778,7 @@ static int32_t dfu_transfer_in( dfu_device_t *device,
                                 uint8_t request,
                                 const int32_t value,
                                 uint8_t* data,
-                                const size_t length )
-{
+                                const size_t length ) {
 #ifdef HAVE_LIBUSB_1_0
     return libusb_control_transfer( device->handle,
                 /* bmRequestType */ LIBUSB_ENDPOINT_IN | LIBUSB_REQUEST_TYPE_CLASS | LIBUSB_RECIPIENT_INTERFACE,
@@ -897,22 +800,55 @@ static int32_t dfu_transfer_in( dfu_device_t *device,
 #endif
 }
 
-
-/*
- *  Used to output the response from our USB request in a human reable
- *  form.
- *
- *  function - the calling function to output on behalf of
- *  result   - the result to interpret
- */
-static void dfu_msg_response_output( const char *function, const int32_t result )
-{
+static void dfu_msg_response_output( const char *function,
+                                     const int32_t result ) {
     char *msg = NULL;
 
     if( 0 <= result ) {
         msg = "No error.";
     } else {
         switch( result ) {
+#ifdef HAVE_LIBUSB_1_0
+            case LIBUSB_ERROR_IO :
+                msg = "LIBUSB_ERROR_IO: Input/output error.";
+                break;
+            case LIBUSB_ERROR_INVALID_PARAM :
+                msg = "LIBUSB_ERROR_INVALID_PARAM: Invalid parameter.";
+                break;
+            case LIBUSB_ERROR_ACCESS :
+                msg = "LIBUSB_ERROR_ACCESS: Access denied (insufficient permissions)";
+                break;
+            case LIBUSB_ERROR_NO_DEVICE :
+                msg = "LIBUSB_ERROR_NO_DEVICE: No such device (it may have been disconnected)";
+                break;
+            case LIBUSB_ERROR_NOT_FOUND :
+                msg = "LIBUSB_ERROR_NOT_FOUND: Entity not found.";
+                break;
+            case LIBUSB_ERROR_BUSY :
+                msg = "LIBUSB_ERROR_BUSY: Resource busy.";
+                break;
+            case LIBUSB_ERROR_TIMEOUT :
+                msg = "LIBUSB_ERROR_TIMEOUT: Operation timed out.";
+                break;
+            case LIBUSB_ERROR_OVERFLOW :
+                msg = "LIBUSB_ERROR_OVERFLOW: Overflow.";
+                break;
+            case LIBUSB_ERROR_PIPE :
+                msg = "LIBUSB_ERROR_PIPE: Pipe error.";
+                break;
+            case LIBUSB_ERROR_INTERRUPTED :
+                msg = "LIBUSB_ERROR_INTERRUPTED: System call interrupted (perhaps due to signal)";
+                break;
+            case LIBUSB_ERROR_NO_MEM :
+                msg = "LIBUSB_ERROR_NO_MEM: Insufficient memory.";
+                break;
+            case LIBUSB_ERROR_NOT_SUPPORTED :
+                msg = "LIBUSB_ERROR_NOT_SUPPORTED: Operation not supported or unimplemented on this platform.";
+                break;
+            case LIBUSB_ERROR_OTHER :
+                msg = "LIBUSB_ERROR_OTHER: Other error.";
+                break;
+#else   /* HAVE_LIBUSB_1_0 */
             case -ENOENT:
                 msg = "-ENOENT: URB was canceled by unlink_urb";
                 break;
@@ -956,11 +892,11 @@ static void dfu_msg_response_output( const char *function, const int32_t result 
             case -EINVAL:
                 msg = "-EINVAL: ISO madness, if this happens: Log off and go home";
                 break;
+#endif  /* HAVE_LIBUSB_1_0 */
             default:
                 msg = "Unknown error";
                 break;
         }
-
-        DEBUG( "%s 0x%08x (%d)\n", msg, result, result );
+        DEBUG( "%s ERR: %s 0x%08x (%d)\n", function, msg, result, result );
     }
 }
