@@ -229,15 +229,17 @@ static void intel_invalid_addr_warning(uint32_t line_count, uint32_t address,
             " suppressing additional address error messages.\n" );
 }
 
-int32_t intel_process_data( atmel_buffer_out_t *bout, char value,
+int32_t intel_process_data( intel_buffer_out_t *bout, char value,
         uint32_t target_offset, uint32_t address) {
-    // NOTE : there are some hex program files that contain data in the user
-    // page, which is outside of 'valid' memory.  In this situation, the hex
-    // file is processed and used as normal with a warning message containing
-    // the first line with an invalid address.
+    /* NOTE : there are some hex program files that contain data in the user
+     * page, which is outside of 'valid' memory.  In this situation, the hex
+     * file is processed and used as normal with a warning message containing
+     * the first line with an invalid address.
+     */
     uint32_t raddress;   // relative address = address - target offset
 
-    // The Atmel flash page starts at address 0x80000000, we need to ignore
+    // The Atmel flash page starts at address 0x8000 0000, we need to ignore
+    //             stm32 flash page starts at 0x0800 0000
     // that bit
     target_offset &= 0x7fffffff;
     address &= 0x7fffffff;
@@ -263,8 +265,8 @@ int32_t intel_process_data( atmel_buffer_out_t *bout, char value,
     return 0;
 }
 
-int32_t intel_hex_to_buffer( char *filename, atmel_buffer_out_t *bout,
-        uint32_t target_offset, dfu_bool quiet ) {
+int32_t intel_hex_to_buffer( char *filename, intel_buffer_out_t *bout,
+                             uint32_t target_offset, dfu_bool quiet ) {
     FILE *fp = NULL;
     struct intel_record record;
     // unsigned int count, type, checksum, address; char data[256]
@@ -347,9 +349,9 @@ int32_t intel_hex_to_buffer( char *filename, atmel_buffer_out_t *bout,
                                  (((uint32_t) record.data[1]) << 16) |
                                  (((uint32_t) record.data[2]) <<  8) |
                                   ((uint32_t) record.data[3]);
-                /* Note: In AVR32 memory map, FLASH starts at 0x80000000, but the
-                 * ISP places this memory at 0.  The hex file will use 0x8..., so
-                 * mask off that bit. */
+                /* Note: In AVR32 memory map, FLASH starts at 0x80000000, but
+                 * the ISP places this memory at 0. The hex file will use
+                 * 0x8..., so mask off that bit. */
                 address_offset = (0x7fffffff & address_offset);
                 DEBUG( "Address offset set to 0x%x.\n", address_offset );
                 break;
@@ -461,8 +463,8 @@ static int32_t ihex_make_record_04_offset( uint32_t offset, char *str ) {
 //    return 0;
 //}
 
-int32_t intel_hex_from_buffer( atmel_buffer_in_t *buin,
-        dfu_bool force_full, uint32_t target_offset ) {
+int32_t intel_hex_from_buffer( intel_buffer_in_t *buin,
+                               dfu_bool force_full, uint32_t target_offset ) {
     char line[80];
     uint32_t offset_address = 0;    // offset address written to a previous line
     uint32_t address = 0;   // relative offset from previously set addr
@@ -550,5 +552,139 @@ int32_t intel_hex_from_buffer( atmel_buffer_in_t *buin,
     }
     fprintf( stdout, ":00000001FF\n" );
 
+    return 0;
+}
+
+int32_t intel_init_buffer_out( intel_buffer_out_t *bout,
+                               size_t total_size, size_t page_size ) {
+    uint32_t i;
+    if ( !total_size || !page_size ) {
+        DEBUG("What are you thinking... size must be > 0.\n");
+        return -1;
+    }
+
+    bout->info.total_size = total_size;
+    bout->info.page_size = page_size;
+    bout->info.data_start = UINT32_MAX;      // invalid data start
+    bout->info.data_end = 0;
+    bout->info.valid_start = 0;
+    bout->info.valid_end = total_size - 1;
+    bout->info.block_start = 0;
+    bout->info.block_end = 0;
+    // allocate the memory
+    bout->data = (uint16_t *) malloc( total_size * sizeof(uint16_t) );
+    if( NULL == bout->data ) {
+        DEBUG( "ERROR allocating 0x%X bytes of memory.\n",
+                total_size * sizeof(uint16_t));
+        return -2;
+    }
+
+    // initialize buffer to 0xFFFF (invalid / unassigned data)
+    for( i = 0; i < total_size; i++ ) {
+        bout->data[i] = UINT16_MAX;
+    }
+    return 0;
+}
+
+int32_t intel_init_buffer_in( intel_buffer_in_t *buin,
+                              size_t total_size, size_t page_size ) {
+    // TODO : is there a way to combine this and above? maybe typecast to an
+    // in or out buffer from a char pointer?
+    buin->info.total_size = total_size;
+    buin->info.page_size = page_size;
+    buin->info.data_start = 0;
+    buin->info.data_end = total_size - 1;
+    buin->info.valid_start = 0;
+    buin->info.valid_end = total_size - 1;
+    buin->info.block_start = 0;
+    buin->info.block_end = 0;
+
+    buin->data = (uint8_t *) malloc( total_size );
+    if( NULL == buin->data ) {
+        DEBUG( "ERROR allocating 0x%X bytes of memory.\n", total_size );
+        return -2;
+    }
+
+    // initialize buffer to 0xFF (blank / unassigned data)
+    memset( buin->data, UINT8_MAX, total_size );
+
+    return 0;
+}
+
+int32_t intel_validate_buffer( intel_buffer_in_t *buin,
+                               intel_buffer_out_t *bout,
+                               dfu_bool quiet) {
+    int32_t i;
+    int32_t invalid_data_region = 0;
+    int32_t invalid_outside_data_region = 0;
+
+    DEBUG( "Validating image from byte 0x%X to 0x%X.\n",
+            bout->info.valid_start, bout->info.valid_end );
+
+    if( !quiet ) fprintf( stderr, "Validating...  " );
+    for( i = bout->info.valid_start; i <= bout->info.valid_end; i++ ) {
+        if(  bout->data[i] <= UINT8_MAX ) {
+            // Memory should have been programmed here
+            if( ((uint8_t) bout->data[i]) != buin->data[i] ) {
+                if ( !invalid_data_region ) {
+                    if( !quiet ) fprintf( stderr, "ERROR\n" );
+                    DEBUG( "Image did not validate at byte: 0x%X of 0x%X.\n", i,
+                            bout->info.valid_end - bout->info.valid_start + 1 );
+                    DEBUG( "Wanted 0x%02x but read 0x%02x.\n",
+                            0xff & bout->data[i], buin->data[i] );
+                    DEBUG( "suppressing additional warnings.\n");
+                }
+                invalid_data_region++;
+            }
+        } else {
+            // Memory should be blank here
+            if( 0xff != buin->data[i] ) {
+                if ( !invalid_data_region ) {
+                    DEBUG( "Outside program region: byte 0x%X epected 0xFF.\n", i);
+                    DEBUG( "but read 0x%02X.  supressing additional warnings.\n",
+                            buin->data[i] );
+                }
+                invalid_outside_data_region++;
+            }
+        }
+    }
+
+    if( !quiet ) {
+        if ( 0 == invalid_data_region + invalid_outside_data_region ) {
+            fprintf( stderr, "SUCCESS\n" );
+        } else {
+            fprintf( stderr,
+                    "%d invalid bytes in program region, %d outside region.\n",
+                    invalid_data_region, invalid_outside_data_region );
+        }
+    }
+
+    return invalid_data_region ?
+        -1 * invalid_data_region : invalid_outside_data_region;
+}
+
+int32_t intel_flash_prep_buffer( intel_buffer_out_t *bout ) {
+    uint16_t *page;
+    int32_t i;
+
+    // increment pointer by page_size * sizeof(int16) until page_start >= end
+    for( page = bout->data;
+        page < &bout->data[bout->info.valid_end];
+        page = &page[bout->info.page_size] ) {
+        // check if there is valid data on this page
+        for( i = 0; i < bout->info.page_size; i++ ) {
+            if( page[i] <= UINT8_MAX )
+                break;
+            }
+
+        if( bout->info.page_size != i ) {
+            /* There was valid data in the block & we need to make
+            * sure there is no unassigned data.  */
+            for( i = 0; i < bout->info.page_size; i++ ) {
+                if( page[i] > UINT8_MAX )
+                    page[i] = 0xff;     // 0xff is blank
+            }
+        }
+    }
     return 0;
 }
