@@ -100,7 +100,7 @@ int32_t stm32_get_configuration( dfu_device_t *device );
    * @retrn 0 on success, negative for error
    */
 
-int32_t stm32_read_unprotect( dfu_device_t *device );
+int32_t stm32_read_unprotect( dfu_device_t *device, dfu_bool quiet );
   /* @brief unprotect the device (triggers a mass erase)
    * @param device pointer
    * @retrn 0 on success

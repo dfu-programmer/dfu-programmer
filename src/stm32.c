@@ -748,7 +748,7 @@ int32_t stm32_get_configuration( dfu_device_t *device ) {
   return 0;
 }
 
-int32_t stm32_read_unprotect( dfu_device_t *device ) {
+int32_t stm32_read_unprotect( dfu_device_t *device, dfu_bool quiet ) {
   TRACE("%s( %p )\n", __FUNCTION__, device);
   uint8_t command[] = { READ_UNPROTECT };
   uint8_t length = 1;
