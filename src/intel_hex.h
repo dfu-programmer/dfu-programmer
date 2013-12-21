@@ -23,18 +23,53 @@
 
 #include <stdint.h>
 
-/**
- *  Used to read in a file in intel hex format and return a chunck of
+#include "atmel.h"
+
+int32_t intel_process_data( atmel_buffer_out_t *bout,
+        char value, uint32_t target_offset, uint32_t address);
+/* process a data value by adding to the buffer at the appropriate address or if
+ * the address is out of range do nothing and return -1. Also update the valid
+ * range of data in bout
+ * return 0 on success, -1 on address error
+ */
+
+// NOTE : intel_process_data should be moved to a different module dealing with
+// processing any data and putting it into a buffer
+
+int32_t intel_hex_to_buffer( char *filename, atmel_buffer_out_t *bout,
+        uint32_t target_offset, dfu_bool quiet );
+/*  Used to read in a file in intel hex format and return a chunk of
  *  memory containing the memory image described in the file.
  *
  *  \param filename the name of the intel hex file to process
- *  \param max_size the maximum size of the memory image in bytes
- *  \param usage[out] the amount of the available memory image used
+ *  \param target_offset is the flash memory address location of buffer[0]
+ *  \param quiet tells fcn to suppress termninal messages
+ *  \param bout buffer_out structure containing pointer to memory data for the
+ *          program and for the user page.  Each is an array of int16_t's where
+ *          the values 0-255 are valid memory values, and anything else
+ *          indicates an unused memory location.  These do not need to be
+ *          initialized before passing this parameter to the function.
  *
- *  \return an array of int16_t's where the values 0-255 are valid memory
- *          values, and anything else indicates an unused memory location,
- *          NULL on anything other than a success
+ *          when passed to the function, program_usage and user_usage must
+ *          indicate the maximum size of each of these memory sections
+ *          in bytes.  After the program has run they will indicate the
+ *          amount of available memory image used for each section
+ *
+ *  \return success integer
+ *          0 = success
+ *          + = the amount of data that exists outside the specified memory
+ *              area and has not been added to the buffer
+ *          - = all sorts of error codes (eg, no data in flash memory, ...)
+ *              if the hex file contains no valid data an error is NOT thrown
+ *              but the presence of valid data can be checked using the
+ *              data_start field in atmel_buffer_out_t
  */
-int16_t *intel_hex_to_buffer( char *filename, int max_size, int *usage );
+
+int32_t intel_hex_from_buffer( atmel_buffer_in_t *buin,
+        dfu_bool force_full, uint32_t target_offset );
+/*  Used to convert a buffer to an intel hex formatted file.
+ *  target offset is the address location of buffer 0
+ *  force_full sets whether to keep writing entirely blank pages.
+ */
 
 #endif

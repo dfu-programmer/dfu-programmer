@@ -1,0 +1,12 @@
+Makefile
+Makefile.in
+aclocal.m4
+autom4te.cache
+configure
+config.status
+fedora/dfu-programmer.spec
+src/.deps/*
+src/config.h
+src/config.h.in
+src/dfu-programmer
+src/stamp-h1

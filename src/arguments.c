@@ -158,6 +158,7 @@ static struct target_mapping_structure target_map[] = {
 /* ----- command specific structures ---------------------------------------- */
 static struct option_mapping_structure command_map[] = {
     { "configure",    com_configure },
+    { "read",         com_read      },
     { "dump",         com_dump      },
     { "dump-eeprom",  com_edump     },
     { "dump-user",    com_udump     },
@@ -167,10 +168,13 @@ static struct option_mapping_structure command_map[] = {
     { "flash-eeprom", com_eflash    },
     { "get",          com_get       },
     { "getfuse",      com_getfuse   },
+    { "launch",       com_launch    },
+    { "reset",        com_reset     },
     { "setfuse",      com_setfuse   },
     { "setsecure",    com_setsecure },
-    { "reset",        com_reset     },
     { "start",        com_start_app },
+    { "bin2hex",      com_bin2hex   },
+    { "hex2bin",      com_hex2bin   },
     { NULL }
 };
 
@@ -263,25 +267,23 @@ static void usage()
 {
     fprintf( stderr, "Usage: dfu-programmer target[:usb-bus,usb-addr] command [options] "
                      "[global-options] [file|data]\n\n" );
-
     fprintf( stderr, "global-options:\n"
                      "        --quiet\n"
                      "        --debug level    (level is an integer specifying level of detail)\n"
                      "        Global options can be used with any command and must come\n"
-                     "        after the command and before any file or data value\n\n" );
-    fprintf( stderr, "commands:\n" );
-    fprintf( stderr, "        configure {BSB|SBV|SSB|EB|HSB} "
-                     "[--suppress-validation] data\n" );
-    fprintf( stderr, "        dump\n" );
-    fprintf( stderr, "        dump-eeprom\n" );
-    fprintf( stderr, "        dump-user\n" );
-    fprintf( stderr, "        erase [--suppress-validation]\n" );
-    fprintf( stderr, "        flash [--suppress-validation] [--suppress-bootloader-mem]\n"
+                     "        after the command and before any file or data value\n" );
+    fprintf( stderr, "\n" );
+    fprintf( stderr, "command summary:\n" );
+    fprintf( stderr, "        launch       [--no-reset]\n" );
+    fprintf( stderr, "        read         [--force] [--bin] [(flash)|--user|--eeprom]\n" );
+    fprintf( stderr, "        erase        [--force] [--suppress-validation]\n" );
+    fprintf( stderr, "        flash        [--force] [(flash)|--user|--eeprom]\n"
+                     "                     [--suppress-validation]\n"
+                     "                     [--suppress-bootloader-mem]\n"
                      "                     [--serial=hexdigits:offset] {file|STDIN}\n" );
-    fprintf( stderr, "        flash-eeprom [--suppress-validation]\n"
-                     "                     [--serial=hexdigits:offset] {file|STDIN}\n" );
-    fprintf( stderr, "        flash-user   [--suppress-validation]\n"
-                     "                     [--serial=hexdigits:offset] {file|STDIN}\n" );
+    fprintf( stderr, "        setsecure\n" );
+    fprintf( stderr, "        configure {BSB|SBV|SSB|EB|HSB}"
+                     " [--suppress-validation] data\n" );
     fprintf( stderr, "        get     {bootloader-version|ID1|ID2|BSB|SBV|SSB|EB|\n"
                      "                 manufacturer|family|product-name|\n"
                      "                 product-revision|HSB}\n" );
@@ -291,10 +293,25 @@ static void usage()
     fprintf( stderr, "        setfuse {LOCK|EPFL|BOOTPROT|BODLEVEL|BODHYST|\n"
                      "                 BODEN|ISP_BOD_EN|ISP_IO_COND_EN|\n"
                      "                 ISP_FORCE} data\n" );
-    fprintf( stderr, "        setsecure\n" );
-    fprintf( stderr, "        reset\n" );
-    fprintf( stderr, "        start\n" );
+    fprintf( stderr, "\n" );
+    fprintf( stderr, "additional details:\n" );
+    fprintf( stderr,
+" launch: Launch from the bootloader into the main program using a watchdog\n"
+"         reset.  To jump directly into the main program use --no-reset.\n");
+    fprintf( stderr,
+"   read: Read the program memory in flash and output non-blank pages in ihex\n"
+"         format.  Use --force to output the entire memory and --bin for binary\n"
+"         output.  User page and eeprom are selected using --user and --eprom\n");
+    fprintf( stderr,
+"  erase: Erase memory contents if the chip is not blank or always with --force\n");
+    fprintf( stderr,
+"  flash: Flash a program onto device flash memory.  EEPROM and user page are\n"
+"         selected using --eeprom|--user flags. Use --force to ignore warning\n"
+"         when data exists in target memory region.  Bootloader configuration\n"
+"         uses last 4 to 8 bytes of user page, --force always required here.\n");
+    fprintf( stderr, "Note: version 0.6.1 commands still supported.\n");
 }
+
 
 static int32_t assign_option( int32_t *arg,
                               char *value,
@@ -444,11 +461,118 @@ static int32_t assign_global_options( struct programmer_arguments *args,
                     /* not supported. */
                     return -1;
             }
-
             break;
         }
     }
 
+    /* Find '--bin' for read binary */
+    for( i = 0; i < argc; i++ ) {
+        if( 0 == strcmp("--bin", argv[i]) ) {
+            *argv[i] = '\0';
+
+            switch( args->command ) {
+                case com_read:
+                case com_dump:
+                case com_edump:
+                case com_udump:
+                    args->com_read_data.bin = 1;
+                    break;
+                default:
+                    /* not supported. */
+                    return -1;
+            }
+            break;
+        }
+    }
+
+    /* Find '--user' for the user page segment */
+    for( i = 0; i < argc; i++ ) {
+        if( 0 == strcmp("--user", argv[i]) ) {
+            *argv[i] = '\0';
+            switch( args->command ) {
+                case com_read:
+                case com_udump:
+                    args->com_read_data.segment = mem_user;
+                    break;
+                case com_flash:
+                case com_user:
+                    args->com_flash_data.segment = mem_user;
+                    break;
+                case com_bin2hex:
+                    args->com_convert_data.segment = mem_user;
+                    break;
+                default:
+                    /* not supported. */
+                    return -1;
+            }
+            break;
+        }
+    }
+
+    /* Find '--eeprom' for the eeprom page segment */
+    for( i = 0; i < argc; i++ ) {
+        if( 0 == strcmp("--eeprom", argv[i]) ) {
+            *argv[i] = '\0';
+            switch( args->command ) {
+                case com_read:
+                case com_udump:
+                    args->com_read_data.segment = mem_eeprom;
+                    break;
+                case com_flash:
+                case com_user:
+                    args->com_flash_data.segment = mem_eeprom;
+                    break;
+                case com_bin2hex:
+                    args->com_convert_data.segment = mem_eeprom;
+                    break;
+                default:
+                    /* not supported. */
+                    return -1;
+            }
+            break;
+        }
+    }
+
+    /* Find '--force' if it is here - even though it is not
+     * used by all this is easier. */
+    for( i = 0; i < argc; i++ ) {
+        if( 0 == strcmp("--force", argv[i]) ) {
+            *argv[i] = '\0';
+            switch( args->command ) {
+                case com_flash :
+                case com_eflash :
+                case com_user :
+                    args->com_flash_data.force = true;
+                    break;
+                case com_read :
+                    args->com_read_data.force = true;
+                    break;
+                case com_erase :
+                    args->com_erase_data.force = true;
+                    break;
+                default:
+                    // not supported
+                    return -1;
+            }
+            break;
+        }
+    }
+
+    /* Find '--no-reset' if it is here - even though it is not
+     * used by all this is easier. */
+    for( i = 0; i < argc; i++ ) {
+        if( 0 == strcmp("--no-reset", argv[i]) ) {
+            *argv[i] = '\0';
+
+            if ( args->command == com_launch ) {
+                args->com_launch_config.noreset = true;
+            } else {
+                // not supported
+                return -1;
+            }
+            break;
+        }
+    }
 
     /* Find '--debug' if it is here */
     for( i = 0; i < argc; i++ ) {
@@ -473,7 +597,7 @@ static int32_t assign_global_options( struct programmer_arguments *args,
 
     /* Find '--serial=<hexdigit+>:<offset>' */
     for( i = 0; i < argc; i++ ) {
-      if( 0 == strncmp("--serial=", argv[i], 9) ) {
+        if( 0 == strncmp("--serial=", argv[i], 9) ) {
             *argv[i] = '\0';
 
             switch( args->command ) {
@@ -607,6 +731,18 @@ static int32_t assign_com_flash_option( struct programmer_arguments *args,
     return 0;
 }
 
+static int32_t assign_com_convert_option( struct programmer_arguments *args,
+                                          const int32_t parameter,
+                                          char *value )
+{
+    /* file */
+    args->com_convert_data.original_first_char = *value;
+    args->com_convert_data.file = value;
+
+    return 0;
+}
+
+
 static int32_t assign_com_getfuse_option( struct programmer_arguments *args,
                                       const int32_t parameter,
                                       char *value )
@@ -669,11 +805,19 @@ static int32_t assign_command_options( struct programmer_arguments *args,
                     return -3;
                 break;
 
+            case com_bin2hex:
+            case com_hex2bin:
+                required_params = 1;
+                if( 0 != assign_com_convert_option(args, param, argv[i]) )
+                    return -3;
+                break;
+
             case com_getfuse:
                 required_params = 1;
                 if( 0 != assign_com_getfuse_option(args, param, argv[i]) )
                     return -4;
                 break;
+
             case com_get:
                 required_params = 1;
                 if( 0 != assign_com_get_option(args, param, argv[i]) )
@@ -747,6 +891,9 @@ static void print_args( struct programmer_arguments *args )
         case com_get:
             fprintf( stderr, "       name: %d\n", args->com_get_data.name );
             break;
+        case com_launch:
+            fprintf( stderr, "   no-reset: %d\n", args->com_launch_config.noreset );
+            break;
         default:
             break;
     }
@@ -780,7 +927,9 @@ int32_t parse_arguments( struct programmer_arguments *args,
             list_targets();
             return -1;
         }
-        if( 0 == strcasecmp(argv[1], "--help") ) {
+        if( 0 == strcasecmp(argv[1], "--help") ||
+                0 == strcasecmp(argv[1], "-h") ||
+                0 == strcasecmp(argv[1], "--h") ) {
             usage();
             return -1;
         }
@@ -808,6 +957,26 @@ int32_t parse_arguments( struct programmer_arguments *args,
     *argv[1] = '\0';
     *argv[2] = '\0';
 
+    /* assign command specific default values */
+    switch( args->command ) {
+        case com_flash :
+            args->com_flash_data.force = 0;
+            args->com_flash_data.segment = mem_flash;
+            break;
+        case com_launch :
+            args->com_launch_config.noreset = 0;
+            break;
+        case com_dump :
+            args->com_read_data.segment = mem_flash;
+            args->com_flash_data.force = 0;
+            break;
+        case com_bin2hex :
+            args->com_convert_data.segment = mem_flash;
+            break;
+        default :
+            break;
+    }
+
     if( 0 != assign_global_options(args, argc, argv) ) {
         status = -5;
         goto done;
@@ -828,13 +997,28 @@ int32_t parse_arguments( struct programmer_arguments *args,
     }
 
     /* if this is a flash command, restore the filename */
-    if( (com_flash == args->command) || (com_eflash == args->command) || (com_user == args->command) ) {
+    if( (com_flash == args->command) || (com_eflash == args->command)
+            || (com_user == args->command) ) {
         if( 0 == args->com_flash_data.file ) {
+// TODO : it should be ok to not have a filename if --serial=hexdigits:offset is
+// provided, this should be implemented.. in fact, given that most of this
+// program is written to use a single command by it self, this probably should
+// be separated out as a new command.  The caveat is if data is written to '\0'
+// in the hex file, serialize will do nothing bc can't unwrite w/o erase
             fprintf( stderr, "flash filename is missing\n" );
             status = -8;
             goto done;
         }
         args->com_flash_data.file[0] = args->com_flash_data.original_first_char;
+    }
+
+    if( (com_bin2hex == args->command) || (com_hex2bin == args->command) ) {
+        if( 0 == args->com_convert_data.file ) {
+            fprintf( stderr, "conversion filename is missing\n" );
+            status = -8;
+            goto done;
+        }
+        args->com_convert_data.file[0] = args->com_convert_data.original_first_char;
     }
 
 done:

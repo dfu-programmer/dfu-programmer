@@ -34,12 +34,14 @@
 #include "util.h"
 
 
-/*
- * Atmel's firmware doesn't export a DFU descriptor in its config
+/* Atmel's firmware doesn't export a DFU descriptor in its config
  * descriptor, so we have to guess about parameters listed there.
  * We use 3KB for wTransferSize (MAX_TRANSFER_SIZE).
  */
-
+/* a 64kb page contains 0x10000 values (0 to 0xFFFF).  For the largest 512 kb
+ * devices (2^19 bytes) there should be 8 pages.
+ */
+#define ATMEL_64KB_PAGE             0x10000
 #define ATMEL_MAX_TRANSFER_SIZE     0x0400
 #define ATMEL_MAX_FLASH_BUFFER_SIZE (ATMEL_MAX_TRANSFER_SIZE +              \
                                         ATMEL_AVR32_CONTROL_BLOCK_SIZE +    \
@@ -58,32 +60,85 @@
 #define TRACE(...)  dfu_debug( __FILE__, __FUNCTION__, __LINE__, \
                                ATMEL_TRACE_THRESHOLD, __VA_ARGS__ )
 
-static int32_t atmel_flash_block( dfu_device_t *device,
-                                  int16_t *buffer,
-                                  const uint32_t base_address,
-                                  const size_t length,
-                                  const dfu_bool eeprom );
+extern int debug;
 
-static int32_t atmel_select_flash( dfu_device_t *device );
+// ________  P R O T O T Y P E S  _______________________________
+static int32_t atmel_read_command( dfu_device_t *device,
+                                   const uint8_t data0,
+                                   const uint8_t data1 );
+/* returns 0 - 255 on success, < 0 otherwise
+ *
+ * but what is it used for??
+ */
 
-static int32_t atmel_select_user( dfu_device_t *device );
+static int32_t __atmel_flash_block( dfu_device_t *device,
+                                    atmel_buffer_out_t *bout,
+                                    const dfu_bool eeprom );
+/* flash the contents of memory into a block of memory.  it is assumed that the
+ * appropriate page has already been selected.  start and end are the start and
+ * end addresses of the flash data.  returns 0 on success, positive dfu error
+ * code if one is obtained, or negative if communitcation with device fails.
+ */
 
-static int32_t atmel_select_fuses( dfu_device_t *device );
+static int32_t atmel_select_memory_unit( dfu_device_t *device,
+        enum atmel_memory_unit_enum unit );
+/* select a memory unit from the following list (enumerated)
+ * flash, eeprom, security, configuration, bootloader, signature, user page
+ */
 
 static int32_t atmel_select_page( dfu_device_t *device,
                                   const uint16_t mem_page );
+/* select a page in memory, numbering starts with 0, pages are
+ * 64kb pages (0x10000 bytes).  Select page when the memory unit
+ * is set to the user page will cause an error.
+ */
 
-static int32_t __atmel_read_page( dfu_device_t *device,
-                                  const uint32_t start,
-                                  const uint32_t end,
-                                  uint8_t* buffer,
-                                  const dfu_bool eeprom );
+static int32_t __atmel_blank_page_check( dfu_device_t *device,
+                                         const uint32_t start,
+                                         const uint32_t end );
+/* use to check if a certain address range on the current page is blank
+ * it assumes current page has previously been selected.
+ * returns 0 if the page is blank
+ * returns the first non-blank address + 1 if not blank (no zero!)
+ * returns a negative number if the blank check fails
+ */
 
-/* returns 0 - 255 on success, < 0 otherwise */
+static int32_t atmel_flash_prep_buffer( atmel_buffer_out_t *bout );
+/* prepare the buffer so that valid data fills each page that contains data.
+ * unassigned data in buffer is given a value of 0xff (blank memory)
+ * the buffer pointer must align with the beginning of a flash page
+ * return 0 on success, -1 if assigning data would extend flash above size
+ */
+
+static int32_t __atmel_read_block( dfu_device_t *device,
+                                   atmel_buffer_in_t *buin,
+                                   const dfu_bool eeprom );
+/* assumes block does not cross 64 b page boundaries and ideally alligs
+ * with flash pages. appropriate memory type and 64kb page has already
+ * been selected, max transfer size is not violated it updates the buffer
+ * data between data_start and data_end
+ */
+
+static inline void __print_progress( atmel_buffer_info_t *info,
+                                        uint32_t *progress );
+/* calculate how many progress indicator steps to print and print them
+ * update progress value
+ */
+
+// ________  F U N C T I O N S  _______________________________
 static int32_t atmel_read_command( dfu_device_t *device,
                                    const uint8_t data0,
-                                   const uint8_t data1 )
-{
+                                   const uint8_t data1 ) {
+    atmel_buffer_in_t buin;
+    uint8_t buffer[4];
+
+    TRACE( "%s( %p, 0x%02x, 0x%02x )\n", __FUNCTION__, device, data0, data1 );
+
+    // init the necessary parts of buin
+    buin.info.block_start = data1;
+    buin.info.block_end = data1;
+    buin.data = buffer;
+
     if( NULL == device ) {
         DEBUG( "invalid arguments.\n" );
         return -1;
@@ -92,25 +147,17 @@ static int32_t atmel_read_command( dfu_device_t *device,
     if( GRP_AVR32 & device->type ) {
         //We need to talk to configuration memory.  It comes
         //in two varieties in this chip.  data0 is the command to
-        //select it
-        //Data1 is the byte of that group we want
+        //select it. Data1 is the byte of that group we want
 
-        uint8_t command[4] = { 0x06, 0x03, 0x00, data0 };
-
-        if( 4 != dfu_download(device, 4, command) ) {
-            DEBUG( "dfu_download failed.\n" );
-            return -1;
+        if( 0 != atmel_select_memory_unit(device, data0) ) {
+            return -3;
         }
 
-        int32_t result;
-        uint8_t buffer[1];
-        result = __atmel_read_page( device, data1, data1+1, buffer, false );
-        if( 1 != result ) {
+        if( 0 != __atmel_read_block(device, &buin, false) ) {
             return -5;
         }
 
-        return (0xff & buffer[0]);
-
+        return (0xff & buffer[data1]);
     } else {
         uint8_t command[3] = { 0x05, 0x00, 0x00 };
         uint8_t data[1]    = { 0x00 };
@@ -119,7 +166,6 @@ static int32_t atmel_read_command( dfu_device_t *device,
         command[1] = data0;
         command[2] = data1;
 
-        TRACE( "%s( %p, 0x%02x, 0x%02x )\n", __FUNCTION__, device, data0, data1 );
 
         if( 3 != dfu_download(device, 3, command) ) {
             DEBUG( "dfu_download failed\n" );
@@ -134,6 +180,7 @@ static int32_t atmel_read_command( dfu_device_t *device,
         if( DFU_STATUS_OK != status.bStatus ) {
             DEBUG( "status(%s) was not OK.\n",
                    dfu_status_to_string(status.bStatus) );
+            dfu_clear_status( device );
             return -3;
         }
 
@@ -146,30 +193,154 @@ static int32_t atmel_read_command( dfu_device_t *device,
     }
 }
 
+static inline void __print_progress( atmel_buffer_info_t *info,
+                                        uint32_t *progress ) {
+    if ( !(debug > ATMEL_DEBUG_THRESHOLD) ) {
+        while ( ((info->block_end - info->data_start + 1) * 32) > *progress ) {
+            fprintf( stderr, ">" );
+            *progress += info->data_end - info->data_start + 1;
+        }
+    }
+}
+
+int32_t atmel_validate_buffer( atmel_buffer_in_t *buin,
+                               atmel_buffer_out_t *bout,
+                               dfu_bool quiet) {
+    int32_t i;
+    int32_t invalid_data_region = 0;
+    int32_t invalid_outside_data_region = 0;
+
+    DEBUG( "Validating image from byte 0x%X to 0x%X.\n",
+            bout->info.valid_start, bout->info.valid_end );
+
+    if( !quiet ) fprintf( stderr, "Validating...  " );
+    for( i = bout->info.valid_start; i <= bout->info.valid_end; i++ ) {
+        if(  bout->data[i] <= UINT8_MAX ) {
+            // Memory should have been programmed here
+            if( ((uint8_t) bout->data[i]) != buin->data[i] ) {
+                if ( !invalid_data_region ) {
+                    if( !quiet ) fprintf( stderr, "ERROR\n" );
+                    DEBUG( "Image did not validate at byte: 0x%X of 0x%X.\n", i,
+                            bout->info.valid_end - bout->info.valid_start + 1 );
+                    DEBUG( "Wanted 0x%02x but read 0x%02x.\n",
+                            0xff & bout->data[i], buin->data[i] );
+                    DEBUG( "suppressing additional warnings.\n");
+                }
+                invalid_data_region++;
+            }
+        } else {
+            // Memory should be blank here
+            if( 0xff != buin->data[i] ) {
+                if ( !invalid_data_region ) {
+                    DEBUG( "Outside program region: byte 0x%X epected 0xFF.\n", i);
+                    DEBUG( "but read 0x%02X.  supressing additional warnings.\n",
+                            buin->data[i] );
+                }
+                invalid_outside_data_region++;
+            }
+        }
+    }
+
+    if( !quiet ) {
+        if ( 0 == invalid_data_region + invalid_outside_data_region ) {
+            fprintf( stderr, "SUCCESS\n" );
+        } else {
+            fprintf( stderr,
+                    "%d invalid bytes in program region, %d outside region.\n",
+                    invalid_data_region, invalid_outside_data_region );
+        }
+    }
+
+    return invalid_data_region ?
+        -1 * invalid_data_region : invalid_outside_data_region;
+}
+
+int32_t atmel_init_buffer_out(atmel_buffer_out_t *bout,
+        size_t total_size, size_t page_size ) {
+    uint32_t i;
+    if ( !total_size || !page_size ) {
+        DEBUG("What are you thinking... size must be > 0.\n");
+        return -1;
+    }
+
+    bout->info.total_size = total_size;
+    bout->info.page_size = page_size;
+    bout->info.data_start = UINT32_MAX;      // invalid data start
+    bout->info.data_end = 0;
+    bout->info.valid_start = 0;
+    bout->info.valid_end = total_size - 1;
+    bout->info.block_start = 0;
+    bout->info.block_end = 0;
+    // allocate the memory
+    bout->data = (uint16_t *) malloc( total_size * sizeof(uint16_t) );
+    if( NULL == bout->data ) {
+        DEBUG( "ERROR allocating 0x%X bytes of memory.\n",
+                total_size * sizeof(uint16_t));
+        return -2;
+    }
+
+    // initialize buffer to 0xFFFF (invalid / unassigned data)
+    for( i = 0; i < total_size; i++ ) {
+        bout->data[i] = UINT16_MAX;
+    }
+    return 0;
+}
+
+int32_t atmel_init_buffer_in(atmel_buffer_in_t *buin,
+        size_t total_size, size_t page_size ) {
+    // TODO : is there a way to combine this and above? maybe typecast to an
+    // in or out buffer from a char pointer?
+    buin->info.total_size = total_size;
+    buin->info.page_size = page_size;
+    buin->info.data_start = 0;
+    buin->info.data_end = total_size - 1;
+    buin->info.valid_start = 0;
+    buin->info.valid_end = total_size - 1;
+    buin->info.block_start = 0;
+    buin->info.block_end = 0;
+
+    buin->data = (uint8_t *) malloc( total_size );
+    if( NULL == buin->data ) {
+        DEBUG( "ERROR allocating 0x%X bytes of memory.\n", total_size );
+        return -2;
+    }
+
+    // initialize buffer to 0xFF (blank / unassigned data)
+    memset( buin->data, UINT8_MAX, total_size );
+
+    return 0;
+}
+
 int32_t atmel_read_fuses( dfu_device_t *device,
-                           atmel_avr32_fuses_t *info )
-{
+                           atmel_avr32_fuses_t *info ) {
+    atmel_buffer_in_t buin;
+    uint8_t buffer[32];
+    int i;
+
+    // init the necessary parts of buin
+    buin.info.block_start = 0;
+    buin.info.block_end = 31;
+    buin.data = buffer;
+
     if( NULL == device ) {
         DEBUG( "invalid arguments.\n" );
         return -1;
     }
 
-    if( GRP_AVR & device->type ) {
-       DEBUG( "target does not support fuse operation.\n" );
-       fprintf( stderr, "target does not support fuse operation.\n" );
-       return -1;
+    if( !(ADC_AVR32 & device->type) ) {
+        DEBUG( "target does not support fuse operation.\n" );
+        fprintf( stderr, "target does not support fuse operation.\n" );
+        return -1;
     }
 
-    if( 0 != atmel_select_fuses(device) ) {
+    if( 0 != atmel_select_memory_unit(device, mem_config) ) {
         return -3;
     }
-    int32_t result;
-    uint8_t buffer[32];
-    int i;
-    result = __atmel_read_page( device, 0, 32, buffer, false );
-    if( 32 != result ) {
-        return -5;
+
+    if( 0 != __atmel_read_block(device, &buin, false) ) {
+            return -5;
     }
+
     info->lock = 0;
     for(i = 0; i < 16; i++) {
         info->lock = info->lock | (buffer[i] << i);
@@ -189,18 +360,8 @@ int32_t atmel_read_fuses( dfu_device_t *device,
     return 0;
 }
 
-/*
- *  This reads in all of the configuration and Manufacturer Information
- *  into the atmel_device_info data structure for easier use later.
- *
- *  device    - the usb_dev_handle to communicate with
- *  info      - the data structure to populate
- *
- *  returns 0 if successful, < 0 if not
- */
 int32_t atmel_read_config( dfu_device_t *device,
-                           atmel_device_info_t *info )
-{
+                           atmel_device_info_t *info ) {
     typedef struct {
         uint8_t data0;
         uint8_t data1;
@@ -214,19 +375,19 @@ int32_t atmel_read_config( dfu_device_t *device,
      */
     static const atmel_read_config_t data[] = {
         { 0x00, 0x00, (ADC_8051 | ADC_AVR), offsetof(atmel_device_info_t, bootloaderVersion) },
-        { 0x04, 0x00, (ADC_AVR32),          offsetof(atmel_device_info_t, bootloaderVersion) },
+        { 0x04, 0x00, (ADC_AVR32 | ADC_XMEGA),          offsetof(atmel_device_info_t, bootloaderVersion) },
         { 0x00, 0x01, (ADC_8051 | ADC_AVR), offsetof(atmel_device_info_t, bootID1)           },
-        { 0x04, 0x01, (ADC_AVR32),          offsetof(atmel_device_info_t, bootID1)           },
+        { 0x04, 0x01, (ADC_AVR32 | ADC_XMEGA),          offsetof(atmel_device_info_t, bootID1)           },
         { 0x00, 0x02, (ADC_8051 | ADC_AVR), offsetof(atmel_device_info_t, bootID2)           },
-        { 0x04, 0x02, (ADC_AVR32),          offsetof(atmel_device_info_t, bootID2)           },
+        { 0x04, 0x02, (ADC_AVR32 | ADC_XMEGA),          offsetof(atmel_device_info_t, bootID2)           },
         { 0x01, 0x30, (ADC_8051 | ADC_AVR), offsetof(atmel_device_info_t, manufacturerCode)  },
-        { 0x05, 0x00, (ADC_AVR32),          offsetof(atmel_device_info_t, manufacturerCode)  },
+        { 0x05, 0x00, (ADC_AVR32 | ADC_XMEGA),          offsetof(atmel_device_info_t, manufacturerCode)  },
         { 0x01, 0x31, (ADC_8051 | ADC_AVR), offsetof(atmel_device_info_t, familyCode)        },
-        { 0x05, 0x01, (ADC_AVR32),          offsetof(atmel_device_info_t, familyCode)        },
+        { 0x05, 0x01, (ADC_AVR32 | ADC_XMEGA),          offsetof(atmel_device_info_t, familyCode)        },
         { 0x01, 0x60, (ADC_8051 | ADC_AVR), offsetof(atmel_device_info_t, productName)       },
-        { 0x05, 0x02, (ADC_AVR32),          offsetof(atmel_device_info_t, productName)       },
+        { 0x05, 0x02, (ADC_AVR32 | ADC_XMEGA),          offsetof(atmel_device_info_t, productName)       },
         { 0x01, 0x61, (ADC_8051 | ADC_AVR), offsetof(atmel_device_info_t, productRevision)   },
-        { 0x05, 0x03, (ADC_AVR32),          offsetof(atmel_device_info_t, productRevision)   },
+        { 0x05, 0x03, (ADC_AVR32 | ADC_XMEGA),          offsetof(atmel_device_info_t, productRevision)   },
         { 0x01, 0x00, ADC_8051,             offsetof(atmel_device_info_t, bsb)               },
         { 0x01, 0x01, ADC_8051,             offsetof(atmel_device_info_t, sbv)               },
         { 0x01, 0x05, ADC_8051,             offsetof(atmel_device_info_t, ssb)               },
@@ -263,21 +424,9 @@ int32_t atmel_read_config( dfu_device_t *device,
     return retVal;
 }
 
-/*
- *
- *  device    - the usb_dev_handle to communicate with
- *  mode      - the mode to use when erasing flash
- *              ATMEL_ERASE_BLOCK_0
- *              ATMEL_ERASE_BLOCK_1
- *              ATMEL_ERASE_BLOCK_2
- *              ATMEL_ERASE_BLOCK_3
- *              ATMEL_ERASE_ALL
- *
- *  returns status DFU_STATUS_OK if ok, anything else on error
- */
 int32_t atmel_erase_flash( dfu_device_t *device,
-                           const uint8_t mode )
-{
+                           const uint8_t mode,
+                           dfu_bool quiet ) {
     uint8_t command[3] = { 0x04, 0x00, 0x00 };
     dfu_status_t status;
     int32_t i;
@@ -305,7 +454,9 @@ int32_t atmel_erase_flash( dfu_device_t *device,
             return -1;
     }
 
+    if( !quiet ) fprintf( stderr, "Erasing flash...  " );
     if( 3 != dfu_download(device, 3, command) ) {
+        if( !quiet ) fprintf( stderr, "ERROR\n" );
         DEBUG( "dfu_download failed\n" );
         return -2;
     }
@@ -315,35 +466,40 @@ int32_t atmel_erase_flash( dfu_device_t *device,
      */
     for( i = 0; i < 10; i++ ) {
         if( 0 == dfu_get_status(device, &status) ) {
+            if( !quiet ) fprintf( stderr, "SUCCESS\n" );
+            DEBUG ( "CMD_ERASE status: Erase Done.\n" );
             return status.bStatus;
+        } else {
+            if( !quiet ) fprintf( stderr, "ERROR\n" );
+            DEBUG ( "CMD_ERASE status check %d returned nonzero.\n", i );
         }
     }
+
 
     return -3;
 }
 
 int32_t atmel_set_fuse( dfu_device_t *device,
-                          const uint8_t property,
-                          const uint32_t value )
-{
-    int32_t result;
-    int16_t buffer[16];
+                        const uint8_t property,
+                        const uint32_t value ) {
+    uint16_t buffer[16];
     int32_t address;
     int8_t numbytes;
     int8_t i;
+    atmel_buffer_out_t bout;
 
     if( NULL == device ) {
         DEBUG( "invalid arguments.\n" );
         return -1;
     }
 
-    if( GRP_AVR & device->type ) {
+    if( !(ADC_AVR32 & device->type) ) {
        DEBUG( "target does not support fuse operation.\n" );
        fprintf( stderr, "target does not support fuse operation.\n" );
        return -1;
     }
 
-    if( 0 != atmel_select_fuses(device) ) {
+    if( 0 != atmel_select_memory_unit(device, mem_config) ) {
         return -3;
     }
 
@@ -443,17 +599,20 @@ int32_t atmel_set_fuse( dfu_device_t *device,
             break;
     }
 
-    result = atmel_flash_block( device, buffer, address, numbytes, false );
-    if(result < 0) {
+    bout.data = buffer;
+    bout.info.block_start = address;
+    bout.info.block_end = address + numbytes - 1;
+
+    if( 0 != __atmel_flash_block(device, &bout, false) ) {
         return -6;
     }
+
     return 0;
 }
 
 int32_t atmel_set_config( dfu_device_t *device,
                           const uint8_t property,
-                          const uint8_t value )
-{
+                          const uint8_t value ) {
     uint8_t command[4] = { 0x04, 0x01, 0x00, 0x00 };
     dfu_status_t status;
 
@@ -497,157 +656,198 @@ int32_t atmel_set_config( dfu_device_t *device,
     return status.bStatus;
 }
 
-static int32_t __atmel_read_page( dfu_device_t *device,
-                                  const uint32_t start,
-                                  const uint32_t end,
-                                  uint8_t* buffer,
-                                  const dfu_bool eeprom )
-{
+static int32_t __atmel_read_block( dfu_device_t *device,
+                                   atmel_buffer_in_t *buin,
+                                   const dfu_bool eeprom ) {
     uint8_t command[6] = { 0x03, 0x00, 0x00, 0x00, 0x00, 0x00 };
-    uint32_t current_start;
-    size_t size;
-    uint32_t mini_page;
     int32_t result;
 
-    TRACE( "%s( %p, %u, %u, %p, %s )\n", __FUNCTION__, device, start, end,
-           buffer, ((true == eeprom) ? "true" : "false") );
+    if( buin->info.block_end < buin->info.block_start ) {
+        // this would cause a problem bc read length could be way off
+        DEBUG("ERROR: start address is after end address.\n");
+        return -1;
+    } else if( buin->info.block_end - buin->info.block_start + 1 > ATMEL_MAX_TRANSFER_SIZE ) {
+        // this could cause a read problem
+        DEBUG("ERROR: transfer size must not exceed %d.\n",
+                ATMEL_MAX_TRANSFER_SIZE );
+        return -1;
+    }
 
-    // AVR/8051 requires 0x02 here to read eeprom, AVR32/XMEGA requires 0x00.
+    // AVR/8051 requires 0x02 here to read eeprom, XMEGA requires 0x00.
     if( true == eeprom && (GRP_AVR & device->type) ) {
         command[1] = 0x02;
     }
 
-    current_start = start;
-    size = end - current_start;
-    for( mini_page = 0; 0 < size; mini_page++ ) {
-        if( ATMEL_MAX_TRANSFER_SIZE < size ) {
-            size = ATMEL_MAX_TRANSFER_SIZE;
-        }
-        command[2] = 0xff & (current_start >> 8);
-        command[3] = 0xff & current_start;
-        command[4] = 0xff & ((current_start + size - 1)>> 8);
-        command[5] = 0xff & (current_start + size - 1);
+    command[2] = 0xff & (buin->info.block_start >> 8);
+    command[3] = 0xff & (buin->info.block_start);
+    command[4] = 0xff & (buin->info.block_end >> 8);
+    command[5] = 0xff & (buin->info.block_end);
 
-        if( 6 != dfu_download(device, 6, command) ) {
-            DEBUG( "dfu_download failed\n" );
-            return -1;
-        }
-
-        result = dfu_upload( device, size, buffer );
-        if( result < 0) {
-            dfu_status_t status;
-
-            DEBUG( "result: %d\n", result );
-            if( 0 == dfu_get_status(device, &status) ) {
-                if( DFU_STATUS_ERROR_FILE == status.bStatus ) {
-                    fprintf( stderr,
-                             "The device is read protected.\n" );
-                } else {
-                    fprintf( stderr, "Unknown error.  Try enabling debug.\n" );
-                }
-            } else {
-                fprintf( stderr, "Device is unresponsive.\n" );
-            }
-
-            return result;
-        }
-
-        buffer += size;
-        current_start += size;
-
-        if( current_start < end ) {
-            size = end - current_start;
-        } else {
-            size = 0;
-        }
-    }
-
-    return (end - start);
-}
-
-/* Just to be safe, let's limit the transfer size */
-int32_t atmel_read_flash( dfu_device_t *device,
-                          const uint32_t start,
-                          const uint32_t end,
-                          uint8_t* buffer,
-                          const size_t buffer_len,
-                          const dfu_bool eeprom,
-                          const dfu_bool user )
-{
-    uint16_t page = 0;
-    uint32_t current_start;
-    size_t size;
-
-    TRACE( "%s( %p, 0x%08x, 0x%08x, %p, %u, %s )\n", __FUNCTION__, device,
-           start, end, buffer, buffer_len, ((true == eeprom) ? "true" : "false") );
-
-    if( (NULL == buffer) || (start >= end) || (NULL == device) ) {
-        DEBUG( "invalid arguments.\n" );
+    if( 6 != dfu_download(device, 6, command) ) {
+        DEBUG( "dfu_download failed\n" );
         return -1;
     }
 
-    if( (end - start) > buffer_len ) {
-        DEBUG( "buffer isn't large enough - bytes needed: %d : %d.\n", (end - start), buffer_len );
-        return -2;
-    }
+    result = dfu_upload( device, buin->info.block_end - buin->info.block_start + 1,
+                                &buin->data[buin->info.block_start] );
+    if( result < 0) {
+        dfu_status_t status;
 
-    /* For the AVR32/XMEGA chips, select the flash space. */
-    if( GRP_AVR32 & device->type ) {
-        if( user == true ) {
-            if( 0 != atmel_select_user(device) ) {
-                return -3;
+        DEBUG( "dfu_upload result: %d\n", result );
+        if( 0 == dfu_get_status(device, &status) ) {
+            if( DFU_STATUS_ERROR_FILE == status.bStatus ) {
+                fprintf( stderr,
+                            "The device is read protected.\n" );
+            } else {
+                fprintf( stderr, "Unknown error. Try enabling debug.\n" );
             }
         } else {
-            if( 0 != atmel_select_flash(device) ) {
-                return -3;
-            }
+            fprintf( stderr, "Device is unresponsive.\n" );
         }
+        dfu_clear_status( device );
+
+        return result;
     }
 
-    current_start = start;
-    if( end > 0x10000 ) {
-        size = 0x10000 - start;
-    } else {
-        size = end;
-    }
-    for( page = 0; 0 < size; page++ ) {
-        int32_t result;
-        if( size > 0x10000 ) {
-            size = 0x10000;
-        }
-        if( user == false ) {
-            if( 0 != atmel_select_page(device, page) ) {
-                return -4;
-            }
-        }
-
-        result = __atmel_read_page( device, current_start, (current_start + size), buffer, eeprom );
-        if( size != result ) {
-            return -5;
-        }
-
-        /* Move the buffer forward. */
-        buffer += size;
-
-        current_start += size;
-
-        if( current_start < end ) {
-            size = end - current_start;
-        } else {
-            size = 0;
-        }
-    }
-
-    return (end - start);
+    return 0;
 }
 
-static int32_t __atmel_blank_check_internal( dfu_device_t *device,
+int32_t atmel_read_flash( dfu_device_t *device,
+                          atmel_buffer_in_t *buin,
+                          const uint8_t mem_segment,
+                          const dfu_bool quiet ) {
+    uint8_t mem_page = 0;           // tracks the current memory page
+    uint32_t progress = 0;          // used to indicate progress
+    int32_t result = 0;
+    // TODO : use status instead of result
+    int32_t retval = -1;            // the return value for this function
+
+    TRACE( "%s( %p, %p, %u, %s )\n", __FUNCTION__, device, buin,
+            mem_segment, ((true == quiet) ? "true" : "false"));
+
+    if( (NULL == buin) || (NULL == device) ) {
+        DEBUG( "invalid arguments.\n" );
+        if( !quiet )
+            fprintf( stderr, "Program Error, use debug for more info.\n" );
+        return -1;
+    } else if ( mem_segment != mem_flash &&
+                mem_segment != mem_user &&
+                mem_segment != mem_eeprom ) {
+        DEBUG( "Invalid memory segment %d to read.\n", mem_segment );
+        if( !quiet )
+            fprintf( stderr, "Program Error, use debug for more info.\n" );
+        return -1;
+    }
+
+    // For the AVR32/XMEGA chips, select the flash space. (safe for all parts)
+    if( 0 != atmel_select_memory_unit(device, mem_segment) ) {
+        DEBUG ("Error selecting memory unit.\n");
+        if( !quiet )
+            fprintf( stderr, "Memory access error, use debug for more info.\n" );
+        return -3;
+    }
+
+    if( !quiet ) {
+        if( debug <= ATMEL_DEBUG_THRESHOLD ) {
+            // NOTE: From here on we should go to finally on error
+            fprintf( stderr, "[================================] " );
+        }
+        fprintf( stderr, "Reading 0x%X bytes...\n",
+                buin->info.data_end - buin->info.data_start + 1 );
+        if( debug <= ATMEL_DEBUG_THRESHOLD ) {
+            // NOTE: From here on we should go to finally on error
+            fprintf( stderr, "[" );
+        }
+    }
+
+    // select the first memory page ( not safe for mem_user )
+    buin->info.block_start = buin->info.data_start;
+    mem_page = buin->info.block_start / ATMEL_64KB_PAGE;
+    if ( mem_segment != mem_user ) {
+        if( 0 != (result = atmel_select_page( device, mem_page )) ) {
+            DEBUG( "ERROR selecting 64kB page %d.\n", result );
+            retval = -3;
+            goto finally;
+        }
+    }
+
+    while (buin->info.block_start <= buin->info.data_end) {
+        // ensure the memory page is correct
+        if ( buin->info.block_start / ATMEL_64KB_PAGE != mem_page ) {
+            mem_page = buin->info.block_start / ATMEL_64KB_PAGE;
+            if( 0 != (result = atmel_select_page( device, mem_page )) ) {
+                DEBUG( "ERROR selecting 64kB page %d.\n", result );
+                retval = -3;
+            }
+            // check if the entire page is blank ()
+        }
+
+        // find end value for the current transfer
+        buin->info.block_end = buin->info.block_start +
+            ATMEL_MAX_TRANSFER_SIZE - 1;
+        if ( buin->info.block_end / ATMEL_64KB_PAGE > mem_page ) {
+            buin->info.block_end = ATMEL_64KB_PAGE * mem_page - 1;
+        }
+        if ( buin->info.block_end > buin->info.data_end ) {
+            buin->info.block_end = buin->info.data_end;
+        }
+
+        if( 0 != (result = __atmel_read_block(device, buin,
+                    mem_segment == mem_eeprom ? 1 : 0)) ) {
+            DEBUG( "Error reading block 0x%X to 0x%X: err %d.\n",
+                    buin->info.block_start, buin->info.block_end, result );
+            retval = -5;
+            goto finally;
+        }
+
+        buin->info.block_start = buin->info.block_end + 1;
+        if ( !quiet ) __print_progress( &buin->info, &progress );
+    }
+    retval = 0;
+
+finally:
+    if ( !quiet ) {
+        if( 0 == retval ) {
+            if ( debug <= ATMEL_DEBUG_THRESHOLD ) {
+                fprintf( stderr, "] " );
+            }
+            fprintf( stderr, "SUCCESS\n" );
+        } else {
+            if ( debug <= ATMEL_DEBUG_THRESHOLD ) {
+                fprintf( stderr, " X  ");
+            }
+            fprintf( stderr, "ERROR\n" );
+            if( retval==-3 )
+                fprintf( stderr,
+                        "Memory access error, use debug for more info.\n" );
+            else if( retval==-5 )
+                fprintf( stderr,
+                        "Memory read error, use debug for more info.\n" );
+        }
+    }
+    return retval;
+}
+
+static int32_t __atmel_blank_page_check( dfu_device_t *device,
                                              const uint32_t start,
-                                             const uint32_t end )
-{
+                                             const uint32_t end ) {
     uint8_t command[6] = { 0x03, 0x01, 0x00, 0x00, 0x00, 0x00 };
+    dfu_status_t status;
 
     TRACE( "%s( %p, 0x%08x, 0x%08x )\n", __FUNCTION__, device, start, end );
+
+    if( (NULL == device) ) {
+        DEBUG( "ERROR: Invalid arguments, device pointer is NULL.\n" );
+        return -1;
+    } else if ( start > end ) {
+        DEBUG( "ERROR: End address 0x%X before start address 0x%X.\n",
+                end, start );
+        return -1;
+    } else if ( end >= ATMEL_64KB_PAGE ) {
+        DEBUG( "ERROR: Address out of 64kb (0x10000) byte page range.\n",
+                end );
+        return -1;
+    }
 
     command[2] = 0xff & (start >> 8);
     command[3] = 0xff & start;
@@ -655,100 +855,122 @@ static int32_t __atmel_blank_check_internal( dfu_device_t *device,
     command[5] = 0xff & end;
 
     if( 6 != dfu_download(device, 6, command) ) {
-        DEBUG( "dfu_download failed.\n" );
+        DEBUG( "__atmel_blank_page_check DFU_DNLOAD failed.\n" );
         return -2;
     }
 
+    if( 0 != dfu_get_status(device, &status) ) {
+        DEBUG( "__atmel_blank_page_check DFU_GETSTATUS failed.\n" );
+        return -3;
+    }
+
+    // check status and proceed accordingly
+    if( DFU_STATUS_OK == status.bStatus ) {
+        DEBUG( "Flash region from 0x%X to 0x%X is blank.\n", start, end );
+    } else if ( DFU_STATUS_ERROR_CHECK_ERASED == status.bStatus ) {
+        // need to DFU upload to get the address
+        DEBUG( "Region is NOT bank.\n" );
+        uint8_t addr[2] = { 0x00, 0x00 };
+        int32_t retval = 0;
+        if ( 2 != dfu_upload(device, 2, addr) ) {
+            DEBUG( "__atmel_blank_page_check DFU_UPLOAD failed.\n" );
+            return -4;
+        } else {
+            retval = (int32_t) ( ( ((uint16_t) addr[0]) << 8 ) + addr[1] );
+            DEBUG( " First non-blank address in region is 0x%X.\n", retval );
+            return retval + 1;
+        }
+    } else {
+        DEBUG( "Error: status (%s) was not OK.\n",
+            dfu_status_to_string(status.bStatus) );
+        if ( STATE_DFU_ERROR == status.bState ) {
+            dfu_clear_status( device );
+        }
+        return -4;
+    }
     return 0;
 }
 
 int32_t atmel_blank_check( dfu_device_t *device,
                            const uint32_t start,
-                           const uint32_t end )
-{
-    int32_t rv;
-    uint16_t page;
-    uint32_t current_start;
-    size_t size;
+                           const uint32_t end,
+                           dfu_bool quiet ) {
+    int32_t result;                     // blank_page_check_result
+    uint32_t blank_upto = start;        // up to is not inclusive
+    uint32_t check_until;               // end address of page check
+    uint16_t current_page;              // 64kb page number
+    int32_t retval;
 
-    TRACE( "%s( %p, 0x%08x, 0x%08x )\n", __FUNCTION__, device, start, end );
+    TRACE( "%s( %p, 0x%08X, 0x%08X )\n", __FUNCTION__, device, start, end );
 
-    if( (start >= end) || (NULL == device) ) {
-        DEBUG( "invalid arguments.\n" );
+    if( (NULL == device) ) {
+        DEBUG( "ERROR: Invalid arguments, device pointer is NULL.\n" );
+        return -1;
+    } else if ( start > end ) {
+        DEBUG( "ERROR: End address 0x%X before start address 0x%X.\n",
+                end, start );
         return -1;
     }
 
-    rv = -3;
-
-    /* Handle small memory (< 64k) devices without a page selection. */
-    if( end < UINT16_MAX ) {
-        rv = __atmel_blank_check_internal( device, start, end );
-        goto done;
+    // safe to call this with any type of device
+    if( 0 != atmel_select_memory_unit(device, mem_flash) ) {
+        return -2;
     }
 
-    /* Select FLASH memory */
-    if( GRP_AVR32 & device->type ) {
-        if( 0 != atmel_select_flash(device) ) {
-            return -2;
-        }
+    if( !quiet ) {
+        fprintf( stderr, "Checking memory from 0x%X to 0x%X...  ",
+                start, end );
+        // from here need to go to retval on error
+        if( debug > ATMEL_DEBUG_THRESHOLD ) fprintf( stderr, "\n" );
     }
+    do {
+        // want to have checks align with pages
+        current_page = blank_upto / ATMEL_64KB_PAGE;
+        check_until = ( current_page + 1 ) * ATMEL_64KB_PAGE - 1;
+        check_until = check_until > end ? end : check_until;
 
-    current_start = start;
-    size = end - current_start;
-    for( page = 0; 0 < size; page++ ) {
-        if( UINT16_MAX < size ) {
-            size = UINT16_MAX;
+        // safe to call with any type of device (just bc end address is
+        // below 0x10000 doesn't mean you are definitely on page 0)
+        if ( 0 != atmel_select_page(device, current_page) ) {
+            DEBUG ("page select error.\n");
+            retval = -3;
+            goto error;
         }
 
-        /* Select the page of memory */
-        if( 0 != atmel_select_page(device, page) ) {
-            return -2;
-        }
+        // send the 'page' address, not absolute address
+        result = __atmel_blank_page_check( device,
+                blank_upto % ATMEL_64KB_PAGE,
+                check_until % ATMEL_64KB_PAGE );
 
-        rv = __atmel_blank_check_internal( device, 0, size );
-        if( 0 != rv ) {
-            /* We ran into a problem. */
-            return rv;
-        }
-
-        /* Add 1 because we checked an inclusive number of bytes. */
-        current_start += size + 1;
-
-        /* because we are subtracting the number of bytes compared, the
-         * next starting position is 1 after the end, which causes all
-         * sorts of problems if size_t is unsigned. */
-        if( current_start < end ) {
-            size = end - current_start;
+        if ( result == 0 ) {
+            DEBUG ( "Flash blank from 0x%X to 0x%X.\n",
+                    start, check_until );
+            blank_upto = check_until + 1;
+        } else if ( result > 0 ) {
+            blank_upto = result - 1 + ATMEL_64KB_PAGE * current_page;
+            DEBUG ( "Flash NOT blank beginning at 0x%X.\n", blank_upto );
+            retval = blank_upto + 1;
+            goto error;
         } else {
-            size = 0;
+            DEBUG ( "Blank check fail err %d. Flash status unknown.\n", result );
+            retval = result;
+            goto error;
         }
+    } while ( blank_upto < end );
+    retval = 0;
+
+error:
+    if( retval == 0 ) {
+        if( !quiet ) fprintf( stderr, "EMPTY.\n" );
+    } else if ( retval > 0 ) {
+        if( !quiet ) fprintf( stderr, "NOT BLANK at 0x%X.\n", retval );
+    } else {
+        if( !quiet ) fprintf( stderr, "ERROR.\n" );
     }
-
-done:
-    if( 0 == rv ) {
-        int32_t i;
-
-        /* It looks like it can take a while to erase the chip.
-         * We will try for 10 seconds before giving up.
-         */
-        for( i = 0; i < 20; i++ ) {
-            dfu_status_t status;
-            if( 0 == dfu_get_status(device, &status) ) {
-                return status.bStatus;
-            }
-        }
-    }
-
-    DEBUG( "erase chip failed.\n" );
-    return -3;
+    return retval;
 }
 
-/* Reset the processor.
- * This is done internally by forcing a watchdog reset.
- * Depending on fuse settings this may go straight back into the bootloader.
- */
-int32_t atmel_reset( dfu_device_t *device )
-{
+int32_t atmel_start_app_reset( dfu_device_t *device ) {
     uint8_t command[3] = { 0x04, 0x03, 0x00 };
 
     TRACE( "%s( %p )\n", __FUNCTION__, device );
@@ -766,11 +988,7 @@ int32_t atmel_reset( dfu_device_t *device )
     return 0;
 }
 
-/* Start the app by jumping to the start of the app area.
- * This does not do a true device reset.
- */
-int32_t atmel_start_app( dfu_device_t *device )
-{
+int32_t atmel_start_app_noreset( dfu_device_t *device ) {
     uint8_t command[5] = { 0x04, 0x03, 0x01, 0x00, 0x00 };
 
     TRACE( "%s( %p )\n", __FUNCTION__, device );
@@ -788,143 +1006,174 @@ int32_t atmel_start_app( dfu_device_t *device )
     return 0;
 }
 
-static int32_t atmel_select_flash( dfu_device_t *device )
-{
-    TRACE( "%s( %p )\n", __FUNCTION__, device );
+static int32_t atmel_select_memory_unit( dfu_device_t *device,
+                                enum atmel_memory_unit_enum unit ) {
+    TRACE( "%s( %p, %d )\n", __FUNCTION__, device, unit );
 
-    if( (NULL != device) && (GRP_AVR32 & device->type) ) {
-        uint8_t command[4] = { 0x06, 0x03, 0x00, 0x00 };
+    uint8_t command[4] = { 0x06, 0x03, 0x00, (0xFF & unit) };
+    dfu_status_t status;
+    char *mem_names[] = { ATMEL_MEM_UNIT_NAMES };
 
-        if( 4 != dfu_download(device, 4, command) ) {
-            DEBUG( "dfu_download failed.\n" );
-            return -1;
-        }
-        DEBUG( "flash selected\n" );
+    // input parameter checks
+    if( NULL == device) {
+        DEBUG ( "ERROR: Device pointer is NULL.\n" );
+        return -1;
     }
 
-    return 0;
-}
-
-static int32_t atmel_select_fuses( dfu_device_t *device )
-{
-    TRACE( "%s( %p )\n", __FUNCTION__, device );
-
-    if( (NULL != device) && (GRP_AVR32 & device->type) ) {
-        uint8_t command[4] = { 0x06, 0x03, 0x00, 0x03 };
-
-        if( 4 != dfu_download(device, 4, command) ) {
-            DEBUG( "dfu_download failed.\n" );
-            return -1;
-        }
-        DEBUG( "fuses selected\n" );
+    // check compatiblity with various devices
+    if( !(GRP_AVR32 & device->type) ) {
+        DEBUG( "Ignore Select Memory Unit for non GRP_AVR32 device.\n" );
+        return 0;
+    } else if ( (ADC_AVR32 & device->type) && !( unit == mem_flash ||
+                                                 unit == mem_security ||
+                                                 unit == mem_config ||
+                                                 unit == mem_boot ||
+                                                 unit == mem_sig ||
+                                                 unit == mem_user ) ) {
+        DEBUG( "%d is not a valid memory unit for AVR32 devices.\n", unit );
+        fprintf( stderr, "Invalid Memory Unit Selection.\n" );
+        return -1;
+    } else if ( unit > mem_extdf ) {
+        DEBUG( "Valid Memory Units 0 to 0x%X, not 0x%X.\n", mem_extdf, unit );
+        fprintf( stderr, "Invalid Memory Unit Selection.\n" );
+        return -1;
     }
 
-    return 0;
-}
+    // select memory unit               below is OK bc unit < len(mem_names)
+    DEBUG( "Selecting %s memory unit.\n", mem_names[unit] );
+    if( 4 != dfu_download(device, 4, command) ) {
+        DEBUG( "atmel_select_memory_unit 0x%02X dfu_download failed.\n", unit );
+        return -2;
+    }
 
-static int32_t atmel_select_user( dfu_device_t *device )
-{
-    TRACE( "%s( %p )\n", __FUNCTION__, device );
+    // check that memory section was selected
+    if( 0 != dfu_get_status(device, &status) ) {
+        DEBUG( "DFU_GETSTATUS failed after atmel_select_memory_unit.\n" );
+        return -3;
+    }
 
-    if( (NULL != device) && (GRP_AVR32 & device->type) ) {
-        uint8_t command[4] = { 0x06, 0x03, 0x00, 0x06 };
-
-        if( 4 != dfu_download(device, 4, command) ) {
-            DEBUG( "dfu_download failed.\n" );
-            return -1;
+    // if error, report and clear
+    if( DFU_STATUS_OK != status.bStatus ) {
+        DEBUG( "Error: status (%s) was not OK.\n",
+            dfu_status_to_string(status.bStatus) );
+        if ( STATE_DFU_ERROR == status.bState ) {
+            dfu_clear_status( device );
         }
-        DEBUG( "flash selected\n" );
+        return -4;
     }
 
     return 0;
 }
 
 static int32_t atmel_select_page( dfu_device_t *device,
-                                  const uint16_t mem_page )
-{
+                                  const uint16_t mem_page ) {
     TRACE( "%s( %p, %u )\n", __FUNCTION__, device, mem_page );
+    dfu_status_t status;
 
-    if( NULL != device ) {
-        if( GRP_AVR32 & device->type ) {
-            uint8_t command[5] = { 0x06, 0x03, 0x01, 0x00, 0x00 };
-            command[3] = 0xff & (mem_page >> 8);
-            command[4] = 0xff & mem_page;
+    if( NULL == device ) {
+        DEBUG ( "ERROR: Device pointer is NULL.\n" );
+        return -2;
+    }
 
-            if( 5 != dfu_download(device, 5, command) ) {
-                DEBUG( "dfu_download failed.\n" );
-                return -1;
-            }
-        } else if( ADC_AVR == device->type ) {      // AVR but not 8051
-            uint8_t command[4] = { 0x06, 0x03, 0x00, 0x00 };
+    if ( ADC_8051 & device->type ) {
+        DEBUG( "Select page not implemented for 8051 device, ignoring.\n" );
+        return 0;
+    }
 
-            command[3] = (char) mem_page;
+    DEBUG( "Selecting page %d, address 0x%X.\n",
+            mem_page, ATMEL_64KB_PAGE * mem_page );
 
-            if( 4 != dfu_download(device, 4, command) ) {
-                DEBUG( "dfu_download failed.\n" );
-                return -1;
-            }
+    if( GRP_AVR32 & device->type ) {
+        uint8_t command[5] = { 0x06, 0x03, 0x01, 0x00, 0x00 };
+        command[3] = 0xff & (mem_page >> 8);
+        command[4] = 0xff & mem_page;
+
+        if( 5 != dfu_download(device, 5, command) ) {
+            DEBUG( "atmel_select_page DFU_DNLOAD failed.\n" );
+            return -1;
         }
+    } else if( ADC_AVR == device->type ) {      // AVR but not 8051
+        uint8_t command[4] = { 0x06, 0x03, 0x00, 0x00 };
+        command[3] = 0xff & mem_page;
+
+        if( 4 != dfu_download(device, 4, command) ) {
+            DEBUG( "atmel_select_page DFU_DNLOAD failed.\n" );
+            return -1;
+        }
+    }
+
+    // check that page number was set
+    if( 0 != dfu_get_status(device, &status) ) {
+        DEBUG( "atmel_select_page DFU_GETSTATUS failed.\n" );
+        return -3;
+    }
+
+    // if error, report and clear
+    if( DFU_STATUS_OK != status.bStatus ) {
+        DEBUG( "Error: status (%s) was not OK.\n",
+            dfu_status_to_string(status.bStatus) );
+        if ( STATE_DFU_ERROR == status.bState ) {
+            dfu_clear_status( device );
+        }
+        return -4;
     }
 
     return 0;
 }
 
-static void atmel_flash_prepair_buffer( int16_t *buffer, const size_t size,
-                                        const size_t page_size )
-{
-    int16_t *page;
+static int32_t atmel_flash_prep_buffer( atmel_buffer_out_t *bout ) {
+    uint16_t *page;
+    int32_t i;
 
-    TRACE( "%s( %p, %u, %u )\n", __FUNCTION__, buffer, size, page_size );
+    TRACE( "%s( %p )\n", __FUNCTION__, bout );
 
-    for( page = buffer;
-         &page[page_size] < &buffer[size];
-         page = &page[page_size] )
-    {
-        int32_t i;
-
-        for( i = 0; i < page_size; i++ ) {
-            if( (0 <= page[i]) && (page[i] <= UINT8_MAX) ) {
-                /* We found a valid value. */
+    // increment pointer by page_size * sizeof(int16) until page_start >= end
+    for( page = bout->data;
+            page < &bout->data[bout->info.valid_end];
+            page = &page[bout->info.page_size] ) {
+        // check if there is valid data on this page
+        for( i = 0; i < bout->info.page_size; i++ ) {
+            if( page[i] <= UINT8_MAX )
                 break;
-            }
         }
 
-        if( page_size != i ) {
+        if( bout->info.page_size != i ) {
             /* There was valid data in the block & we need to make
              * sure there is no unassigned data.  */
-            for( i = 0; i < page_size; i++ ) {
-                if( (page[i] < 0) || (UINT8_MAX < page[i]) ) {
-                    /* Invalid memory value. */
-                    page[i] = 0;
-                }
+            for( i = 0; i < bout->info.page_size; i++ ) {
+                if( page[i] > UINT8_MAX )
+                    page[i] = 0xff;         // 0xff is blank
             }
         }
     }
+    return 0;
 }
 
-int32_t atmel_user( dfu_device_t *device,
-                    int16_t *buffer,
-                    const uint32_t end )
-{
+int32_t atmel_user( dfu_device_t *device, atmel_buffer_out_t *bout ) {
     int32_t result = 0;
-    TRACE( "%s( %p, %p, %u)\n", __FUNCTION__, device, buffer,end);
 
-    if( (NULL == buffer) || (end <= 0) ) {
+    TRACE( "%s( %p, %p )\n", __FUNCTION__, device, bout );
+
+    if( (NULL == bout) || (NULL == device ) ) {
         DEBUG( "invalid arguments.\n" );
         return -1;
     }
 
     /* Select USER page */
-    uint8_t command[4] = { 0x06, 0x03, 0x00, 0x06 };
-    if( 4 != dfu_download(device, 4, command) ) {
-        DEBUG( "dfu_download failed.\n" );
+    if( 0 != atmel_select_memory_unit(device, mem_user) ) {
+        DEBUG( "User Page Memory NOT selected.\n" );
         return -2;
+    } else {
+        DEBUG( "User Page memory selected.\n" );
     }
 
-    //The user block is one flash page, so we'll just do it all in a block.
-    result = atmel_flash_block( device, buffer, 0, end, 0 );
+    bout->info.block_start = 0;
+    bout->info.block_end = bout->info.page_size - 1;
 
-    if( result < 0 ) {
+    //The user block is one flash page, so we'll just do it all in a block.
+    result = __atmel_flash_block( device, bout, false );
+
+    if( result != 0 ) {
         DEBUG( "error flashing the block: %d\n", result );
         return -4;
     }
@@ -932,10 +1181,10 @@ int32_t atmel_user( dfu_device_t *device,
     return 0;
 }
 
-int32_t atmel_secure( dfu_device_t *device )
-{
+int32_t atmel_secure( dfu_device_t *device ) {
     int32_t result = 0;
-    int16_t buffer[1];
+    uint16_t buffer[1];
+    atmel_buffer_out_t bout;
     TRACE( "%s( %p )\n", __FUNCTION__, device );
 
     /* Select SECURITY page */
@@ -945,11 +1194,15 @@ int32_t atmel_secure( dfu_device_t *device )
         return -2;
     }
 
+    bout.info.block_start = 0;
+    bout.info.block_end = 0;
+    bout.data = buffer;
+
     // The security block is a single byte, so we'll just do it all in a block.
     buffer[0] = 0x01;   // Non-zero to set security fuse.
-    result = atmel_flash_block( device, buffer, 0, 1, false );
+    result = __atmel_flash_block( device, &bout, false );
 
-    if( result < 0 ) {
+    if( result != 0 ) {
         DEBUG( "error flashing security fuse: %d\n", result );
         return -4;
     }
@@ -957,13 +1210,21 @@ int32_t atmel_secure( dfu_device_t *device )
     return 0;
 }
 
-int32_t atmel_getsecure( dfu_device_t *device )
-{
+int32_t atmel_getsecure( dfu_device_t *device ) {
     int32_t result = 0;
     uint8_t buffer[1];
     TRACE( "%s( %p )\n", __FUNCTION__, device );
 
+    atmel_buffer_in_t buin;
+
+    // init the necessary parts of buin
+    buin.info.block_start = 0;
+    buin.info.block_end = 0;
+    buin.data = buffer;
+
     dfu_clear_status( device );
+
+    // TODO : Probably should use selelect_memory_unit command here
     /* Select SECURITY page */
     uint8_t command[4] = { 0x06, 0x03, 0x00, 0x02 };
     result = dfu_download(device, 4, command);
@@ -981,146 +1242,210 @@ int32_t atmel_getsecure( dfu_device_t *device )
     }
 
     // The security block is a single byte, so we'll just do it all in a block.
-    result = __atmel_read_page( device, 0, 1, buffer, false );
-    if( 1 != result ) {
-        return -2;
+    if( 0 != __atmel_read_block(device, &buin, false) ) {
+            return -2;
     }
 
     return( (0 == buffer[0]) ? ATMEL_SECURE_OFF : ATMEL_SECURE_ON );
 }
 
 int32_t atmel_flash( dfu_device_t *device,
-                     int16_t *buffer,
-                     const uint32_t start,
-                     const uint32_t end,
-                     const size_t page_size,
-                     const dfu_bool eeprom )
-{
-    uint32_t first = 0;
-    int32_t sent = 0;
-    uint8_t mem_page = 0;
-    int32_t result = 0;
-    size_t size = end - start;
+                     atmel_buffer_out_t *bout,
+                     const dfu_bool eeprom,
+                     const dfu_bool force,
+                     const dfu_bool quiet ) {
+    uint32_t i;
+    uint32_t progress = 0;  // keep record of sent progress as bytes * 32
+    uint8_t mem_page = 0;   // tracks the current memory page
+    int32_t result = 0;     // result storage for many function calls
+    int32_t retval = -1;    // the return value for this function
 
-    TRACE( "%s( %p, %p, %u, %u, %u, %s )\n", __FUNCTION__, device, buffer,
-           start, end, page_size, ((true == eeprom) ? "true" : "false") );
+    TRACE( "%s( %p, %p, %s, %s )\n", __FUNCTION__, device, bout,
+                    ((true == eeprom) ? "true" : "false"),
+                    ((true == quiet) ? "true" : "false") );
 
-    if( (NULL == device) || (NULL == buffer) || ((end - start) <= 0) ) {
-        DEBUG( "invalid arguments.\n" );
+    // check arguments
+    if( (NULL == device) || (NULL == bout) ) {
+        DEBUG( "ERROR: Invalid arguments, device/buffer pointer is NULL.\n" );
+        if( !quiet )
+            fprintf( stderr, "Program Error, use debug for more info.\n" );
+        return -1;
+    } else if ( bout->info.valid_start > bout->info.valid_end ) {
+        DEBUG( "ERROR: No valid target memory, end 0x%X before start 0x%X.\n",
+                bout->info.valid_end, bout->info.valid_start );
+        if( !quiet )
+            fprintf( stderr, "Program Error, use debug for more info.\n" );
         return -1;
     }
 
-    if( ADC_8051 != device->type ) {
-        if( GRP_AVR32 & device->type ) {
-            /* Select FLASH memory */
-            uint8_t command[4] = { 0x06, 0x03, 0x00, 0x00 };
-            if( 4 != dfu_download(device, 4, command) ) {
-                DEBUG( "dfu_download failed.\n" );
-                return -2;
-            }
-        }
-
-        /* Select Page 0 */
-        result = atmel_select_page( device, mem_page );
-        if( result < 0 ) {
-            DEBUG( "error selecting the page: %d\n", result );
-            return -3;
-        }
-
-    } else {
-        atmel_flash_prepair_buffer( &buffer[start], size, page_size );
+    // for each page with data, fill unassigned values on the page with 0xFF
+    // bout->data[0] always aligns with a flash page boundary irrespective
+    // of where valid_start is located
+    if( 0 != atmel_flash_prep_buffer( bout ) ) {
+        if( !quiet )
+            fprintf( stderr, "Program Error, use debug for more info.\n" );
+        return -2;
     }
 
-    first = start;
-
-    while( 1 )
-    {
-        uint32_t last = 0;
-        int32_t length;
-
-        /* Find the next valid character to start sending from */
-        for( ; first < end; first++ ) {
-            if( (0 <= buffer[first]) && (buffer[first] <= UINT8_MAX) ) {
-                /* We found a valid value. */
-                break;
-            }
-        }
-
-        /* We didn't find anything to flash. */
-        if( first == end ) {
-            break;
-        }
-
-        /* Find the last character in this valid block to send. */
-        for( last = first; last < end; last++ ) {
-            if( (buffer[last] < 0) || (UINT8_MAX < buffer[last]) ) {
-                break;
-            }
-        }
-
-recheck_page:
-        /* Make sure any writes align with the memory page boudary. */
-        if( (0x10000 * (1 + mem_page)) <= last ) {
-            if( first < (0x10000 * (1 + mem_page)) ) {
-                last = 0x10000 * (1 + mem_page);
-            } else {
-                int32_t result;
-
-                mem_page++;
-                result = atmel_select_page( device, mem_page );
-                if( result < 0 ) {
-                    DEBUG( "error selecting the page: %d\n", result );
-                    return -3;
-                }
-                goto recheck_page;
-            }
-        }
-
-        length = last - first;
-
-        DEBUG( "valid block length: %d, (%d - %d)\n", length, first, last );
-
-        while( 0 < length ) {
-            int32_t result;
-
-            if( ATMEL_MAX_TRANSFER_SIZE < length ) {
-                length = ATMEL_MAX_TRANSFER_SIZE;
-            }
-
-            result = atmel_flash_block( device, &(buffer[first]),
-                                        (UINT16_MAX & first), length, eeprom );
-
-            if( result < 0 ) {
-                DEBUG( "error flashing the block: %d\n", result );
-                return -4;
-            }
-
-            first += result;
-            sent += result;
-
-            DEBUG( "Next first: %d\n", first );
-            length = last - first;
-            DEBUG( "valid block length: %d\n", length );
-        }
-        DEBUG( "sent: %d, first: %u last: %u\n", sent, first, last );
-    }
-
-    if( mem_page > 0 ) {
-        int32_t result = atmel_select_page( device, 0 );
-        if( result < 0) {
-            DEBUG( "error selecting the page: %d\n", result );
-            return -5;
+    // determine the limits of where actual data resides in the buffer
+    bout->info.data_start = UINT32_MAX;
+    for( i = 0; i < bout->info.total_size; i++ ) {
+        if( bout->data[i] <= UINT8_MAX ) {
+            bout->info.data_end = i;
+            if (bout->info.data_start == UINT32_MAX)
+                bout->info.data_start = i;
         }
     }
 
-    return sent;
+    // debug info about data limits
+    DEBUG("Flash available from 0x%X to 0x%X (64kB p. %u to %u), 0x%X bytes.\n",
+            bout->info.valid_start, bout->info.valid_end,
+            bout->info.valid_start / ATMEL_64KB_PAGE,
+            bout->info.valid_end / ATMEL_64KB_PAGE,
+            bout->info.valid_end - bout->info.valid_start + 1); // bytes inclusive so +1
+    DEBUG("Data start @ 0x%X: 64kB p %u; %uB p 0x%X + 0x%X offset.\n",
+            bout->info.data_start, bout->info.data_start / ATMEL_64KB_PAGE,
+            bout->info.page_size, bout->info.data_start / bout->info.page_size,
+            bout->info.data_start % bout->info.page_size);
+    DEBUG("Data end @ 0x%X: 64kB p %u; %uB p 0x%X + 0x%X offset.\n",
+            bout->info.data_end, bout->info.data_end / ATMEL_64KB_PAGE,
+            bout->info.page_size, bout->info.data_end / bout->info.page_size,
+            bout->info.data_end % bout->info.page_size);
+    DEBUG("Totals: 0x%X bytes, %u %uB pages, %u 64kB byte pages.\n",
+            bout->info.data_end - bout->info.data_start + 1,
+            bout->info.data_end/bout->info.page_size - bout->info.data_start/bout->info.page_size + 1,
+            bout->info.page_size,
+            bout->info.data_end/ATMEL_64KB_PAGE - bout->info.data_start/ATMEL_64KB_PAGE + 1 );
+
+    // more error checking
+    if( (bout->info.data_start < bout->info.valid_start) ||
+            (bout->info.data_end > bout->info.valid_end) ) {
+        DEBUG( "ERROR: Data exists outside of the valid target flash region.\n" );
+        if( !quiet )
+            fprintf( stderr, "Hex file error, use debug for more info.\n" );
+        return -1;
+    } else if( bout->info.data_start == UINT32_MAX ) {
+        DEBUG( "ERROR: No valid data to flash.\n" );
+        if( !quiet )
+            fprintf( stderr, "Hex file error, use debug for more info.\n" );
+        return -1;
+    } else if( !force && 0 != (result = atmel_blank_check(device,
+                    bout->info.data_start, bout->info.data_end, quiet)) ) {
+        if ( !quiet )
+            fprintf( stderr,
+                    "The target memory for the program is not blank.\n"
+                    "Use --force flag to override this error check.\n");
+        DEBUG("The target memory is not blank.\n");
+        return -1;
+    }
+
+    // select eeprom/flash as the desired memory target, safe for non GRP_AVR32
+    mem_page = eeprom ? mem_eeprom : mem_flash;
+    if( 0 != atmel_select_memory_unit(device, mem_page) ) {
+        DEBUG ("Error selecting memory unit.\n");
+        if( !quiet )
+            fprintf( stderr, "Memory access error, use debug for more info.\n" );
+        return -2;
+    }
+
+    if( !quiet ) {
+        if( debug <= ATMEL_DEBUG_THRESHOLD ) {
+            // NOTE: from here on we need to run finally block
+            fprintf( stderr, "[================================] " );
+        }
+        fprintf( stderr, "Programming 0x%X bytes...\n",
+                bout->info.data_end - bout->info.data_start + 1 );
+        if( debug <= ATMEL_DEBUG_THRESHOLD ) {
+            // NOTE: from here on we need to run finally block
+            fprintf( stderr, "[" );
+        }
+    }
+
+    // program the data
+    bout->info.block_start = bout->info.data_start;
+    mem_page = bout->info.block_start / ATMEL_64KB_PAGE;
+    if( 0 != (result = atmel_select_page( device, mem_page )) ) {
+        DEBUG( "ERROR selecting 64kB page %d.\n", result );
+        retval = -3;
+        goto finally;
+    }
+
+    while (bout->info.block_start <= bout->info.data_end) {
+        // select the memory page if needed (safe for non GRP_AVR32)
+        if ( bout->info.block_start / ATMEL_64KB_PAGE != mem_page ) {
+            mem_page = bout->info.block_start / ATMEL_64KB_PAGE;
+            if( 0 != (result = atmel_select_page( device, mem_page )) ) {
+                DEBUG( "ERROR selecting 64kB page %d.\n", result );
+                retval = -3;
+                goto finally;
+            }
+        }
+
+        // find end address (info.block_end) for data section to write
+        for(bout->info.block_end = bout->info.block_start;
+                bout->info.block_end <= bout->info.data_end;
+                bout->info.block_end++) {
+            // check if the current value is valid
+            if( bout->data[bout->info.block_end] > UINT8_MAX ) break;
+            // check if the current data packet is too big
+            if( (bout->info.block_end - bout->info.block_start + 1) > ATMEL_MAX_TRANSFER_SIZE ) break;
+            // check if the current data value is outside of the 64kB flash page
+            if( bout->info.block_end / ATMEL_64KB_PAGE - mem_page ) break;
+        }
+        bout->info.block_end--; // bout->info.block_end was one step beyond the last data value to flash
+
+        // write the data
+        DEBUG("Program data block: 0x%X to 0x%X (p. %u), 0x%X bytes.\n",
+                bout->info.block_start, bout->info.block_end,
+                bout->info.block_end / ATMEL_64KB_PAGE,
+                bout->info.block_end - bout->info.block_start + 1);
+        result = __atmel_flash_block( device, bout, eeprom );
+        if( 0 != result ) {
+            DEBUG( "Error flashing the block: err %d.\n", result );
+            retval = -4;
+            goto finally;
+        }
+
+        // incrment bout->info.block_start to the next valid address
+        for(bout->info.block_start = bout->info.block_end + 1;
+                bout->info.block_start <= bout->info.data_end;
+                bout->info.block_start++) {
+            if( (bout->data[bout->info.block_start] <= UINT8_MAX) ) break;
+        } // bout->info.block_start is now on the first valid data for the next segment
+
+        // display progress in 32 increments (if not hidden)
+        if ( !quiet ) __print_progress( &bout->info, &progress );
+    }
+    retval = 0;
+
+finally:
+    if ( !quiet ) {
+        if( 0 == retval ) {
+            if ( debug <= ATMEL_DEBUG_THRESHOLD ) {
+                fprintf( stderr, "] " );
+            }
+            fprintf( stderr, "SUCCESS\n" );
+        } else {
+            if ( debug <= ATMEL_DEBUG_THRESHOLD ) {
+                fprintf( stderr, " X  ");
+            }
+            fprintf( stderr, "ERROR\n" );
+            if( retval==-3 )
+                fprintf( stderr,
+                        "Memory access error, use debug for more info.\n" );
+            else if( retval==-4 )
+                fprintf( stderr,
+                        "Memory write error, use debug for more info.\n" );
+        }
+    }
+
+    return retval;
 }
 
 static void atmel_flash_populate_footer( uint8_t *message, uint8_t *footer,
                                          const uint16_t vendorId,
                                          const uint16_t productId,
-                                         const uint16_t bcdFirmware )
-{
+                                         const uint16_t bcdFirmware ) {
     int32_t crc;
 
     TRACE( "%s( %p, %p, %u, %u, %u )\n", __FUNCTION__, message, footer,
@@ -1165,20 +1490,16 @@ static void atmel_flash_populate_footer( uint8_t *message, uint8_t *footer,
 }
 
 static void atmel_flash_populate_header( uint8_t *header,
-                                         const uint32_t start_address,
-                                         const size_t length, const dfu_bool eeprom )
-{
-    uint16_t end;
+                                         const uint32_t start,
+                                         const uint32_t end,
+                                         const dfu_bool eeprom ) {
 
-    TRACE( "%s( %p, %u, %u, %s )\n", __FUNCTION__, header, start_address,
-           length, ((true == eeprom) ? "true" : "false") );
+    TRACE( "%s( %p, 0x%X, 0x%X, %s )\n", __FUNCTION__, header, start,
+           end, ((true == eeprom) ? "true" : "false") );
 
     if( NULL == header ) {
         return;
     }
-
-    /* If we send 1 byte @ 0x0000, the end address will also be 0x0000 */
-    end = start_address + (length - 1);
 
     /* Command Identifier */
     header[0] = 0x01;   /* ld_prog_start */
@@ -1187,20 +1508,19 @@ static void atmel_flash_populate_header( uint8_t *header,
     header[1] = ((true == eeprom) ? 0x01 : 0x00);
 
     /* start_address */
-    header[2] = 0xff & (start_address >> 8);
-    header[3] = 0xff & start_address;
+    header[2] = 0xff & (start >> 8);
+    header[3] = 0xff & start;
 
     /* end_address */
     header[4] = 0xff & (end >> 8);
     header[5] = 0xff & end;
 }
 
-static int32_t atmel_flash_block( dfu_device_t *device,
-                                  int16_t *buffer,
-                                  const uint32_t base_address,
-                                  const size_t length,
-                                  const dfu_bool eeprom )
-{
+static int32_t __atmel_flash_block( dfu_device_t *device,
+                                    atmel_buffer_out_t *bout,
+                                    const dfu_bool eeprom ) {
+    // from doc7618, AT90 / ATmega app note protocol:
+    const size_t length = bout->info.block_end - bout->info.block_start + 1;
     uint8_t message[ATMEL_MAX_FLASH_BUFFER_SIZE];
     uint8_t *header;
     uint8_t *data;
@@ -1212,20 +1532,29 @@ static int32_t atmel_flash_block( dfu_device_t *device,
     size_t control_block_size;  /* USB control block size */
     size_t alignment;
 
-    TRACE( "%s( %p, %p, %u, %u, %s )\n", __FUNCTION__, device, buffer,
-           base_address, length, ((true == eeprom) ? "true" : "false") );
+    TRACE( "%s( %p, %p, %s )\n", __FUNCTION__, device, bout,
+                            ((true == eeprom) ? "true" : "false") );
 
-    if( (NULL == device) || (NULL == buffer) || (ATMEL_MAX_TRANSFER_SIZE < length) ) {
-        DEBUG( "invalid arguments.\n" );
+    // check input args
+    if( (NULL == device) || (NULL == bout) ) {
+        DEBUG( "ERROR: Invalid arguments, device/buffer pointer is NULL.\n" );
+        return -1;
+    } else if ( bout->info.block_start > bout->info.block_end ) {
+        DEBUG( "ERROR: End address 0x%X before start address 0x%X.\n",
+                bout->info.block_end, bout->info.block_start );
+        return -1;
+    } else if ( length > ATMEL_MAX_TRANSFER_SIZE ) {
+        DEBUG( "ERROR: 0x%X byte message > MAX TRANSFER SIZE (0x%X).\n",
+                length, ATMEL_MAX_TRANSFER_SIZE );
         return -1;
     }
 
-    /* 0 out the message. */
+    // 0 out the message
     memset( message, 0, ATMEL_MAX_FLASH_BUFFER_SIZE );
 
     if( GRP_AVR32 & device->type ) {
         control_block_size = ATMEL_AVR32_CONTROL_BLOCK_SIZE;
-        alignment = base_address % ATMEL_AVR32_CONTROL_BLOCK_SIZE;
+        alignment = bout->info.block_start % ATMEL_AVR32_CONTROL_BLOCK_SIZE;
     } else {
         control_block_size = ATMEL_CONTROL_BLOCK_SIZE;
         alignment = 0;
@@ -1235,19 +1564,24 @@ static int32_t atmel_flash_block( dfu_device_t *device,
     data   = &message[control_block_size + alignment];
     footer = &data[length];
 
-    atmel_flash_populate_header( header, base_address, length, eeprom );
+    atmel_flash_populate_header( header,
+            bout->info.block_start % ATMEL_64KB_PAGE,
+            bout->info.block_end % ATMEL_64KB_PAGE,
+            eeprom );
+    /* for programming flash or eeprom for xmega or avr32, header[1] = 0x00 */
+    /* for programming eeprom, memory was selected in atmel_flash */
+    if( ADC_XMEGA & device->type ) {
+	header[1] = 0x00; 
+    } 
 
-    DEBUG( "%d bytes to MCU %06x\n", length, base_address );
-
-    /* Copy the data */
+    // Copy the data
     for( i = 0; i < length; i++ ) {
-        data[i] = (uint8_t) buffer[i];
+        data[i] = (uint8_t) bout->data[bout->info.block_start + i];
     }
 
     atmel_flash_populate_footer( message, footer, 0xffff, 0xffff, 0xffff );
 
     message_length = ((size_t) (footer - header)) + ATMEL_FOOTER_SIZE;
-    DEBUG( "message length: %d\n", message_length );
 
     result = dfu_download( device, message_length, message );
 
@@ -1258,31 +1592,35 @@ static int32_t atmel_flash_block( dfu_device_t *device,
              * which means the device is write protected.
              */
             fprintf( stderr, "Device is write protected.\n" );
-
             dfu_clear_status( device );
         } else {
-            DEBUG( "dfu_download failed. %d\n", result );
+            DEBUG( "atmel_flash: flash data dfu_download failed.\n" );
+            DEBUG( "Expected message length of %d, got %d.\n",
+                    message_length, result );
         }
         return -2;
     }
 
-    /* check status */
+    // check status
     if( 0 != dfu_get_status(device, &status) ) {
         DEBUG( "dfu_get_status failed.\n" );
         return -3;
     }
 
-    if( DFU_STATUS_OK != status.bStatus ) {
-        DEBUG( "status(%s) was not OK.\n",
+    if( DFU_STATUS_OK == status.bStatus ) {
+        DEBUG( "Page write success.\n" );
+    } else {
+        DEBUG( "Page write not unsuccessful (err %s).\n",
                dfu_status_to_string(status.bStatus) );
-        return -4;
+        if ( STATE_DFU_ERROR == status.bState ) {
+            dfu_clear_status( device );
+        }
+        return (int32_t) status.bStatus;
     }
-
-    return (int32_t) length;
+    return 0;
 }
 
-void atmel_print_device_info( FILE *stream, atmel_device_info_t *info )
-{
+void atmel_print_device_info( FILE *stream, atmel_device_info_t *info ) {
     fprintf( stream, "%18s: 0x%04x - %d\n", "Bootloader Version", info->bootloaderVersion, info->bootloaderVersion );
     fprintf( stream, "%18s: 0x%04x - %d\n", "Device boot ID 1", info->bootID1, info->bootID1 );
     fprintf( stream, "%18s: 0x%04x - %d\n", "Device boot ID 2", info->bootID2, info->bootID2 );
