@@ -5,6 +5,7 @@ autom4te.cache
 configure
 config.status
 fedora/dfu-programmer.spec
+m4/compile
 src/.deps/*
 src/config.h
 src/config.h.in
