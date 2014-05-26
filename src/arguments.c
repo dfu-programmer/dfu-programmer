@@ -256,13 +256,16 @@ static void list_targets()
 
 static void basic_help()
 {
+    fprintf( stderr, PACKAGE_STRING "\n");
+    fprintf( stderr, PACKAGE_URL "\n" );
     fprintf( stderr, "Type 'dfu-programmer --help'    for a list of commands\n" );
     fprintf( stderr, "     'dfu-programmer --targets' to list supported target devices\n" );
-    fprintf( stderr, "     'dfu-programmer --version' to show version information\n" );
 }
 
 static void usage()
 {
+    fprintf( stderr, PACKAGE_STRING "\n");
+    fprintf( stderr, PACKAGE_URL "\n" );
     fprintf( stderr, "Usage: dfu-programmer target[:usb-bus,usb-addr] command [options] "
                      "[global-options] [file|data]\n\n" );
     fprintf( stderr, "global-options:\n"

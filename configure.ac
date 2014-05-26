@@ -2,8 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-#AC_INIT(dfu-programmer, VERSION, BUG-REPORT-ADDRESS)
-AC_INIT([dfu-programmer],[0.6.2])
+AC_INIT([dfu-programmer],[0.6.2],[],[],[https://github.com/dfu-programmer/dfu-programmer])
 AC_CONFIG_AUX_DIR(m4)
 AC_CONFIG_SRCDIR([src/atmel.c])
 AM_INIT_AUTOMAKE
