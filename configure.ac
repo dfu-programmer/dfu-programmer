@@ -5,8 +5,8 @@ AC_PREREQ(2.59)
 #AC_INIT(dfu-programmer, VERSION, BUG-REPORT-ADDRESS)
 AC_INIT([dfu-programmer],[0.6.2])
 AC_CONFIG_AUX_DIR(m4)
-AM_INIT_AUTOMAKE(AC_PACKAGE_NAME, AC_PACKAGE_VERSION)
 AC_CONFIG_SRCDIR([src/atmel.c])
+AM_INIT_AUTOMAKE
 AM_CONFIG_HEADER([src/config.h])
 
 AM_MAINTAINER_MODE
@@ -43,7 +43,7 @@ if test "$have_libusb_1_0" = "no"; then
   dnl libusb >= 0.1.8 is required, as we need usb_interrupt_read()
   AS_ECHO("using libusb");
   AC_CHECK_HEADER(usb.h,
-                  AC_CHECK_LIB(usb, usb_interrupt_read, 
+                  AC_CHECK_LIB(usb, usb_interrupt_read,
                                [LIBS="$LIBS -lusb"
                                 HAVE_USB=yes]))
 fi

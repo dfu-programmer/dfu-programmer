@@ -103,12 +103,14 @@ Reads the user space flash on the AVR32 chips and writes it as binary
 data to stdout.
 .HP
 .B erase
-[\-\-suppress\-validation]
+[\-\-force]
 .br
-Erases all the flash memory.
-This is required before the bootloader will perform other commands.
+Erases all the flash memory.  For AT90 and ATmega type devices a
+chip erase must be performed before other commands become available.
+Erase first checks if the memory is blank unless \-\-force flag is set.
 .HP
 .B flash
+[\-\-force]
 [\-\-suppress\-validation]
 [\-\-suppress\-bootloader\-mem]
 [\-\-serial=hexbytes:offset]
@@ -117,7 +119,9 @@ file or STDIN
 Writes flash memory.  The input file (or stdin) must use the "ihex" file
 format convention for a memory image. \-\-suppress\-bootloader\-mem
 ignores any data written to the bootloader memory space when flashing
-the device.  This option is particularly useful for the AVR32 chips
+the device.  This option is particularly useful for the AVR32 chips.
+The \-\-force flag tells the program to ignore whether memory inside
+the program region is blank.
 .B trampoline
 code.
 .PP
@@ -133,6 +137,7 @@ with a "0x" prefix, octal if it begins with a "0", otherwise is it
 assumed to be decimal.
 .HP
 .B flash-user
+[\-\-force]
 [\-\-suppress\-validation]
 [\-\-serial=hexbytes:offset]
 file or STDIN
@@ -140,15 +145,21 @@ file or STDIN
 Writes to user space flash on the AVR32 chips.  This block of flash
 is out of the normal range of flash blocks and is designed to contain
 configuration parameters.  The input file (or stdin) must use the "ihex"
-file format convention for a memory image.
+file format convention for a memory image.  The bootloader often uses
+the last word or last two words on the user page for configuration.  In
+order to write the last two words of the user page, \-\-force must be
+set.  If this data is corrupted, the device will restart into the
+bootloader until valid data is used (see atmel doc7745 or doc32166).
 .HP
 .B flash-eeprom
+[\-\-force]
 [\-\-suppress\-validation]
 [\-\-serial=hexbytes:offset]
 file or STDIN
 .br
 Writes to eeprom memory.  The input file (or stdin) must use the "ihex"
-file format convention for a memory image.
+file format convention for a memory image.  \-\-force can be used to
+prevent checking whether memory in the program region is blank.
 .HP
 .B setsecure
 .br
@@ -164,14 +175,12 @@ register
 .br
 Displays various product identifier bytes.
 .HP
-.B reset
+.B launch
+[\-\-no\-reset]
 .br
-Resets microcontroller using watchdog timer
-.HP
-.B start
-.br
-Starts the application firmware by having the microcontroller
-jump to address zero.
+Launch the application by resetting the device. The --no-reset flag
+can be used to launch the device without a reset (jump to the start
+address of the program).
 .SS Global Options
 \-\-quiet \- minimizes the output
 

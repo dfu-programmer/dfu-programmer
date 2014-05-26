@@ -116,7 +116,8 @@ error:
            reset in the attached device. In any event, since reset causes a USB detach
            this should not matter, so there is no point in raising an alarm.
         */
-        if( 0 != rv && com_reset != args.command ) {
+        if( 0 != rv && !(com_launch == args.command &&
+                args.com_launch_config.noreset == 0) ) {
             fprintf( stderr, "%s: failed to release interface %d.\n",
                              progname, dfu_device.interface );
             retval = 1;
