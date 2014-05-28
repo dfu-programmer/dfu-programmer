@@ -1,4 +1,4 @@
-.TH DFU\-PROGRAMMER 1 "January 24, 2013" "DFU\-PROGRAMMER" ""
+.TH DFU\-PROGRAMMER 1 "May 28, 2014" "DFU\-PROGRAMMER" ""
 .SH NAME
 dfu\-programmer \- USB firmware upgrading for Atmel microcontrollers
 .nh
@@ -88,19 +88,13 @@ Bootloaders for 8051 based controllers support writing certain
 configuration bytes.
 .HP
 .B dump
+[\-\-force]
+[\-\-bin]
+[(flash)|\-\-user|\-\-eeprom]
 .br
-Reads all the available flash memory, and writes it as binary
-data to stdout.
-.HP
-.B dump-eeprom
-.br
-Reads all the available eeprom memory, and writes it as binary
-data to stdout.
-.HP
-.B dump-user
-.br
-Reads the user space flash on the AVR32 chips and writes it as binary
-data to stdout.
+Reads the program memory in flash and output non\-blank pages in ihex format
+to stdout.  Use \-\-force to output the entire memory and \-\-bin for binary
+output.  User page and eeprom are selected using \-\-user and \-\-eeprom.
 .HP
 .B erase
 [\-\-force]
@@ -111,6 +105,7 @@ Erase first checks if the memory is blank unless \-\-force flag is set.
 .HP
 .B flash
 [\-\-force]
+[(flash)|\-\-user|\-\-eeprom]
 [\-\-suppress\-validation]
 [\-\-suppress\-bootloader\-mem]
 [\-\-serial=hexbytes:offset]
@@ -122,8 +117,13 @@ ignores any data written to the bootloader memory space when flashing
 the device.  This option is particularly useful for the AVR32 chips.
 The \-\-force flag tells the program to ignore whether memory inside
 the program region is blank.
-.B trampoline
-code.
+User page and eeprom are selected using \-\-user and \-\-eeprom.
+The user space flash on AVR32 chips lies outside of the normal range
+of flash blocks and is designed to contain configuration parameters.
+Bootloader configuration uses the last 4 to 8 bytes of the user page.
+If this data is corrupted, the device will restart into the
+bootloader until valid data is used (see atmel doc7745 or doc32166).
+\-\-force is always required here.
 .PP
 \-\-serial provides a way to inject a serial number or other unique
 sequence of bytes into the memory image programmed into the
@@ -135,31 +135,6 @@ on. There must be an even number of hex digits, but the sequence can
 be any length. The offset is assumed to be given in hex if it starts
 with a "0x" prefix, octal if it begins with a "0", otherwise is it
 assumed to be decimal.
-.HP
-.B flash-user
-[\-\-force]
-[\-\-suppress\-validation]
-[\-\-serial=hexbytes:offset]
-file or STDIN
-.br
-Writes to user space flash on the AVR32 chips.  This block of flash
-is out of the normal range of flash blocks and is designed to contain
-configuration parameters.  The input file (or stdin) must use the "ihex"
-file format convention for a memory image.  The bootloader often uses
-the last word or last two words on the user page for configuration.  In
-order to write the last two words of the user page, \-\-force must be
-set.  If this data is corrupted, the device will restart into the
-bootloader until valid data is used (see atmel doc7745 or doc32166).
-.HP
-.B flash-eeprom
-[\-\-force]
-[\-\-suppress\-validation]
-[\-\-serial=hexbytes:offset]
-file or STDIN
-.br
-Writes to eeprom memory.  The input file (or stdin) must use the "ihex"
-file format convention for a memory image.  \-\-force can be used to
-prevent checking whether memory in the program region is blank.
 .HP
 .B setsecure
 .br
@@ -256,7 +231,7 @@ http://www.atmel.com/Images/doc8457.pdf
 .UR AVR32 UC3 USB DFU Bootloader
 http://www.atmel.com/Images/doc7745.pdf
 .SH COPYRIGHT
-Copyright (C) 2005-2013 Weston Schmidt
+Copyright (C) 2005-2014 Weston Schmidt
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

@@ -123,20 +123,11 @@ require separate commands.
 Bootloaders for 8051 based controllers support writing certain
 configuration bytes.
 </p>
-<h4><b>dump</b></h4>
+<h4><b>dump</b> [--force] [--bin] [(flash)|--user|--eeprom]</h4>
 <p>
-Reads all the available flash memory, and writes it as binary
-data to stdout.
-</p>
-<h4><b>dump-eeprom</b></h4>
-<p>
-Reads all the available eeprom memory, and writes it as binary
-data to stdout.
-</p>
-<h4><b>dump-user</b></h4>
-<p>
-Reads the user space flash on the AVR32 chips and writes it as binary
-data to stdout.
+Reads the program memory in flash and output non-blank pages in ihex format
+to stdout.  Use --force to output the entire memory and --bin for binary
+output.  User page and eeprom are selected using --user and --eeprom.
 </p>
 <h4><b>erase</b> [--force]</h4>
 <p>
@@ -144,7 +135,8 @@ Erases all the flash memory.  For AT90 and ATmega type devices a
 chip erase must be performed before other commands become available.
 Erase first checks if the memory is blank unless --force flag is set.
 </p>
-<h4><b>flash</b> [--force] [--suppress-validation] [--suppress-bootloader-mem] [--serial=hexbytes:offset] file or STDIN</h4>
+<h4><b>flash</b> [--force] [(flash)|--user|--eeprom] [--suppress-validation] 
+[--suppress-bootloader-mem]<br /> [--serial=hexbytes:offset] file or STDIN</h4>
 <p>
 Writes flash memory.  The input file (or stdin) must use the "ihex" file
 format convention for a memory image. --suppress-bootloader-mem
@@ -152,7 +144,13 @@ ignores any data written to the bootloader memory space when flashing
 the device.  This option is particularly useful for the AVR32 chips.
 The --force flag tells the program to ignore whether memory inside
 the program region is blank.
-code.
+User page and eeprom are selected using --user and --eeprom.
+The user space flash on AVR32 chips lies outside of the normal range
+of flash blocks and is designed to contain configuration parameters.
+Bootloader configuration uses the last 4 to 8 bytes of the user page.
+If this data is corrupted, the device will restart into the
+bootloader until valid data is used (see atmel doc7745 or doc32166).
+--force is always required here.
 </p>
 <p>
 --serial provides a way to inject a serial number or other unique
@@ -165,23 +163,6 @@ on. There must be an even number of hex digits, but the sequence can
 be any length. The offset is assumed to be given in hex if it starts
 with a "0x" prefix, octal if it begins with a "0", otherwise is it
 assumed to be decimal.
-</p>
-<h4><b>flash-user</b> [--force] [--suppress-validation] [--serial=hexbytes:offset] file or STDIN</h4>
-<p>
-Writes to user space flash on the AVR32 chips.  This block of flash
-is out of the normal range of flash blocks and is designed to contain
-configuration parameters.  The input file (or stdin) must use the "ihex"
-file format convention for a memory image.  The bootloader often uses
-the last word or last two words on the user page for configuration.  In
-order to write the last two words of the user page, --force must be
-set.  If this data is corrupted, the device will restart into the
-bootloader until valid data is used (see atmel doc7745 or doc32166).
-</p>
-<h4><b>flash-eeprom</b> [--force] [--suppress-validation] [--serial=hexbytes:offset] file or STDIN</h4>
-<p>
-Writes to eeprom memory.  The input file (or stdin) must use the "ihex"
-file format convention for a memory image.  --force can be used to
-prevent checking whether memory in the program region is blank.
 </p>
 <h4><b>setsecure</b></h4>
 <p>
@@ -299,7 +280,7 @@ Weston Schmidt &lt;weston_schmidt@alumni.purdue.edu&gt;
 
 <h2>COPYRIGHT</h2>
 <p>
-Copyright &copy; 2005-2013 Weston Schmidt
+Copyright &copy; 2005-2014 Weston Schmidt
 </p>
 <p>
 This program is free software; you can redistribute it and/or modify
