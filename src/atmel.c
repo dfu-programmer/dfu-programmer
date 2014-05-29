@@ -24,6 +24,8 @@
 #include <string.h>
 #include <stddef.h>
 #include <errno.h>
+#include <time.h>
+#include <unistd.h>
 
 #include "dfu-bool.h"
 #include "dfu-device.h"
@@ -429,7 +431,8 @@ int32_t atmel_erase_flash( dfu_device_t *device,
                            dfu_bool quiet ) {
     uint8_t command[3] = { 0x04, 0x00, 0x00 };
     dfu_status_t status;
-    int32_t i;
+    int32_t retries;
+    time_t start;
 
     TRACE( "%s( %p, %d )\n", __FUNCTION__, device, mode );
 
@@ -462,19 +465,39 @@ int32_t atmel_erase_flash( dfu_device_t *device,
     }
 
     /* It looks like it can take a while to erase the chip.
-     * We will try for 10 seconds before giving up.
+     * We will try for 20 seconds before giving up.
+     * Different version of the bootloader behave in different ways.
+     * In some the dfu_get_status() call blocks until the operation completes.
+     * In others it returns immediately with an erase-in-progress status.
      */
-    for( i = 0; i < 10; i++ ) {
+    #define ERASE_SECONDS 20
+    start = time(NULL);
+    retries = 0;
+    do {
         if( 0 == dfu_get_status(device, &status) ) {
-            if( !quiet ) fprintf( stderr, "SUCCESS\n" );
-            DEBUG ( "CMD_ERASE status: Erase Done.\n" );
-            return status.bStatus;
+            // Status return is valid
+            if( (DFU_STATUS_ERROR_NOTDONE == status.bStatus) &&
+                (STATE_DFU_DOWNLOAD_BUSY == status.bState) ) {
+                // Erase is still in progress.
+                // Wait 100ms and get status again.
+                usleep(100000);
+            } else {
+                // Erase complete.
+                if( !quiet ) fprintf( stderr, "SUCCESS\n" );
+                DEBUG ( "CMD_ERASE status: Erase Done.\n" );
+                return status.bStatus;
+            }
         } else {
+            // Status command failed.
+            dfu_clear_status( device );
+            ++retries;
             if( !quiet ) fprintf( stderr, "ERROR\n" );
-            DEBUG ( "CMD_ERASE status check %d returned nonzero.\n", i );
+            DEBUG ( "CMD_ERASE status check %d returned nonzero.\n", retries );
         }
-    }
+    } while( (10 > retries) && (-1 != start) && (ERASE_SECONDS > (time(NULL) - start)) );
 
+    if( 10 > retries )
+        DEBUG ( "CMD_ERASE time limit %ds exceeded.\n", ERASE_SECONDS );
 
     return -3;
 }
