@@ -29,6 +29,11 @@
 #include "config.h"
 #include "arguments.h"
 
+// Modes used to display the list of targets.
+#define LIST_STD        0
+#define LIST_TEX        1
+#define LIST_HTML       2
+
 struct option_mapping_structure {
     const char *name;
     int32_t value;
@@ -233,19 +238,48 @@ static struct option_mapping_structure setfuse_map[] = {
     { NULL }
 };
 
-static void list_targets()
+static void list_targets(int mode)
 {
     struct target_mapping_structure *map = NULL;
     int col = 0;
+    atmel_device_class_t device_type = 0;
+    const char *dev_type_name;
 
     map = target_map;
 
-    fprintf( stderr, "targets:\n" );
     while( 0 != *((int32_t *) map) ) {
+        if( device_type != map->device_type ) {
+            device_type = map->device_type;
+            switch( device_type ) {
+            case ADC_8051:  dev_type_name = "8051";  break;
+            case ADC_AVR:   dev_type_name = "AVR";   break;
+            case ADC_AVR32: dev_type_name = "AVR32"; break;
+            case ADC_XMEGA: dev_type_name = "XMEGA"; break;
+            default:        dev_type_name = NULL;    break;
+            }
+            if( dev_type_name != NULL ) {
+                if( 0 != col ) {
+                    fprintf( stderr, "\n" );
+                    col = 0;
+                }
+                if( LIST_TEX == mode ) {
+                    fprintf( stderr, ".IP \"%s based controllers:\"\n", dev_type_name );
+                } else if( LIST_HTML == mode ) {
+                    if( map != target_map )
+                        fprintf( stderr, "</p>\n" );
+                    fprintf( stderr, "<h3>%s based controllers:</h3>\n<p>\n", dev_type_name );
+                } else {
+                    fprintf( stderr, "%s based controllers:\n", dev_type_name );
+                }
+            }
+        }
         if( 0 == col ) {
             fprintf( stderr, " " );
         }
-        fprintf( stderr, "   %-16s", map->name );
+        if( LIST_STD == mode )
+            fprintf( stderr, "   %-16s", map->name );
+        else
+            fprintf( stderr, " %s", map->name );
         if( 4 == ++col ) {
             fprintf( stderr, "\n" );
             col = 0;
@@ -254,6 +288,8 @@ static void list_targets()
     }
     if( 0 != col )
         fprintf( stderr, "\n" );
+    if( LIST_HTML == mode )
+        fprintf( stderr, "</p>\n" );
 }
 
 static void basic_help()
@@ -901,7 +937,15 @@ int32_t parse_arguments( struct programmer_arguments *args,
             return -1;
         }
         if( 0 == strcasecmp(argv[1], "--targets") ) {
-            list_targets();
+            list_targets( LIST_STD );
+            return -1;
+        }
+        if( 0 == strcasecmp(argv[1], "--targets-tex") ) {
+            list_targets( LIST_TEX );
+            return -1;
+        }
+        if( 0 == strcasecmp(argv[1], "--targets-html") ) {
+            list_targets( LIST_HTML );
             return -1;
         }
         if( 0 == strcasecmp(argv[1], "--help") ||
@@ -974,7 +1018,7 @@ done:
     }
 
     if(-3 == status ) {
-        list_targets();
+        list_targets( LIST_STD );
     } else if( 0 != status ) {
         usage();
     }
