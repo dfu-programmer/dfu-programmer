@@ -259,37 +259,37 @@ static void list_targets(int mode)
             }
             if( dev_type_name != NULL ) {
                 if( 0 != col ) {
-                    fprintf( stderr, "\n" );
+                    fprintf( stdout, "\n" );
                     col = 0;
                 }
                 if( LIST_TEX == mode ) {
-                    fprintf( stderr, ".IP \"%s based controllers:\"\n", dev_type_name );
+                    fprintf( stdout, ".IP \"%s based controllers:\"\n", dev_type_name );
                 } else if( LIST_HTML == mode ) {
                     if( map != target_map )
-                        fprintf( stderr, "</p>\n" );
-                    fprintf( stderr, "<h3>%s based controllers:</h3>\n<p>\n", dev_type_name );
+                        fprintf( stdout, "</p>\n" );
+                    fprintf( stdout, "<h3>%s based controllers:</h3>\n<p>\n", dev_type_name );
                 } else {
-                    fprintf( stderr, "%s based controllers:\n", dev_type_name );
+                    fprintf( stdout, "%s based controllers:\n", dev_type_name );
                 }
             }
         }
         if( 0 == col ) {
-            fprintf( stderr, " " );
+            fprintf( stdout, " " );
         }
         if( LIST_STD == mode )
-            fprintf( stderr, "   %-16s", map->name );
+            fprintf( stdout, "   %-16s", map->name );
         else
-            fprintf( stderr, " %s", map->name );
+            fprintf( stdout, " %s", map->name );
         if( 4 == ++col ) {
-            fprintf( stderr, "\n" );
+            fprintf( stdout, "\n" );
             col = 0;
         }
         map++;
     }
     if( 0 != col )
-        fprintf( stderr, "\n" );
+        fprintf( stdout, "\n" );
     if( LIST_HTML == mode )
-        fprintf( stderr, "</p>\n" );
+        fprintf( stdout, "</p>\n" );
 }
 
 static void basic_help()
