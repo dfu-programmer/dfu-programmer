@@ -494,9 +494,9 @@ int32_t atmel_erase_flash( dfu_device_t *device,
             if( !quiet ) fprintf( stderr, "ERROR\n" );
             DEBUG ( "CMD_ERASE status check %d returned nonzero.\n", retries );
         }
-    } while( (10 > retries) && (-1 != start) && (ERASE_SECONDS > (time(NULL) - start)) );
+    } while( (retries < 10) && (start != -1) && ((time(NULL) - start) < ERASE_SECONDS) );
 
-    if( 10 > retries )
+    if( retries < 10 )
         DEBUG ( "CMD_ERASE time limit %ds exceeded.\n", ERASE_SECONDS );
 
     return -3;
