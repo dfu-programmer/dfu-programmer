@@ -245,7 +245,7 @@ int32_t atmel_validate_buffer( atmel_buffer_in_t *buin,
 
     if( !quiet ) {
         if ( 0 == invalid_data_region + invalid_outside_data_region ) {
-            fprintf( stderr, "SUCCESS\n" );
+            fprintf( stderr, "Success\n" );
         } else {
             fprintf( stderr,
                     "%d invalid bytes in program region, %d outside region.\n",
@@ -483,7 +483,7 @@ int32_t atmel_erase_flash( dfu_device_t *device,
                 usleep(100000);
             } else {
                 // Erase complete.
-                if( !quiet ) fprintf( stderr, "SUCCESS\n" );
+                if( !quiet ) fprintf( stderr, "Success\n" );
                 DEBUG ( "CMD_ERASE status: Erase Done.\n" );
                 return status.bStatus;
             }
@@ -834,7 +834,7 @@ finally:
             if ( debug <= ATMEL_DEBUG_THRESHOLD ) {
                 fprintf( stderr, "] " );
             }
-            fprintf( stderr, "SUCCESS\n" );
+            fprintf( stderr, "Success\n" );
         } else {
             if ( debug <= ATMEL_DEBUG_THRESHOLD ) {
                 fprintf( stderr, " X  ");
@@ -984,9 +984,9 @@ int32_t atmel_blank_check( dfu_device_t *device,
 
 error:
     if( retval == 0 ) {
-        if( !quiet ) fprintf( stderr, "EMPTY.\n" );
+        if( !quiet ) fprintf( stderr, "Empty.\n" );
     } else if ( retval > 0 ) {
-        if( !quiet ) fprintf( stderr, "NOT BLANK at 0x%X.\n", retval );
+        if( !quiet ) fprintf( stderr, "Not blank at 0x%X.\n", retval );
     } else {
         if( !quiet ) fprintf( stderr, "ERROR.\n" );
     }
@@ -1447,7 +1447,7 @@ finally:
             if ( debug <= ATMEL_DEBUG_THRESHOLD ) {
                 fprintf( stderr, "] " );
             }
-            fprintf( stderr, "SUCCESS\n" );
+            fprintf( stderr, "Success\n" );
         } else {
             if ( debug <= ATMEL_DEBUG_THRESHOLD ) {
                 fprintf( stderr, " X  ");
