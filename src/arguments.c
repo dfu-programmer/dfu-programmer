@@ -242,6 +242,7 @@ static void list_targets(int mode)
 {
     struct target_mapping_structure *map = NULL;
     int col = 0;
+    int group_count = 0;
     atmel_device_class_t device_type = 0;
     const char *dev_type_name;
 
@@ -258,33 +259,46 @@ static void list_targets(int mode)
             default:        dev_type_name = NULL;    break;
             }
             if( dev_type_name != NULL ) {
-                if( 0 != col ) {
-                    fprintf( stdout, "\n" );
-                    col = 0;
-                }
                 if( LIST_TEX == mode ) {
+                    if( map != target_map )
+                        fprintf( stdout, "\n" );
                     fprintf( stdout, ".IP \"%s based controllers:\"\n", dev_type_name );
                 } else if( LIST_HTML == mode ) {
                     if( map != target_map )
-                        fprintf( stdout, "</p>\n" );
+                        fprintf( stdout, "\n</p>\n" );
                     fprintf( stdout, "<h3>%s based controllers:</h3>\n<p>\n", dev_type_name );
                 } else {
+                    if( 0 != col )
+                        fprintf( stdout, "\n" );
                     fprintf( stdout, "%s based controllers:\n", dev_type_name );
                 }
+                group_count = 0;
+                col = 0;
             }
         }
-        if( 0 == col ) {
-            fprintf( stdout, " " );
-        }
-        if( LIST_STD == mode )
+        if( LIST_STD == mode ) {
+            if( 0 == col ) {
+                fprintf( stdout, " " );
+            }
             fprintf( stdout, "   %-16s", map->name );
-        else
-            fprintf( stdout, " %s", map->name );
-        if( 4 == ++col ) {
-            fprintf( stdout, "\n" );
-            col = 0;
+            if( 4 == ++col ) {
+                fprintf( stdout, "\n" );
+                col = 0;
+            }
+        } else {
+            if( 0 == col ) {
+                if( 0 != group_count )
+                    fprintf( stdout, ",\n" );
+            } else {
+                fprintf( stdout, ", " );
+            }
+            fprintf( stdout, "%s", map->name );
+            if( 4 == ++col ) {
+                col = 0;
+            }
         }
         map++;
+        group_count++;
     }
     if( 0 != col )
         fprintf( stdout, "\n" );
