@@ -252,7 +252,7 @@ int32_t atmel_validate_buffer( atmel_buffer_in_t *buin,
 
     if( !quiet ) {
         if ( 0 == invalid_data_region + invalid_outside_data_region ) {
-            LOG( "success\n" );
+            LOG( "Success\n" );
         } else {
             LOG( "%d invalid bytes in program region, %d outside region.\n",
                  invalid_data_region, invalid_outside_data_region );
@@ -474,7 +474,7 @@ int32_t atmel_erase_flash( dfu_device_t *device,
      */
     for( i = 0; i < 10; i++ ) {
         if( 0 == dfu_get_status(device, &status) ) {
-            LOG_QUIET( "success\n" );
+            LOG_QUIET( "Success\n" );
             DEBUG ( "CMD_ERASE status: Erase Done.\n" );
             return status.bStatus;
         } else {
@@ -818,7 +818,7 @@ finally:
             if ( debug <= ATMEL_DEBUG_THRESHOLD ) {
                 LOG( PROGRESS_END );
             }
-            LOG( "success\n" );
+            LOG( "Success\n" );
         } else {
             if ( debug <= ATMEL_DEBUG_THRESHOLD ) {
                 LOG( " X  ");
@@ -966,9 +966,9 @@ int32_t atmel_blank_check( dfu_device_t *device,
 
 error:
     if( retval == 0 ) {
-        LOG_QUIET( "empty.\n" );
+        LOG_QUIET( "Empty.\n" );
     } else if ( retval > 0 ) {
-        LOG_QUIET( "not blank at 0x%X.\n", retval );
+        LOG_QUIET( "Not blank at 0x%X.\n", retval );
     } else {
         LOG_QUIET( "ERROR.\n" );
     }
@@ -1428,7 +1428,7 @@ finally:
             if ( debug <= ATMEL_DEBUG_THRESHOLD ) {
                 LOG( PROGRESS_END );
             }
-            LOG( "success\n" );
+            LOG( "Success\n" );
         } else {
             if ( debug <= ATMEL_DEBUG_THRESHOLD ) {
                 LOG( " X  ");
