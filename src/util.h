@@ -23,6 +23,8 @@
 
 #include <stdarg.h>
 
+#define log(...) fprintf( stderr, __VA_ARGS__ )
+
 void dfu_debug( const char *file, const char *function, const int line,
                 const int level, const char *format, ... );
 #endif

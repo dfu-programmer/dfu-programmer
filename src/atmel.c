@@ -66,6 +66,9 @@
 #define PROGRESS_BAR  ">"
 #define PROGRESS_END  "]  "
 
+#define log_quiet(...) if( !quiet ) log( __VA_ARGS__ )
+
+
 extern int debug;
 
 // ________  P R O T O T Y P E S  _______________________________
@@ -203,7 +206,7 @@ static inline void __print_progress( atmel_buffer_info_t *info,
                                         uint32_t *progress ) {
     if ( !(debug > ATMEL_DEBUG_THRESHOLD) ) {
         while ( ((info->block_end - info->data_start + 1) * 32) > *progress ) {
-            fprintf( stderr, PROGRESS_BAR );
+            log( PROGRESS_BAR );
             *progress += info->data_end - info->data_start + 1;
         }
     }
@@ -219,13 +222,13 @@ int32_t atmel_validate_buffer( atmel_buffer_in_t *buin,
     DEBUG( "Validating image from byte 0x%X to 0x%X.\n",
             bout->info.valid_start, bout->info.valid_end );
 
-    if( !quiet ) fprintf( stderr, "Validating...  " );
+    log_quiet( "Validating...  " );
     for( i = bout->info.valid_start; i <= bout->info.valid_end; i++ ) {
         if(  bout->data[i] <= UINT8_MAX ) {
             // Memory should have been programmed here
             if( ((uint8_t) bout->data[i]) != buin->data[i] ) {
                 if ( !invalid_data_region ) {
-                    if( !quiet ) fprintf( stderr, "ERROR\n" );
+                    log_quiet( "ERROR\n" );
                     DEBUG( "Image did not validate at byte: 0x%X of 0x%X.\n", i,
                             bout->info.valid_end - bout->info.valid_start + 1 );
                     DEBUG( "Wanted 0x%02x but read 0x%02x.\n",
@@ -249,11 +252,10 @@ int32_t atmel_validate_buffer( atmel_buffer_in_t *buin,
 
     if( !quiet ) {
         if ( 0 == invalid_data_region + invalid_outside_data_region ) {
-            fprintf( stderr, "success\n" );
+            log( "success\n" );
         } else {
-            fprintf( stderr,
-                    "%d invalid bytes in program region, %d outside region.\n",
-                    invalid_data_region, invalid_outside_data_region );
+            log( "%d invalid bytes in program region, %d outside region.\n",
+                 invalid_data_region, invalid_outside_data_region );
         }
     }
 
@@ -335,7 +337,7 @@ int32_t atmel_read_fuses( dfu_device_t *device,
 
     if( !(ADC_AVR32 & device->type) ) {
         DEBUG( "target does not support fuse operation.\n" );
-        fprintf( stderr, "target does not support fuse operation.\n" );
+        log( "target does not support fuse operation.\n" );
         return -1;
     }
 
@@ -460,9 +462,9 @@ int32_t atmel_erase_flash( dfu_device_t *device,
             return -1;
     }
 
-    if( !quiet ) fprintf( stderr, "Erasing flash...  " );
+    log_quiet( "Erasing flash...  " );
     if( 3 != dfu_download(device, 3, command) ) {
-        if( !quiet ) fprintf( stderr, "ERROR\n" );
+        log_quiet( "ERROR\n" );
         DEBUG( "dfu_download failed\n" );
         return -2;
     }
@@ -472,11 +474,11 @@ int32_t atmel_erase_flash( dfu_device_t *device,
      */
     for( i = 0; i < 10; i++ ) {
         if( 0 == dfu_get_status(device, &status) ) {
-            if( !quiet ) fprintf( stderr, "success\n" );
+            log_quiet( "success\n" );
             DEBUG ( "CMD_ERASE status: Erase Done.\n" );
             return status.bStatus;
         } else {
-            if( !quiet ) fprintf( stderr, "ERROR\n" );
+            log_quiet( "ERROR\n" );
             DEBUG ( "CMD_ERASE status check %d returned nonzero.\n", i );
         }
     }
@@ -501,7 +503,7 @@ int32_t atmel_set_fuse( dfu_device_t *device,
 
     if( !(ADC_AVR32 & device->type) ) {
        DEBUG( "target does not support fuse operation.\n" );
-       fprintf( stderr, "target does not support fuse operation.\n" );
+       log( "target does not support fuse operation.\n" );
        return -1;
     }
 
@@ -542,7 +544,7 @@ int32_t atmel_set_fuse( dfu_device_t *device,
 #else
             DEBUG( "Setting BODLEVEL can break your chip. Operation not performed\n" );
             DEBUG( "Rebuild with the SUPPORT_SET_BOD_FUSES #define enabled if you really want to do this.\n" );
-            fprintf( stderr, "Setting BODLEVEL can break your chip. Operation not performed.\n" );
+            log( "Setting BODLEVEL can break your chip. Operation not performed.\n" );
             return -1;
 #endif
         case set_bodhyst:
@@ -556,7 +558,7 @@ int32_t atmel_set_fuse( dfu_device_t *device,
 #else
             DEBUG("Setting BODHYST can break your chip. Operation not performed\n");
             DEBUG( "Rebuild with the SUPPORT_SET_BOD_FUSES #define enabled if you really want to do this.\n" );
-            fprintf( stderr, "Setting BODHYST can break your chip. Operation not performed.\n");
+            log( "Setting BODHYST can break your chip. Operation not performed.\n");
             return -1;
 #endif
         case set_boden:
@@ -571,7 +573,7 @@ int32_t atmel_set_fuse( dfu_device_t *device,
 #else
             DEBUG( "Setting BODEN can break your chip. Operation not performed\n" );
             DEBUG( "Rebuild with the SUPPORT_SET_BOD_FUSES #define enabled if you really want to do this.\n" );
-            fprintf( stderr, "Setting BODEN can break your chip. Operation not performed.\n" );
+            log( "Setting BODEN can break your chip. Operation not performed.\n" );
             return -1;
 #endif
         case set_isp_bod_en:
@@ -585,7 +587,7 @@ int32_t atmel_set_fuse( dfu_device_t *device,
 #else
             DEBUG( "Setting ISP_BOD_EN can break your chip. Operation not performed\n" );
             DEBUG( "Rebuild with the SUPPORT_SET_BOD_FUSES #define enabled if you really want to do this.\n" );
-            fprintf( stderr, "Setting ISP_BOD_EN can break your chip. Operation not performed.\n" );
+            log( "Setting ISP_BOD_EN can break your chip. Operation not performed.\n" );
             return -1;
 #endif
         case set_isp_io_cond_en:
@@ -600,7 +602,7 @@ int32_t atmel_set_fuse( dfu_device_t *device,
             break;
         default:
             DEBUG( "Fuse bits unrecognized\n" );
-            fprintf( stderr, "Fuse bits unrecognized.\n" );
+            log( "Fuse bits unrecognized.\n" );
             return -2;
             break;
     }
@@ -656,7 +658,7 @@ int32_t atmel_set_config( dfu_device_t *device,
     }
 
     if( DFU_STATUS_ERROR_WRITE == status.bStatus ) {
-        fprintf( stderr, "Device is write protected.\n" );
+        log( "Device is write protected.\n" );
     }
 
     return status.bStatus;
@@ -702,13 +704,12 @@ static int32_t __atmel_read_block( dfu_device_t *device,
         DEBUG( "dfu_upload result: %d\n", result );
         if( 0 == dfu_get_status(device, &status) ) {
             if( DFU_STATUS_ERROR_FILE == status.bStatus ) {
-                fprintf( stderr,
-                            "The device is read protected.\n" );
+                log( "The device is read protected.\n" );
             } else {
-                fprintf( stderr, "Unknown error. Try enabling debug.\n" );
+                log( "Unknown error. Try enabling debug.\n" );
             }
         } else {
-            fprintf( stderr, "Device is unresponsive.\n" );
+            log( "Device is unresponsive.\n" );
         }
         dfu_clear_status( device );
 
@@ -734,14 +735,14 @@ int32_t atmel_read_flash( dfu_device_t *device,
     if( (NULL == buin) || (NULL == device) ) {
         DEBUG( "invalid arguments.\n" );
         if( !quiet )
-            fprintf( stderr, "Program Error, use debug for more info.\n" );
+            log( "Program Error, use debug for more info.\n" );
         return -1;
     } else if ( mem_segment != mem_flash &&
                 mem_segment != mem_user &&
                 mem_segment != mem_eeprom ) {
         DEBUG( "Invalid memory segment %d to read.\n", mem_segment );
         if( !quiet )
-            fprintf( stderr, "Program Error, use debug for more info.\n" );
+            log( "Program Error, use debug for more info.\n" );
         return -1;
     }
 
@@ -749,20 +750,20 @@ int32_t atmel_read_flash( dfu_device_t *device,
     if( 0 != atmel_select_memory_unit(device, mem_segment) ) {
         DEBUG ("Error selecting memory unit.\n");
         if( !quiet )
-            fprintf( stderr, "Memory access error, use debug for more info.\n" );
+            log( "Memory access error, use debug for more info.\n" );
         return -3;
     }
 
     if( !quiet ) {
         if( debug <= ATMEL_DEBUG_THRESHOLD ) {
             // NOTE: From here on we should go to finally on error
-            fprintf( stderr, PROGRESS_METER );
+            log( PROGRESS_METER );
         }
-        fprintf( stderr, "Reading 0x%X bytes...\n",
-                buin->info.data_end - buin->info.data_start + 1 );
+        log( "Reading 0x%X bytes...\n",
+             buin->info.data_end - buin->info.data_start + 1 );
         if( debug <= ATMEL_DEBUG_THRESHOLD ) {
             // NOTE: From here on we should go to finally on error
-            fprintf( stderr, PROGRESS_START );
+            log( PROGRESS_START );
         }
     }
 
@@ -815,20 +816,18 @@ finally:
     if ( !quiet ) {
         if( 0 == retval ) {
             if ( debug <= ATMEL_DEBUG_THRESHOLD ) {
-                fprintf( stderr, PROGRESS_END );
+                log( PROGRESS_END );
             }
-            fprintf( stderr, "success\n" );
+            log( "success\n" );
         } else {
             if ( debug <= ATMEL_DEBUG_THRESHOLD ) {
-                fprintf( stderr, " X  ");
+                log( " X  ");
             }
-            fprintf( stderr, "ERROR\n" );
+            log( "ERROR\n" );
             if( retval==-3 )
-                fprintf( stderr,
-                        "Memory access error, use debug for more info.\n" );
+                log( "Memory access error, use debug for more info.\n" );
             else if( retval==-5 )
-                fprintf( stderr,
-                        "Memory read error, use debug for more info.\n" );
+                log( "Memory read error, use debug for more info.\n" );
         }
     }
     return retval;
@@ -924,10 +923,10 @@ int32_t atmel_blank_check( dfu_device_t *device,
     }
 
     if( !quiet ) {
-        fprintf( stderr, "Checking memory from 0x%X to 0x%X...  ",
+        log( "Checking memory from 0x%X to 0x%X...  ",
                 start, end );
         // from here need to go to retval on error
-        if( debug > ATMEL_DEBUG_THRESHOLD ) fprintf( stderr, "\n" );
+        if( debug > ATMEL_DEBUG_THRESHOLD ) log( "\n" );
     }
     do {
         // want to have checks align with pages
@@ -967,11 +966,11 @@ int32_t atmel_blank_check( dfu_device_t *device,
 
 error:
     if( retval == 0 ) {
-        if( !quiet ) fprintf( stderr, "empty.\n" );
+        log_quiet( "empty.\n" );
     } else if ( retval > 0 ) {
-        if( !quiet ) fprintf( stderr, "not blank at 0x%X.\n", retval );
+        log_quiet( "not blank at 0x%X.\n", retval );
     } else {
-        if( !quiet ) fprintf( stderr, "ERROR.\n" );
+        log_quiet( "ERROR.\n" );
     }
     return retval;
 }
@@ -1037,11 +1036,11 @@ static int32_t atmel_select_memory_unit( dfu_device_t *device,
                                                  unit == mem_sig ||
                                                  unit == mem_user ) ) {
         DEBUG( "%d is not a valid memory unit for AVR32 devices.\n", unit );
-        fprintf( stderr, "Invalid Memory Unit Selection.\n" );
+        log( "Invalid Memory Unit Selection.\n" );
         return -1;
     } else if ( unit > mem_extdf ) {
         DEBUG( "Valid Memory Units 0 to 0x%X, not 0x%X.\n", mem_extdf, unit );
-        fprintf( stderr, "Invalid Memory Unit Selection.\n" );
+        log( "Invalid Memory Unit Selection.\n" );
         return -1;
     }
 
@@ -1274,13 +1273,13 @@ int32_t atmel_flash( dfu_device_t *device,
     if( (NULL == device) || (NULL == bout) ) {
         DEBUG( "ERROR: Invalid arguments, device/buffer pointer is NULL.\n" );
         if( !quiet )
-            fprintf( stderr, "Program Error, use debug for more info.\n" );
+            log( "Program Error, use debug for more info.\n" );
         return -1;
     } else if ( bout->info.valid_start > bout->info.valid_end ) {
         DEBUG( "ERROR: No valid target memory, end 0x%X before start 0x%X.\n",
                 bout->info.valid_end, bout->info.valid_start );
         if( !quiet )
-            fprintf( stderr, "Program Error, use debug for more info.\n" );
+            log( "Program Error, use debug for more info.\n" );
         return -1;
     }
 
@@ -1289,7 +1288,7 @@ int32_t atmel_flash( dfu_device_t *device,
     // of where valid_start is located
     if( 0 != atmel_flash_prep_buffer( bout ) ) {
         if( !quiet )
-            fprintf( stderr, "Program Error, use debug for more info.\n" );
+            log( "Program Error, use debug for more info.\n" );
         return -2;
     }
 
@@ -1328,19 +1327,18 @@ int32_t atmel_flash( dfu_device_t *device,
             (bout->info.data_end > bout->info.valid_end) ) {
         DEBUG( "ERROR: Data exists outside of the valid target flash region.\n" );
         if( !quiet )
-            fprintf( stderr, "Hex file error, use debug for more info.\n" );
+            log( "Hex file error, use debug for more info.\n" );
         return -1;
     } else if( bout->info.data_start == UINT32_MAX ) {
         DEBUG( "ERROR: No valid data to flash.\n" );
         if( !quiet )
-            fprintf( stderr, "Hex file error, use debug for more info.\n" );
+            log( "Hex file error, use debug for more info.\n" );
         return -1;
     } else if( !force && 0 != (result = atmel_blank_check(device,
                     bout->info.data_start, bout->info.data_end, quiet)) ) {
         if ( !quiet )
-            fprintf( stderr,
-                    "The target memory for the program is not blank.\n"
-                    "Use --force flag to override this error check.\n");
+            log( "The target memory for the program is not blank.\n"
+                 "Use --force flag to override this error check.\n");
         DEBUG("The target memory is not blank.\n");
         return -1;
     }
@@ -1350,20 +1348,20 @@ int32_t atmel_flash( dfu_device_t *device,
     if( 0 != atmel_select_memory_unit(device, mem_page) ) {
         DEBUG ("Error selecting memory unit.\n");
         if( !quiet )
-            fprintf( stderr, "Memory access error, use debug for more info.\n" );
+            log( "Memory access error, use debug for more info.\n" );
         return -2;
     }
 
     if( !quiet ) {
         if( debug <= ATMEL_DEBUG_THRESHOLD ) {
             // NOTE: from here on we need to run finally block
-            fprintf( stderr, PROGRESS_METER );
+            log( PROGRESS_METER );
         }
-        fprintf( stderr, "Programming 0x%X bytes...\n",
+        log( "Programming 0x%X bytes...\n",
                 bout->info.data_end - bout->info.data_start + 1 );
         if( debug <= ATMEL_DEBUG_THRESHOLD ) {
             // NOTE: from here on we need to run finally block
-            fprintf( stderr, PROGRESS_START );
+            log( PROGRESS_START );
         }
     }
 
@@ -1428,20 +1426,18 @@ finally:
     if ( !quiet ) {
         if( 0 == retval ) {
             if ( debug <= ATMEL_DEBUG_THRESHOLD ) {
-                fprintf( stderr, PROGRESS_END );
+                log( PROGRESS_END );
             }
-            fprintf( stderr, "success\n" );
+            log( "success\n" );
         } else {
             if ( debug <= ATMEL_DEBUG_THRESHOLD ) {
-                fprintf( stderr, " X  ");
+                log( " X  ");
             }
-            fprintf( stderr, "ERROR\n" );
+            log( "ERROR\n" );
             if( retval==-3 )
-                fprintf( stderr,
-                        "Memory access error, use debug for more info.\n" );
+                log( "Memory access error, use debug for more info.\n" );
             else if( retval==-4 )
-                fprintf( stderr,
-                        "Memory write error, use debug for more info.\n" );
+                log( "Memory write error, use debug for more info.\n" );
         }
     }
 
@@ -1597,7 +1593,7 @@ static int32_t __atmel_flash_block( dfu_device_t *device,
              * caused by the device saying "you can't do that"
              * which means the device is write protected.
              */
-            fprintf( stderr, "Device is write protected.\n" );
+            log( "Device is write protected.\n" );
             dfu_clear_status( device );
         } else {
             DEBUG( "atmel_flash: flash data dfu_download failed.\n" );
