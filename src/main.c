@@ -57,7 +57,7 @@ int main( int argc, char **argv )
 
 #ifdef HAVE_LIBUSB_1_0
     if (libusb_init(&usbcontext)) {
-        log( "%s: can't init libusb.\n", progname );
+        LOG( "%s: can't init libusb.\n", progname );
     }
 #else
     usb_init();
@@ -90,7 +90,7 @@ int main( int argc, char **argv )
                               args.honor_interfaceclass );
 
     if( NULL == device ) {
-        log( "%s: no device present.\n", progname );
+        LOG( "%s: no device present.\n", progname );
         retval = 1;
         goto error;
     }
@@ -119,7 +119,7 @@ error:
         */
         if( 0 != rv && !(com_launch == args.command &&
                 args.com_launch_config.noreset == 0) ) {
-            log( "%s: failed to release interface %d.\n",
+            LOG( "%s: failed to release interface %d.\n",
                  progname, dfu_device.interface );
             retval = 1;
         }
@@ -130,7 +130,7 @@ error:
         libusb_close(dfu_device.handle);
 #else
         if( 0 != usb_close(dfu_device.handle) ) {
-            log( "%s: failed to close the handle.\n", progname );
+            LOG( "%s: failed to close the handle.\n", progname );
             retval = 1;
         }
 #endif

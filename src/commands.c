@@ -62,7 +62,7 @@ static void security_check( dfu_device_t *device ) {
 
 static void security_message( void ) {
     if( security_bit_state > ATMEL_SECURE_OFF ) {
-        log( "The security bit %s set.\n"
+        LOG( "The security bit %s set.\n"
              "Erase the device to clear temporarily.\n",
              (ATMEL_SECURE_ON == security_bit_state) ? "is" : "may be" );
     }
@@ -77,7 +77,7 @@ static int32_t execute_erase( dfu_device_t *device,
                                              args->flash_address_top,
                                              args->quiet ) ) {
             if ( !args->quiet ) {
-                log( "Chip already blank, to force erase use --force.\n");
+                LOG( "Chip already blank, to force erase use --force.\n");
             }
             return 0;
         }
@@ -102,7 +102,7 @@ static int32_t execute_setsecure( dfu_device_t *device,
 
     if( ADC_AVR32 != args->device_type ) {
         DEBUG( "target doesn't support security bit set.\n" );
-        log( "target doesn't support security bit set.\n" );
+        LOG( "target doesn't support security bit set.\n" );
         return -1;
     }
 
@@ -110,7 +110,7 @@ static int32_t execute_setsecure( dfu_device_t *device,
 
     if( result < 0 ) {
         DEBUG( "Error while setting security bit. (%d)\n", result );
-        log( "Error setting security bit.\n" );
+        LOG( "Error setting security bit.\n" );
         return -1;
     }
 
@@ -174,7 +174,7 @@ static int32_t execute_validate( dfu_device_t *device,
     retval = 0;
 
 error:
-    if( !quiet && 0 != retval ) log( "FAIL\n" );
+    if( !quiet && 0 != retval ) LOG( "FAIL\n" );
 
     if( NULL != buin.data ) {
         free( buin.data );
@@ -185,7 +185,7 @@ error:
 }
 
 static void print_flash_usage( atmel_buffer_info_t *info ) {
-    log("0x%X bytes written into 0x%X bytes memory (%.02f%%).\n",
+    LOG("0x%X bytes written into 0x%X bytes memory (%.02f%%).\n",
         info->data_end - info->data_start + 1,
         info->valid_end - info->valid_start + 1,
         ((float) (100 * (info->data_end - info->data_start + 1)) /
@@ -211,7 +211,7 @@ static int32_t execute_flash( dfu_device_t *device,
             break;
         case mem_eeprom:
             if( 0 == args->eeprom_memory_size ) {
-                log( "This device has no eeprom.\n" );
+                LOG( "This device has no eeprom.\n" );
                 return -1;
             }
             memory_size = args->eeprom_memory_size;
@@ -223,7 +223,7 @@ static int32_t execute_flash( dfu_device_t *device,
             mem_type = mem_user;
             target_offset = ATMEL_USER_PAGE_OFFSET;
             if( args->device_type != ADC_AVR32 ){
-                log( "Flash User only implemented for ADC_AVR32 devices.\n");
+                LOG( "Flash User only implemented for ADC_AVR32 devices.\n");
                 goto error;
             }
             break;
@@ -253,8 +253,8 @@ static int32_t execute_flash( dfu_device_t *device,
             DEBUG( "Inspect the hex file or try flash-user.\n" );
         }
         if( !args->quiet ) {
-            log( "WARNING: 0x%X bytes are outside target memory,\n", result );
-            log( " and will not be written.\n" );
+            LOG( "WARNING: 0x%X bytes are outside target memory,\n", result );
+            LOG( " and will not be written.\n" );
         }
     }
 // TODO : consider accepting a string to flash to the user page as well as a hex
@@ -275,8 +275,8 @@ static int32_t execute_flash( dfu_device_t *device,
                     //If we're ignoring the bootloader, don't write to it
                     bout.data[i] = UINT16_MAX;
                 } else {
-                    log( "Bootloader and code overlap.\n" );
-                    log( "Use --suppress-bootloader-mem to ignore\n" );
+                    LOG( "Bootloader and code overlap.\n" );
+                    LOG( "Use --suppress-bootloader-mem to ignore\n" );
                     goto error;
                 }
             }
@@ -285,7 +285,7 @@ static int32_t execute_flash( dfu_device_t *device,
         // check here about overwriting?
 
         if ( bout.info.data_start == UINT32_MAX ) {
-            log( "ERROR: No data to write into the user page.\n" );
+            LOG( "ERROR: No data to write into the user page.\n" );
             goto error;
         } else {
             DEBUG("Hex file contains %u bytes to write.\n",
@@ -297,7 +297,7 @@ static int32_t execute_flash( dfu_device_t *device,
             * configuration values in the last word or last two words of the
             * user page.  If these are overwritten the device may not start.
             * A warning should be issued before these values can be changed. */
-            log( "ERROR: --force flag is required to write user page.\n"
+            LOG( "ERROR: --force flag is required to write user page.\n"
                  " Last word(s) in user page contain configuration data.\n"
                  " The user page is erased whenever any data is written.\n"
                  " Without valid config. device always resets in bootloader.\n"
@@ -311,10 +311,10 @@ static int32_t execute_flash( dfu_device_t *device,
             //  ----------- the below for loop is not currently in use -----------
             for ( i = bout.info.total_size - 8; i < bout.info.total_size; i++ ) {
                 if ( -1 != bout.data[i] ) {
-                    log(
+                    LOG(
                             "ERROR: data overlap with bootloader configuration word(s).\n" );
                     DEBUG( "At position %d, value is %d.\n", i, bout.data[i] );
-                    log(
+                    LOG(
                             "ERROR: use the --force-config flag to write the data.\n" );
                     goto error;
                 }
@@ -338,7 +338,7 @@ static int32_t execute_flash( dfu_device_t *device,
     // ------------------  VALIDATE PROGRAM ------------------------------
     if( 0 == args->com_flash_data.suppress_validation ) {
         if( 0 != execute_validate(device, &bout, mem_type, args->quiet) ) {
-            log( "Memory did not validate. Did you erase?\n" );
+            LOG( "Memory did not validate. Did you erase?\n" );
             goto error;
         } else
             if( 0 == args->quiet ) print_flash_usage( &bout.info );
@@ -367,7 +367,7 @@ static int32_t execute_getfuse( dfu_device_t *device,
     /* only ADC_AVR32 seems to support fuse operation */
     if( !(ADC_AVR32 & args->device_type) ) {
         DEBUG( "target doesn't support fuse set operation.\n" );
-        log( "target doesn't support fuse set operation.\n" );
+        LOG( "target doesn't support fuse set operation.\n" );
         return -1;
     }
 
@@ -379,7 +379,7 @@ static int32_t execute_getfuse( dfu_device_t *device,
     if( 0 != status ) {
         DEBUG( "Error reading %s config information.\n",
                args->device_type_string );
-        log( "Error reading %s config information.\n",
+        LOG( "Error reading %s config information.\n",
              args->device_type_string );
         security_message();
         return status;
@@ -446,7 +446,7 @@ static int32_t execute_get( dfu_device_t *device,
     if( 0 != status ) {
         DEBUG( "Error reading %s config information.\n",
                args->device_type_string );
-        log( "Error reading %s config information.\n",
+        LOG( "Error reading %s config information.\n",
              args->device_type_string );
         security_message();
         return status;
@@ -520,13 +520,13 @@ static int32_t execute_get( dfu_device_t *device,
 
     if( 0 != controller_error ) {
         DEBUG( "%s requires 8051 based controller\n", message );
-        log( "%s requires 8051 based controller\n",
+        LOG( "%s requires 8051 based controller\n",
              message );
         return -1;
     }
 
     if( value < 0 ) {
-        log( "The requested device info is unavailable.\n" );
+        LOG( "The requested device info is unavailable.\n" );
         return -2;
     }
 
@@ -566,7 +566,7 @@ static int32_t execute_dump( dfu_device_t *device,
             target_offset = 0x80800000;
             break;
         default:
-            log( "Dump not currenlty supported for this memory.\n" );
+            LOG( "Dump not currenlty supported for this memory.\n" );
             goto error;
     }
 
@@ -605,7 +605,7 @@ static int32_t execute_dump( dfu_device_t *device,
         }
         if( i == buin.info.data_end ) {
             if( !args->quiet )
-                log( "Memory is blank, returning a single blank page.\n"
+                LOG( "Memory is blank, returning a single blank page.\n"
                      "Use --force to return the entire memory regardless.\n");
             buin.info.data_start = 0;
             buin.info.data_end = buin.info.page_size - 1;
@@ -622,14 +622,14 @@ static int32_t execute_dump( dfu_device_t *device,
 
     if( args->com_read_data.bin ) {
         if( !args->quiet )
-            log( "Dumping 0x%X bytes from address offset 0x%X.\n",
+            LOG( "Dumping 0x%X bytes from address offset 0x%X.\n",
                  buin.info.data_end + 1, target_offset );
         for( i = 0; i <= buin.info.data_end; i++ ) {
             fprintf( stdout, "%c", buin.data[i] );
         }
     } else {
         if( !args->quiet )
-            log( "Dumping 0x%X bytes from address offset 0x%X.\n",
+            LOG( "Dumping 0x%X bytes from address offset 0x%X.\n",
                  buin.info.data_end - buin.info.data_start + 1,
                  target_offset + buin.info.data_start );
         intel_hex_from_buffer( &buin,
@@ -657,7 +657,7 @@ static int32_t execute_setfuse( dfu_device_t *device,
     /* only ADC_AVR32 seems to support fuse operation */
     if( !(ADC_AVR32 & args->device_type) ) {
         DEBUG( "target doesn't support fuse set operation.\n" );
-        log( "target doesn't support fuse set operation.\n" );
+        LOG( "target doesn't support fuse set operation.\n" );
         return -1;
     }
 
@@ -667,7 +667,7 @@ static int32_t execute_setfuse( dfu_device_t *device,
     if( 0 != atmel_set_fuse(device, name, value) )
     {
         DEBUG( "Fuse set failed.\n" );
-        log( "Fuse set failed.\n" );
+        LOG( "Fuse set failed.\n" );
         security_message();
         return -1;
     }
@@ -682,20 +682,20 @@ static int32_t execute_configure( dfu_device_t *device,
 
     if( ADC_8051 != args->device_type ) {
         DEBUG( "target doesn't support configure operation.\n" );
-        log( "target doesn't support configure operation.\n" );
+        LOG( "target doesn't support configure operation.\n" );
         return -1;
     }
 
     if( (0xff & value) != value ) {
         DEBUG( "Value to configure must be in range 0-255.\n" );
-        log( "Value to configure must be in range 0-255.\n" );
+        LOG( "Value to configure must be in range 0-255.\n" );
         return -1;
     }
 
     if( 0 != atmel_set_config(device, name, value) )
     {
         DEBUG( "Configuration set failed.\n" );
-        log( "Configuration set failed.\n" );
+        LOG( "Configuration set failed.\n" );
         return -1;
     }
 
@@ -763,7 +763,7 @@ int32_t execute_command( dfu_device_t *device,
         case com_setsecure:
             return execute_setsecure( device, args );
         default:
-            log( "Not supported at this time.\n" );
+            LOG( "Not supported at this time.\n" );
     }
 
     return -1;

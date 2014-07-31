@@ -158,7 +158,7 @@ static int intel_validate_line( struct intel_record *record ) {
             break;
 
         default:
-            log( "Unsupported type. %d\n", record->type );
+            LOG( "Unsupported type. %d\n", record->type );
             /* Type 5 and other types are unsupported. */
             return -5;
     }
@@ -222,9 +222,9 @@ static void intel_invalid_addr_warning(uint32_t line_count, uint32_t address,
         uint32_t target_offset, size_t total_size) {
     DEBUG("Valid address region from 0x%X to 0x%X.\n",
         target_offset, target_offset + total_size - 1);
-    log( "WARNING (line %u): 0x%02x address outside valid region,\n",
+    LOG( "WARNING (line %u): 0x%02x address outside valid region,\n",
          line_count, address);
-    log( " suppressing additional address error messages.\n" );
+    LOG( " suppressing additional address error messages.\n" );
 }
 
 int32_t intel_process_data( atmel_buffer_out_t *bout, char value,
@@ -280,7 +280,7 @@ int32_t intel_hex_to_buffer( char *filename, atmel_buffer_out_t *bout,
     }
 
     if (NULL == filename) {
-        if( !quiet ) log( "Invalid filename.\n" );
+        if( !quiet ) LOG( "Invalid filename.\n" );
         retval = -2;
         goto error;
     }
@@ -290,7 +290,7 @@ int32_t intel_hex_to_buffer( char *filename, atmel_buffer_out_t *bout,
     } else {
         fp = fopen( filename, "r" );
         if( NULL == fp ) {
-            if( !quiet ) log( "Error opening %s\n", filename );
+            if( !quiet ) LOG( "Error opening %s\n", filename );
             retval = -3;
             goto error;
         }
@@ -301,12 +301,12 @@ int32_t intel_hex_to_buffer( char *filename, atmel_buffer_out_t *bout,
         // read the data
         if( 0 != intel_read_data(fp, &record) ) {
             if( !quiet )
-                log( "Error reading line %u.\n", line_count );
+                LOG( "Error reading line %u.\n", line_count );
             retval = -4;
             goto error;
         } else if ( 0 != intel_validate_line( &record ) ) {
             if( !quiet )
-                log( "Error: Line %u does not validate.\n", line_count );
+                LOG( "Error: Line %u does not validate.\n", line_count );
             retval = -5;
             goto error;
         } else
@@ -356,7 +356,7 @@ int32_t intel_hex_to_buffer( char *filename, atmel_buffer_out_t *bout,
 
     if ( invalid_address_count ) {
         if( !quiet )
-            log( "Total of 0x%X bytes in invalid addressed.\n",
+            LOG( "Total of 0x%X bytes in invalid addressed.\n",
                  invalid_address_count );
     }
 
@@ -369,7 +369,7 @@ error:
     }
 
     if( retval & !quiet ) {
-        log( "See --debug=%u or greater for more information.\n",
+        LOG( "See --debug=%u or greater for more information.\n",
              IHEX_DEBUG_THRESHOLD + 1 );
     }
 
