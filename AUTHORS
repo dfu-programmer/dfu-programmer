@@ -61,6 +61,7 @@ Contributors:
         - svn -> git migration
         - update --help -h text
         - also a lot of formatting updates (sorry)
+        - More info in README
     - Simon Large
         - fix atmel_reset function
         - get rid of compiler warnings around fprintf statements
@@ -82,5 +83,5 @@ Contributors:
         - support for using a specific usb bus/address
         - support for device serialisation
         - correction to --quiet output
-    - Walker Inman
-        - More info in README
+    - Olivier Pisano
+        - support for atxmega16c4

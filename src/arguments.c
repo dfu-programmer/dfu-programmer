@@ -29,6 +29,11 @@
 #include "config.h"
 #include "arguments.h"
 
+// Modes used to display the list of targets.
+#define LIST_STD        0
+#define LIST_TEX        1
+#define LIST_HTML       2
+
 struct option_mapping_structure {
     const char *name;
     int32_t value;
@@ -152,7 +157,8 @@ static struct target_mapping_structure target_map[] = {
     { "atxmega128c3",   tar_atxmega128c3,   ADC_XMEGA, 0x2FD7, 0x03eb, 0x20000, 0x2000, true,  512, true,  false, 32,  0x0800 },
     { "atxmega256c3",   tar_atxmega256c3,   ADC_XMEGA, 0x2FDA, 0x03eb, 0x40000, 0x2000, true,  512, true,  false, 32,  0x1000 },
     { "atxmega384c3",   tar_atxmega384c3,   ADC_XMEGA, 0x2FDB, 0x03eb, 0x60000, 0x2000, true,  512, true,  false, 32,  0x1000 },
-    { "atxmega16c4",    tar_atxmega16c4,    ADC_XMEGA, 0x2FD8, 0x03eb,  0x4000,  0x400, true,  256, true,  false, 32,   0x400 },
+    { "atxmega16c4",    tar_atxmega16c4,    ADC_XMEGA, 0x2FD8, 0x03eb,  0x4000, 0x1000, true,  256, true,  false, 32,   0x400 },
+    { "atxmega32c4",    tar_atxmega32c4,    ADC_XMEGA, 0x2FD9, 0x03eb,  0x8000, 0x1000, true,  256, true,  false, 32,   0x400 },
     { NULL }
 };
 
@@ -232,27 +238,72 @@ static struct option_mapping_structure setfuse_map[] = {
     { NULL }
 };
 
-static void list_targets()
+static void list_targets(int mode)
 {
     struct target_mapping_structure *map = NULL;
     int col = 0;
+    int group_count = 0;
+    atmel_device_class_t device_type = 0;
+    const char *dev_type_name;
 
     map = target_map;
 
-    fprintf( stderr, "targets:\n" );
     while( 0 != *((int32_t *) map) ) {
-        if( 0 == col ) {
-            fprintf( stderr, " " );
+        if( device_type != map->device_type ) {
+            device_type = map->device_type;
+            switch( device_type ) {
+            case ADC_8051:  dev_type_name = "8051";  break;
+            case ADC_AVR:   dev_type_name = "AVR";   break;
+            case ADC_AVR32: dev_type_name = "AVR32"; break;
+            case ADC_XMEGA: dev_type_name = "XMEGA"; break;
+            default:        dev_type_name = NULL;    break;
+            }
+            if( dev_type_name != NULL ) {
+                if( LIST_TEX == mode ) {
+                    if( map != target_map )
+                        fprintf( stdout, "\n" );
+                    fprintf( stdout, ".IP \"%s based controllers:\"\n", dev_type_name );
+                } else if( LIST_HTML == mode ) {
+                    if( map != target_map )
+                        fprintf( stdout, "\n</p>\n" );
+                    fprintf( stdout, "<h3>%s based controllers:</h3>\n<p>\n", dev_type_name );
+                } else {
+                    if( 0 != col )
+                        fprintf( stdout, "\n" );
+                    fprintf( stdout, "%s based controllers:\n", dev_type_name );
+                }
+                group_count = 0;
+                col = 0;
+            }
         }
-        fprintf( stderr, "   %-16s", map->name );
-        if( 4 == ++col ) {
-            fprintf( stderr, "\n" );
-            col = 0;
+        if( LIST_STD == mode ) {
+            if( 0 == col ) {
+                fprintf( stdout, " " );
+            }
+            fprintf( stdout, "   %-16s", map->name );
+            if( 4 == ++col ) {
+                fprintf( stdout, "\n" );
+                col = 0;
+            }
+        } else {
+            if( 0 == col ) {
+                if( 0 != group_count )
+                    fprintf( stdout, ",\n" );
+            } else {
+                fprintf( stdout, ", " );
+            }
+            fprintf( stdout, "%s", map->name );
+            if( 4 == ++col ) {
+                col = 0;
+            }
         }
         map++;
+        group_count++;
     }
     if( 0 != col )
-        fprintf( stderr, "\n" );
+        fprintf( stdout, "\n" );
+    if( LIST_HTML == mode )
+        fprintf( stdout, "</p>\n" );
 }
 
 static void basic_help()
@@ -900,7 +951,15 @@ int32_t parse_arguments( struct programmer_arguments *args,
             return -1;
         }
         if( 0 == strcasecmp(argv[1], "--targets") ) {
-            list_targets();
+            list_targets( LIST_STD );
+            return -1;
+        }
+        if( 0 == strcasecmp(argv[1], "--targets-tex") ) {
+            list_targets( LIST_TEX );
+            return -1;
+        }
+        if( 0 == strcasecmp(argv[1], "--targets-html") ) {
+            list_targets( LIST_HTML );
             return -1;
         }
         if( 0 == strcasecmp(argv[1], "--help") ||
@@ -973,7 +1032,7 @@ done:
     }
 
     if(-3 == status ) {
-        list_targets();
+        list_targets( LIST_STD );
     } else if( 0 != status ) {
         usage();
     }
