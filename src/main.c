@@ -35,6 +35,7 @@
 #include "atmel.h"
 #include "arguments.h"
 #include "commands.h"
+#include "util.h"
 
 
 int debug;
@@ -56,7 +57,7 @@ int main( int argc, char **argv )
 
 #ifdef HAVE_LIBUSB_1_0
     if (libusb_init(&usbcontext)) {
-        fprintf( stderr, "%s: can't init libusb.\n", progname );
+        LOG( "%s: can't init libusb.\n", progname );
     }
 #else
     usb_init();
@@ -89,7 +90,7 @@ int main( int argc, char **argv )
                               args.honor_interfaceclass );
 
     if( NULL == device ) {
-        fprintf( stderr, "%s: no device present.\n", progname );
+        LOG( "%s: no device present.\n", progname );
         retval = 1;
         goto error;
     }
@@ -118,8 +119,8 @@ error:
         */
         if( 0 != rv && !(com_launch == args.command &&
                 args.com_launch_config.noreset == 0) ) {
-            fprintf( stderr, "%s: failed to release interface %d.\n",
-                             progname, dfu_device.interface );
+            LOG( "%s: failed to release interface %d.\n",
+                 progname, dfu_device.interface );
             retval = 1;
         }
     }
@@ -129,7 +130,7 @@ error:
         libusb_close(dfu_device.handle);
 #else
         if( 0 != usb_close(dfu_device.handle) ) {
-            fprintf( stderr, "%s: failed to close the handle.\n", progname );
+            LOG( "%s: failed to close the handle.\n", progname );
             retval = 1;
         }
 #endif

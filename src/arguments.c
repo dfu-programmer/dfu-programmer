@@ -28,6 +28,7 @@
 #include "dfu-device.h"
 #include "config.h"
 #include "arguments.h"
+#include "util.h"
 
 struct option_mapping_structure {
     const char *name;
@@ -239,79 +240,79 @@ static void list_targets()
 
     map = target_map;
 
-    fprintf( stderr, "targets:\n" );
+    LOG( "targets:\n" );
     while( 0 != *((int32_t *) map) ) {
         if( 0 == col ) {
-            fprintf( stderr, " " );
+            LOG( " " );
         }
-        fprintf( stderr, "   %-16s", map->name );
+        LOG( "   %-16s", map->name );
         if( 4 == ++col ) {
-            fprintf( stderr, "\n" );
+            LOG( "\n" );
             col = 0;
         }
         map++;
     }
     if( 0 != col )
-        fprintf( stderr, "\n" );
+        LOG( "\n" );
 }
 
 static void basic_help()
 {
-    fprintf( stderr, PACKAGE_STRING "\n");
-    fprintf( stderr, PACKAGE_URL "\n" );
-    fprintf( stderr, "Type 'dfu-programmer --help'    for a list of commands\n" );
-    fprintf( stderr, "     'dfu-programmer --targets' to list supported target devices\n" );
+    LOG( PACKAGE_STRING "\n");
+    LOG( PACKAGE_URL "\n" );
+    LOG( "Type 'dfu-programmer --help'    for a list of commands\n" );
+    LOG( "     'dfu-programmer --targets' to list supported target devices\n" );
 }
 
 static void usage()
 {
-    fprintf( stderr, PACKAGE_STRING "\n");
-    fprintf( stderr, PACKAGE_URL "\n" );
-    fprintf( stderr, "Usage: dfu-programmer target[:usb-bus,usb-addr] command [options] "
-                     "[global-options] [file|data]\n\n" );
-    fprintf( stderr, "global-options:\n"
-                     "        --quiet\n"
-                     "        --debug level    (level is an integer specifying level of detail)\n"
-                     "        Global options can be used with any command and must come\n"
-                     "        after the command and before any file or data value\n" );
-    fprintf( stderr, "\n" );
-    fprintf( stderr, "command summary:\n" );
-    fprintf( stderr, "        launch       [--no-reset]\n" );
-    fprintf( stderr, "        read         [--force] [--bin] [(flash)|--user|--eeprom]\n" );
-    fprintf( stderr, "        erase        [--force] [--suppress-validation]\n" );
-    fprintf( stderr, "        flash        [--force] [(flash)|--user|--eeprom]\n"
-                     "                     [--suppress-validation]\n"
-                     "                     [--suppress-bootloader-mem]\n"
-                     "                     [--serial=hexdigits:offset] {file|STDIN}\n" );
-    fprintf( stderr, "        setsecure\n" );
-    fprintf( stderr, "        configure {BSB|SBV|SSB|EB|HSB}"
-                     " [--suppress-validation] data\n" );
-    fprintf( stderr, "        get     {bootloader-version|ID1|ID2|BSB|SBV|SSB|EB|\n"
-                     "                 manufacturer|family|product-name|\n"
-                     "                 product-revision|HSB}\n" );
-    fprintf( stderr, "        getfuse {LOCK|EPFL|BOOTPROT|BODLEVEL|BODHYST|\n"
-                     "                 BODEN|ISP_BOD_EN|ISP_IO_COND_EN|\n"
-                     "                 ISP_FORCE}\n" );
-    fprintf( stderr, "        setfuse {LOCK|EPFL|BOOTPROT|BODLEVEL|BODHYST|\n"
-                     "                 BODEN|ISP_BOD_EN|ISP_IO_COND_EN|\n"
-                     "                 ISP_FORCE} data\n" );
-    fprintf( stderr, "\n" );
-    fprintf( stderr, "additional details:\n" );
-    fprintf( stderr,
+    LOG( PACKAGE_STRING "\n");
+    LOG( PACKAGE_URL "\n" );
+    LOG( "Usage: dfu-programmer target[:usb-bus,usb-addr] command [options] "
+         "[global-options] [file|data]\n\n" );
+    LOG( "global-options:\n"
+         "        --quiet\n"
+         "        --debug level    (level is an integer specifying level of detail)\n"
+         "        Global options can be used with any command and must come\n"
+         "        after the command and before any file or data value\n" );
+    LOG( "\n" );
+    LOG( "command summary:\n" );
+    LOG( "        launch       [--no-reset]\n" );
+    LOG( "        read         [--force] [--bin] [(flash)|--user|--eeprom]\n" );
+    LOG( "        erase        [--force] [--suppress-validation]\n" );
+    LOG( "        flash        [--force] [(flash)|--user|--eeprom]\n"
+         "                     [--suppress-validation]\n"
+         "                     [--suppress-bootloader-mem]\n"
+         "                     [--serial=hexdigits:offset] {file|STDIN}\n" );
+    LOG( "        setsecure\n" );
+    LOG( "        configure {BSB|SBV|SSB|EB|HSB}"
+         " [--suppress-validation] data\n" );
+    LOG( "        get     {bootloader-version|ID1|ID2|BSB|SBV|SSB|EB|\n"
+         "                 manufacturer|family|product-name|\n"
+         "                 product-revision|HSB}\n" );
+    LOG( "        getfuse {LOCK|EPFL|BOOTPROT|BODLEVEL|BODHYST|\n"
+         "                 BODEN|ISP_BOD_EN|ISP_IO_COND_EN|\n"
+         "                 ISP_FORCE}\n" );
+    LOG( "        setfuse {LOCK|EPFL|BOOTPROT|BODLEVEL|BODHYST|\n"
+         "                 BODEN|ISP_BOD_EN|ISP_IO_COND_EN|\n"
+         "                 ISP_FORCE} data\n" );
+    LOG( "\n" );
+    LOG( "additional details:\n" );
+    LOG(
 " launch: Launch from the bootloader into the main program using a watchdog\n"
 "         reset.  To jump directly into the main program use --no-reset.\n");
-    fprintf( stderr,
+    LOG(
 "   read: Read the program memory in flash and output non-blank pages in ihex\n"
 "         format.  Use --force to output the entire memory and --bin for binary\n"
 "         output.  User page and eeprom are selected using --user and --eprom\n");
-    fprintf( stderr,
+    LOG(
 "  erase: Erase memory contents if the chip is not blank or always with --force\n");
-    fprintf( stderr,
+    LOG(
 "  flash: Flash a program onto device flash memory.  EEPROM and user page are\n"
 "         selected using --eeprom|--user flags. Use --force to ignore warning\n"
 "         when data exists in target memory region.  Bootloader configuration\n"
 "         uses last 4 to 8 bytes of user page, --force always required here.\n");
-    fprintf( stderr, "Note: version 0.6.1 commands still supported.\n");
+    LOG( "Note: version 0.6.1 commands still supported.\n");
 }
 
 
@@ -616,18 +617,18 @@ static int32_t assign_global_options( struct programmer_arguments *args,
                             || ('A' <= c && c <= 'F')) {
                             ++offset_start;
                         } else {
-                          fprintf(stderr, "other character: '%c'\n", *offset_start);
+                          LOG( "other character: '%c'\n", *offset_start);
                             return -1;
                         }
                     }
                     num_digits = offset_start - hexdigits;
                     if (num_digits & 1) {
-                        fprintf(stderr,"There must be an even number of hexdigits in the serial data\n");
+                        LOG("There must be an even number of hexdigits in the serial data\n");
                         return -1;
                     }
                     *offset_start++ = '\0';
                     if( 1 != sscanf(offset_start, "%ld", &serial_offset) ) {
-                      fprintf(stderr, "sscanf failed\n");
+                      LOG( "sscanf failed\n");
                       return -1;
                     }
                     serial_data = (int16_t *) malloc( (num_digits/2) * sizeof(int16_t) );
@@ -637,7 +638,7 @@ static int32_t assign_global_options( struct programmer_arguments *args,
                       buffer[1] = hexdigits[j+1];
                       buffer[2] = 0;
                       if( 1 != sscanf(buffer, "%02x", &data) ) {
-                        fprintf(stderr, "sscanf failed with buffer: %s\n", buffer);
+                        LOG( "sscanf failed with buffer: %s\n", buffer);
                         return -1;
                       }
                       serial_data[j/2] = (int16_t)data;
@@ -649,10 +650,10 @@ static int32_t assign_global_options( struct programmer_arguments *args,
                 }
                 default:
                     /* not supported. */
-                  fprintf(stderr,"command did not match: %d    flash: %d\n", args->command, com_flash);
+                  LOG("command did not match: %d    flash: %d\n", args->command, com_flash);
                     return -1;
             }
-            fprintf(stderr, "Success getting serial number\n");
+            LOG( "Success getting serial number\n");
             break;
         }
     }
@@ -834,46 +835,46 @@ static void print_args( struct programmer_arguments *args )
         }
     }
 
-    fprintf( stderr, "     target: %s\n", target );
-    fprintf( stderr, "    chip_id: 0x%04x\n", args->chip_id );
-    fprintf( stderr, "  vendor_id: 0x%04x\n", args->vendor_id );
-    fprintf( stderr, "    command: %s\n", command );
-    fprintf( stderr, "      quiet: %s\n", (0 == args->quiet) ? "false" : "true" );
-    fprintf( stderr, "      debug: %d\n", debug );
-    fprintf( stderr, "device_type: %s\n", args->device_type_string );
-    fprintf( stderr, "------ command specific below ------\n" );
+    LOG( "     target: %s\n", target );
+    LOG( "    chip_id: 0x%04x\n", args->chip_id );
+    LOG( "  vendor_id: 0x%04x\n", args->vendor_id );
+    LOG( "    command: %s\n", command );
+    LOG( "      quiet: %s\n", (0 == args->quiet) ? "false" : "true" );
+    LOG( "      debug: %d\n", debug );
+    LOG( "device_type: %s\n", args->device_type_string );
+    LOG( "------ command specific below ------\n" );
 
     switch( args->command ) {
         case com_configure:
-            fprintf( stderr, "       name: %d\n", args->com_configure_data.name );
-            fprintf( stderr, "   validate: %s\n",
+            LOG( "       name: %d\n", args->com_configure_data.name );
+            LOG( "   validate: %s\n",
                      (args->com_configure_data.suppress_validation) ?
                         "false" : "true" );
-            fprintf( stderr, "      value: %d\n", args->com_configure_data.value );
+            LOG( "      value: %d\n", args->com_configure_data.value );
             break;
         case com_erase:
-            fprintf( stderr, "   validate: %s\n",
+            LOG( "   validate: %s\n",
                      (args->com_erase_data.suppress_validation) ?
                         "false" : "true" );
             break;
         case com_flash:
         case com_eflash:
         case com_user:
-            fprintf( stderr, "   validate: %s\n",
+            LOG( "   validate: %s\n",
                      (args->com_flash_data.suppress_validation) ?
                         "false" : "true" );
-            fprintf( stderr, "   hex file: %s\n", args->com_flash_data.file );
+            LOG( "   hex file: %s\n", args->com_flash_data.file );
             break;
         case com_get:
-            fprintf( stderr, "       name: %d\n", args->com_get_data.name );
+            LOG( "       name: %d\n", args->com_get_data.name );
             break;
         case com_launch:
-            fprintf( stderr, "   no-reset: %d\n", args->com_launch_config.noreset );
+            LOG( "   no-reset: %d\n", args->com_launch_config.noreset );
             break;
         default:
             break;
     }
-    fprintf( stderr, "\n" );
+    LOG( "\n" );
     fflush( stdout );
 }
 
@@ -896,7 +897,7 @@ int32_t parse_arguments( struct programmer_arguments *args,
     /* Special case - check for the help commands which do not require a device type */
     if( argc == 2 ) {
         if( 0 == strcasecmp(argv[1], "--version") ) {
-            fprintf( stderr, PACKAGE_STRING "\n");
+            LOG( PACKAGE_STRING "\n");
             return -1;
         }
         if( 0 == strcasecmp(argv[1], "--targets") ) {
@@ -918,7 +919,7 @@ int32_t parse_arguments( struct programmer_arguments *args,
     }
 
     if( 0 != assign_target(args, argv[1], target_map) ) {
-        fprintf( stderr, "Unsupported target '%s'.\n", argv[1]);
+        LOG( "Unsupported target '%s'.\n", argv[1]);
         status = -3;
         goto done;
     }
@@ -946,7 +947,7 @@ int32_t parse_arguments( struct programmer_arguments *args,
     /* Make sure there weren't any *extra* options. */
     for( i = 0; i < argc; i++ ) {
         if( '\0' != *argv[i] ) {
-            fprintf( stderr, "unrecognized parameter\n" );
+            LOG( "unrecognized parameter\n" );
             status = -7;
             goto done;
         }
@@ -960,7 +961,7 @@ int32_t parse_arguments( struct programmer_arguments *args,
 // program is written to use a single command by it self, this probably should
 // be separated out as a new command.  The caveat is if data is written to '\0'
 // in the hex file, serialize will do nothing bc can't unwrite w/o erase
-            fprintf( stderr, "flash filename is missing\n" );
+            LOG( "flash filename is missing\n" );
             status = -8;
             goto done;
         }
