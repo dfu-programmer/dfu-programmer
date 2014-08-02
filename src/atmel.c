@@ -62,6 +62,13 @@
 #define TRACE(...)  dfu_debug( __FILE__, __FUNCTION__, __LINE__, \
                                ATMEL_TRACE_THRESHOLD, __VA_ARGS__ )
 
+
+#define PROGRESS_METER  "0%%                            100%%  "
+#define PROGRESS_START  "["
+#define PROGRESS_BAR    ">"
+#define PROGRESS_END    "]  "
+#define PROGRESS_ERROR  " X  "
+
 extern int debug;
 
 // ________  P R O T O T Y P E S  _______________________________
@@ -199,7 +206,7 @@ static inline void __print_progress( atmel_buffer_info_t *info,
                                         uint32_t *progress ) {
     if ( !(debug > ATMEL_DEBUG_THRESHOLD) ) {
         while ( ((info->block_end - info->data_start + 1) * 32) > *progress ) {
-            fprintf( stderr, ">" );
+            fprintf( stderr, PROGRESS_BAR );
             *progress += info->data_end - info->data_start + 1;
         }
     }
@@ -773,13 +780,13 @@ int32_t atmel_read_flash( dfu_device_t *device,
     if( !quiet ) {
         if( debug <= ATMEL_DEBUG_THRESHOLD ) {
             // NOTE: From here on we should go to finally on error
-            fprintf( stderr, "[================================] " );
+            fprintf( stderr, PROGRESS_METER );
         }
         fprintf( stderr, "Reading 0x%X bytes...\n",
                 buin->info.data_end - buin->info.data_start + 1 );
         if( debug <= ATMEL_DEBUG_THRESHOLD ) {
             // NOTE: From here on we should go to finally on error
-            fprintf( stderr, "[" );
+            fprintf( stderr, PROGRESS_START );
         }
     }
 
@@ -832,12 +839,12 @@ finally:
     if ( !quiet ) {
         if( 0 == retval ) {
             if ( debug <= ATMEL_DEBUG_THRESHOLD ) {
-                fprintf( stderr, "] " );
+                fprintf( stderr, PROGRESS_END );
             }
             fprintf( stderr, "Success\n" );
         } else {
             if ( debug <= ATMEL_DEBUG_THRESHOLD ) {
-                fprintf( stderr, " X  ");
+                fprintf( stderr, PROGRESS_ERROR );
             }
             fprintf( stderr, "ERROR\n" );
             if( retval==-3 )
@@ -1374,13 +1381,13 @@ int32_t atmel_flash( dfu_device_t *device,
     if( !quiet ) {
         if( debug <= ATMEL_DEBUG_THRESHOLD ) {
             // NOTE: from here on we need to run finally block
-            fprintf( stderr, "[================================] " );
+            fprintf( stderr, PROGRESS_METER );
         }
         fprintf( stderr, "Programming 0x%X bytes...\n",
                 bout->info.data_end - bout->info.data_start + 1 );
         if( debug <= ATMEL_DEBUG_THRESHOLD ) {
             // NOTE: from here on we need to run finally block
-            fprintf( stderr, "[" );
+            fprintf( stderr, PROGRESS_START );
         }
     }
 
@@ -1445,12 +1452,12 @@ finally:
     if ( !quiet ) {
         if( 0 == retval ) {
             if ( debug <= ATMEL_DEBUG_THRESHOLD ) {
-                fprintf( stderr, "] " );
+                fprintf( stderr, PROGRESS_END );
             }
             fprintf( stderr, "Success\n" );
         } else {
             if ( debug <= ATMEL_DEBUG_THRESHOLD ) {
-                fprintf( stderr, " X  ");
+                fprintf( stderr, PROGRESS_ERROR );
             }
             fprintf( stderr, "ERROR\n" );
             if( retval==-3 )
