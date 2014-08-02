@@ -85,3 +85,5 @@ Contributors:
         - correction to --quiet output
     - Olivier Pisano
         - support for atxmega16c4
+    - Neels Hofmeyr
+        - improvements to progress bar
