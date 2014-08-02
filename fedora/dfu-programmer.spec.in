@@ -42,7 +42,17 @@ Atmel chips with USB support.
 %{_datadir}/hal/fdi/information/20thirdparty/10-dfu-programmer.fdi
 
 %changelog
-Thu Jul 18 2013 Simon Large - 0.6.2-1
+* Sat Aug 02 2014 Simon Large - 0.7.0-1
+- Add support for atmega16c4 and atmega32c4
+- Fix device erase for bootloaders which return busy status
+- Better include file defaults for libusb when run bootstrap is run without pkgconfig.
+- Improved status output
+- Add hex dump commands
+- Add blank memory check
+- Major rework of the flash/user/eeprom code
+- Replace start and reset commands with launch
+- Repository and website migrated to GitHub
+* Thu Jul 18 2013 Simon Large - 0.6.2-1
 - Ignore false "No device found" errors.
 - Use the correct linker argument to specify the path for libusb-1.0.
 * Thu Apr 04 2013 Simon Large - 0.6.1-1

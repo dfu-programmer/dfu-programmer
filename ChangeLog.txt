@@ -1,10 +1,11 @@
+== Release 0.7.0 [2014-08-02]
  * Add support for atmega16c4 and atmega32c4
  * Fix device erase for bootloaders which return busy status
  * Better include file defaults for libusb when run bootstrap is run without pkgconfig.
  * Improved status output
  * Add hex dump commands
  * Add blank memory check
- * Major rework the flash/user/eeprom code
+ * Major rework of the flash/user/eeprom code
  * Replace start and reset commands with launch
  * Repository and website migrated to GitHub
 
