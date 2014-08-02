@@ -1,4 +1,4 @@
- * Add suppoprt for atmega16c4 and atmega32c4
+ * Add support for atmega16c4 and atmega32c4
  * Fix device erase for bootloaders which return busy status
  * Better include file defaults for libusb when run bootstrap is run without pkgconfig.
  * Improved status output
@@ -6,7 +6,7 @@
  * Add blank memory check
  * Major rework the flash/user/eeprom code
  * Replace start and reset commands with launch
- * Repository migrated to GitHub
+ * Repository and website migrated to GitHub
 
 == Release 0.6.2 [2013-07-19]
  * Use correct default libusb-1.0 path

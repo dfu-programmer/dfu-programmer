@@ -7,7 +7,7 @@ on Linux, and because standard DFU loaders do not work for Atmel's chips.
 Check out the Atmel website for more information.  They are kind enough to
 provide generally correct specifications this implementation is based on.
 
-The project website is http://dfu-programmer.sourceforge.net and you can
+The project website is http://dfu-programmer.github.io and you can
 use that to check for updates.
 
 Currently Supported Chips
@@ -47,7 +47,7 @@ Simple install procedure for Unix/Linux/MAC
   % cd dfu-programmer                           # change to the top-level
                                                 # directory
 
-  [ If the source was checked-out from SVN, run the following command.
+  [ If the source was checked-out from GitHub, run the following command.
     You may also need to do this if your libusb is in a non-standard location,
     or if the build fails to find it for some reason.  This command requires
     that autoconf is installed (sudo apt-get install autoconf) ]
@@ -68,7 +68,7 @@ Simple install procedure for Unix/Linux/MAC
     it is not. You can select libusb using --disable-libusb_1_0. If
     usb library is not available try getting libusb-1.0-0-dev ]
 
-    % make                                        # build dfu-programmer
+    % make                                      # build dfu-programmer
   [ Become root if necessary ]
   % make install                                # install dfu-programmer
 
@@ -91,7 +91,7 @@ Build procedure for Windows
   Open the MinGW shell window and change to the dfu-programmer folder.
   Note that C:\dir is accessed in MinGW using the path /c/dir
 
-  [ If the source was checked-out from SVN, run the following command ]
+  [ If the source was checked-out from GitHub, run the following command ]
   $ ./bootstrap.sh
 
   $ ./configure --disable-libusb_1_0

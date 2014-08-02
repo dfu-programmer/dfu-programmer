@@ -1,0 +1,60 @@
+Update info files
+=================
+
+  Make sure the following files are up to date:
+  - ChangeLog.txt
+  - AUTHORS
+  - README
+  - docs/dfu-programmer.1
+  - docs/dfu-programmer.html
+  - fedora/dfu-programmer.spec.in
+
+  Note that the list of devices shown in README and the docs can be auto-generated
+  using dfu-programmer --targets / --targets-tex / --targets-html
+
+  Update the version number in configure.ac and push changes to GitHub.
+
+
+To create the source tarball
+============================
+
+  After updating the version information in configure.ac
+
+  ./bootstrap.sh
+
+  ./configure
+
+  make dist
+
+
+To create the Windows binary zip
+================================
+
+  Create a folder named something like dfu-prog-usb-1.2.2 containing the Atmel
+  driver set from FLIP. Be sure to include Atmel's COPYING notice too.
+
+  Copy dfu-programmer.exe to the parent of this directory.
+
+  Copy the html man page from the doc folder.
+
+  In the parent directory create a zip archive containing the executable, man page and the
+  dfu-prog-usb-x.x.x directory.
+
+
+Upload
+======
+
+  Upload the tarball and in file information mark it as the default for everything except Windows.
+  Set the description as "x.x.x tarball"
+
+  Upload the Windows package and mark it as the default for Windows.
+  Set the description as "x.x.x Windows binary with USB driver"
+
+  Upload the SF-ReadMe.txt file as ReadMe.txt
+
+
+Web page update
+===============
+
+  Edit the index.php page in the dfu-programmer.github.io repository. As soon as the changes
+  are pushed back to the repo the web page will update.
