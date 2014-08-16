@@ -1,29 +1,6 @@
-# file: dfu_complete
-# parameter-completion for dfu-programmer
-# usesage:
-# $ source dfu_complete
-#
-# COMPREPLY: array containing possible completions
-# COMP_WORDS: array continaing individual cmd args so far
-# COMP_CWORD: index of the cmd arg containing the current position
-#   - NOTE: use ${COMP_WORDS[COMP_CWORD]} for the current word
-# COMP_LINE: the current command line
-#
-# TODO : filter commands based on target (eg, no --eeprom for at32uc3 devices)
-# TODO : suppress commands that are mutually exclusive when one has already
-#        been used -- the structure to achieve this exists in the flash case
-# TODO : when tabbing file names, add back ability to use directories - problem
-#        is that it shouldn't append a space at the end of the directory (only
-#        at the end of a file)
-#
+# dfu_completion file, partial of dfu_programmer script
 
-
-TARGET_START_LINE=$( grep START_TARGET_LIST_LINE -n src/arguments.c  | \
-                        sed "s/^\(.*\):.*/\1/")
-TARGET_END_LINE=$( grep END_TARGET_LIST_LINE -n src/arguments.c | \
-                        sed "s/^\(.*\):.*/\1/")
-TARGETS=$( sed -n "$TARGET_START_LINE,$TARGET_END_LINE p" src/arguments.c | \
-          grep "^\s*{ \"" | sed 's/.*"\(.*\)".*/\1/' )
+TARGETS=$( echo $TARGET_INFO | sed 's/::[xX0-9A-Fa-f]*//g' )
 
 COMMANDS=(launch read erase flash setsecure config get getfuse setfuse)
 
@@ -60,7 +37,7 @@ _dfu-programmer () {
         # only either user or eeprom should be displayed based on if device has
         # either feature -- or either one is selected when both features exist
         flags="--force --user --eeprom --bin"
-        eeprom_size=$( grep $target src/arguments.c | sed 's/.*,\s*\([^\s]*\)\s*},/\1/' | sed 's/\s//g' )
+        eeprom_size=$( echo $TARGET_INFO | sed "s/.* $target:://" | sed 's/ .*//' )
         if [[ "$eeprom_size" == 0 ]]; then
           flags=$( echo $flags | sed 's/--eeprom//' )
         fi
@@ -72,7 +49,7 @@ _dfu-programmer () {
       flash)
         filetype="hex"
         flags="--force --user --eeprom --bin"
-        eeprom_size=$( grep $target src/arguments.c | sed 's/.*,\s*\([^\s]*\)\s*},/\1/' | sed 's/\s//g' )
+        eeprom_size=$( echo $TARGET_INFO | sed "s/.* $target:://" | sed 's/ .*//' )
         if [[ "$eeprom_size" == 0 ]]; then
           flags=$( echo $flags | sed 's/--eeprom//' )
         fi
@@ -128,5 +105,3 @@ _dfu-programmer () {
 }
 
 complete -F _dfu-programmer dfu-programmer
-
-# vim: shiftwidth=2
