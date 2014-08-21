@@ -46,6 +46,7 @@ int main( int argc, char **argv )
 {
     static const char *progname = PACKAGE;
     int retval = 0;
+    int status;
     dfu_device_t dfu_device;
     struct programmer_arguments args;
 #ifdef HAVE_LIBUSB_1_0
@@ -56,9 +57,14 @@ int main( int argc, char **argv )
 
     memset( &args, 0, sizeof(args) );
     memset( &dfu_device, 0, sizeof(dfu_device) );
-    if( 0 != parse_arguments(&args, argc, argv) ) {
+
+    status = parse_arguments(&args, argc, argv);
+    if( status < 0 ) {
         /* Exit with an error. */
         return 1;
+    } else if (status > 0) {
+        /* It was handled by parse_arguments. */
+        return 0;
     }
 
 #ifdef HAVE_LIBUSB_1_0
