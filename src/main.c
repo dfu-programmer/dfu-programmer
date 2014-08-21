@@ -69,11 +69,6 @@ int main( int argc, char **argv )
         goto error;
     }
 
-    if( args.command == com_version ) {
-        printf( PACKAGE_STRING "\n" );
-        return 0;
-    }
-
     if( debug >= 200 ) {
 #ifdef HAVE_LIBUSB_1_0
         libusb_set_debug(usbcontext, debug );
