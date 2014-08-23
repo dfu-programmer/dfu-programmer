@@ -87,3 +87,5 @@ Contributors:
         - support for atxmega16c4
     - Neels Hofmeyr
         - improvements to progress bar
+    - John Szakmeister
+        - Fix exit status of help-related options and improve start sequence

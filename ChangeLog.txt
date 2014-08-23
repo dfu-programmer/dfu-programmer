@@ -1,3 +1,5 @@
+ * Fix exit status of help-related options and improve start sequence
+
 == Release 0.7.0 [2014-08-02]
  * Add support for atmega16c4 and atmega32c4
  * Fix device erase for bootloaders which return busy status
