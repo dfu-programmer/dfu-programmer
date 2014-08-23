@@ -54,6 +54,13 @@ int main( int argc, char **argv )
     struct usb_device *device = NULL;
 #endif
 
+    memset( &args, 0, sizeof(args) );
+    memset( &dfu_device, 0, sizeof(dfu_device) );
+    if( 0 != parse_arguments(&args, argc, argv) ) {
+        /* Exit with an error. */
+        return 1;
+    }
+
 #ifdef HAVE_LIBUSB_1_0
     if (libusb_init(&usbcontext)) {
         fprintf( stderr, "%s: can't init libusb.\n", progname );
@@ -61,13 +68,6 @@ int main( int argc, char **argv )
 #else
     usb_init();
 #endif
-
-    memset( &args, 0, sizeof(args) );
-    memset( &dfu_device, 0, sizeof(dfu_device) );
-    if( 0 != parse_arguments(&args, argc, argv) ) {
-        retval = 1;
-        goto error;
-    }
 
     if( debug >= 200 ) {
 #ifdef HAVE_LIBUSB_1_0
