@@ -948,25 +948,25 @@ int32_t parse_arguments( struct programmer_arguments *args,
     if( argc == 2 ) {
         if( 0 == strcasecmp(argv[1], "--version") ) {
             fprintf( stderr, PACKAGE_STRING "\n");
-            return -1;
+            return 1;
         }
         if( 0 == strcasecmp(argv[1], "--targets") ) {
             list_targets( LIST_STD );
-            return -1;
+            return 1;
         }
         if( 0 == strcasecmp(argv[1], "--targets-tex") ) {
             list_targets( LIST_TEX );
-            return -1;
+            return 1;
         }
         if( 0 == strcasecmp(argv[1], "--targets-html") ) {
             list_targets( LIST_HTML );
-            return -1;
+            return 1;
         }
         if( 0 == strcasecmp(argv[1], "--help") ||
                 0 == strcasecmp(argv[1], "-h") ||
                 0 == strcasecmp(argv[1], "--h") ) {
             usage();
-            return -1;
+            return 1;
         }
     }
 

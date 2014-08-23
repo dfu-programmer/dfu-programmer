@@ -46,6 +46,7 @@ int main( int argc, char **argv )
 {
     static const char *progname = PACKAGE;
     int retval = 0;
+    int status;
     dfu_device_t dfu_device;
     struct programmer_arguments args;
 #ifdef HAVE_LIBUSB_1_0
@@ -54,25 +55,26 @@ int main( int argc, char **argv )
     struct usb_device *device = NULL;
 #endif
 
+    memset( &args, 0, sizeof(args) );
+    memset( &dfu_device, 0, sizeof(dfu_device) );
+
+    status = parse_arguments(&args, argc, argv);
+    if( status < 0 ) {
+        /* Exit with an error. */
+        return 1;
+    } else if (status > 0) {
+        /* It was handled by parse_arguments. */
+        return 0;
+    }
+
 #ifdef HAVE_LIBUSB_1_0
     if (libusb_init(&usbcontext)) {
         fprintf( stderr, "%s: can't init libusb.\n", progname );
+        return 1;
     }
 #else
     usb_init();
 #endif
-
-    memset( &args, 0, sizeof(args) );
-    memset( &dfu_device, 0, sizeof(dfu_device) );
-    if( 0 != parse_arguments(&args, argc, argv) ) {
-        retval = 1;
-        goto error;
-    }
-
-    if( args.command == com_version ) {
-        printf( PACKAGE_STRING "\n" );
-        return 0;
-    }
 
     if( debug >= 200 ) {
 #ifdef HAVE_LIBUSB_1_0
