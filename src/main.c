@@ -70,6 +70,7 @@ int main( int argc, char **argv )
 #ifdef HAVE_LIBUSB_1_0
     if (libusb_init(&usbcontext)) {
         fprintf( stderr, "%s: can't init libusb.\n", progname );
+        return 1;
     }
 #else
     usb_init();
