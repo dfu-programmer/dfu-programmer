@@ -70,7 +70,7 @@ static void security_message( void ) {
 
 static int32_t execute_erase( dfu_device_t *device,
                               struct programmer_arguments *args ) {
-    int32_t result = 0;
+    int32_t result = SUCCESS;
 
     if( !args->com_erase_data.force ) {
         if ( 0 == atmel_blank_check( device, args->flash_address_bottom,
@@ -79,14 +79,16 @@ static int32_t execute_erase( dfu_device_t *device,
             if ( !args->quiet ) {
                 fprintf( stderr, "Chip already blank, to force erase use --force.\n");
             }
-            return 0;
+            return SUCCESS;
         }
     }
 
     DEBUG( "erase 0x%X bytes.\n",
            (args->flash_address_top - args->flash_address_bottom) );
 
-    result = atmel_erase_flash( device, ATMEL_ERASE_ALL, args->quiet );
+    if( 0 != (result = atmel_erase_flash( device, ATMEL_ERASE_ALL, args->quiet )) ) {
+        return result;
+    }
 
     if ( !args->com_erase_data.suppress_validation ) {
         result = atmel_blank_check( device, args->flash_address_bottom,
@@ -103,7 +105,7 @@ static int32_t execute_setsecure( dfu_device_t *device,
     if( ADC_AVR32 != args->device_type ) {
         DEBUG( "target doesn't support security bit set.\n" );
         fprintf( stderr, "target doesn't support security bit set.\n" );
-        return -1;
+        return ARGUMENT_ERROR;
     }
 
     result = atmel_secure( device );
@@ -149,13 +151,14 @@ static int32_t execute_validate( dfu_device_t *device,
                                  atmel_buffer_out_t *bout,
                                  uint8_t mem_segment,
                                  const dfu_bool quiet ) {
-    int32_t retval = -1;        // return value for this fcn
+    int32_t retval = UNSPECIFIED_ERROR;
     int32_t result;             // result of fcn calls
     atmel_buffer_in_t buin;     // buffer in for storing read mem
 
     if( 0 != atmel_init_buffer_in(&buin, bout->info.total_size,
                                             bout->info.page_size ) ) {
         DEBUG("ERROR initializing a buffer.\n");
+        retval = BUFFER_INIT_ERROR;
         goto error;
     }
     buin.info.data_start = bout->info.valid_start;
@@ -164,17 +167,23 @@ static int32_t execute_validate( dfu_device_t *device,
     if( 0 !=  (result = atmel_read_flash(device, &buin,
                                          mem_segment, quiet)) ) {
         DEBUG("ERROR: could not read memory, err %d.\n", result);
+        retval = FLASH_READ_ERROR;
         goto error;
     }
 
-    if( 0 != atmel_validate_buffer( &buin, bout, quiet ) ) {
+    if( 0 != (result = atmel_validate_buffer( &buin, bout, quiet )) ) {
+        if( result < 0 ) {
+            retval = VALIDATION_ERROR_IN_REGION;
+        } else {
+            retval = VALIDATION_ERROR_OUTSIDE_REGION;
+        }
         goto error;
     }
 
-    retval = 0;
+    retval = SUCCESS;
 
 error:
-    if( !quiet && 0 != retval ) fprintf( stderr, "FAIL\n" );
+    if( !quiet && SUCCESS != retval ) fprintf( stderr, "FAIL\n" );
 
     if( NULL != buin.data ) {
         free( buin.data );
@@ -195,7 +204,7 @@ static void print_flash_usage( atmel_buffer_info_t *info ) {
 
 static int32_t execute_flash( dfu_device_t *device,
                                 struct programmer_arguments *args ) {
-    int32_t  retval = -1;
+    int32_t  retval = UNSPECIFIED_ERROR;
     int32_t  result;
     uint32_t  i;
     atmel_buffer_out_t bout;
@@ -225,6 +234,7 @@ static int32_t execute_flash( dfu_device_t *device,
             target_offset = ATMEL_USER_PAGE_OFFSET;
             if( args->device_type != ADC_AVR32 ){
                 fprintf(stderr, "Flash User only implemented for ADC_AVR32 devices.\n");
+                retval = ARGUMENT_ERROR;
                 goto error;
             }
             break;
@@ -236,6 +246,7 @@ static int32_t execute_flash( dfu_device_t *device,
     // ----------------- CONVERT HEX FILE TO BINARY -------------------------
     if( 0 != atmel_init_buffer_out(&bout, memory_size, page_size) ) {
         DEBUG("ERROR initializing a buffer.\n");
+        retval = BUFFER_INIT_ERROR;
         goto error;
     }
 
@@ -244,6 +255,7 @@ static int32_t execute_flash( dfu_device_t *device,
 
     if ( result < 0 ) {
         DEBUG( "Something went wrong with creating the memory image.\n" );
+        retval = BUFFER_INIT_ERROR;
         goto error;
     } else if ( result > 0 ) {
         DEBUG( "WARNING: File contains 0x%X bytes outside target memory.\n",
@@ -263,8 +275,10 @@ static int32_t execute_flash( dfu_device_t *device,
 // file.. this would be easier than using serialize and could return the address
 // location of the start of the string (to be used in the program file)
 
-    if (0 != serialize_memory_image( &bout, args ))
-      goto error;
+    if (0 != serialize_memory_image( &bout, args )) {
+        retval = BUFFER_INIT_ERROR;
+        goto error;
+    }
 
     if( mem_type == mem_flash ) {
         bout.info.valid_start = args->flash_address_bottom;
@@ -279,6 +293,7 @@ static int32_t execute_flash( dfu_device_t *device,
                 } else {
                     fprintf( stderr, "Bootloader and code overlap.\n" );
                     fprintf( stderr, "Use --suppress-bootloader-mem to ignore\n" );
+                    retval = BUFFER_INIT_ERROR;
                     goto error;
                 }
             }
@@ -289,6 +304,7 @@ static int32_t execute_flash( dfu_device_t *device,
         if ( bout.info.data_start == UINT32_MAX ) {
             fprintf( stderr,
                     "ERROR: No data to write into the user page.\n" );
+            retval = BUFFER_INIT_ERROR;
             goto error;
         } else {
             DEBUG("Hex file contains %u bytes to write.\n",
@@ -310,6 +326,7 @@ static int32_t execute_flash( dfu_device_t *device,
                     " Without valid config. device always resets in bootloader.\n");
             fprintf( stderr,
                     " Use dump-user to obtain valid configuration words.\n");
+            retval = ARGUMENT_ERROR;
             goto error;
             // TODO : implement so this error only appers when data overlaps the
             // bootloader configuration words.  This would require reading the user
@@ -324,6 +341,7 @@ static int32_t execute_flash( dfu_device_t *device,
                     DEBUG( "At position %d, value is %d.\n", i, bout.data[i] );
                     fprintf( stderr,
                             "ERROR: use the --force-config flag to write the data.\n" );
+                    retval = ARGUMENT_ERROR;
                     goto error;
                 }
             }
@@ -340,21 +358,24 @@ static int32_t execute_flash( dfu_device_t *device,
     }
     if( 0 != result ) {
         DEBUG( "Error writing %s data. (err %d)\n", "memory", result );
+        retval = FLASH_WRITE_ERROR;
         goto error;
     }
 
     // ------------------  VALIDATE PROGRAM ------------------------------
     if( 0 == args->com_flash_data.suppress_validation ) {
-        if( 0 != execute_validate(device, &bout, mem_type, args->quiet) ) {
+        if( 0 != ( retval = execute_validate(device, &bout, mem_type, args->quiet)) ) {
             fprintf( stderr, "Memory did not validate. Did you erase?\n" );
             goto error;
-        } else
-            if( 0 == args->quiet ) print_flash_usage( &bout.info );
-    } else
-        if( 0 == args->quiet ) print_flash_usage( &bout.info );
+        } else if ( 0 == args->quiet ) {
+            print_flash_usage( &bout.info );
+        }
+    } else if( 0 == args->quiet ) {
+        print_flash_usage( &bout.info );
+    }
 
 
-    retval = 0;
+    retval = SUCCESS;
 
 error:
     if( NULL != bout.data ) {
@@ -548,7 +569,7 @@ static int32_t execute_get( dfu_device_t *device,
 static int32_t execute_dump( dfu_device_t *device,
                              struct programmer_arguments *args ) {
     int32_t i = 0;
-    int32_t retval = -1;        // return value for this fcn
+    int32_t retval = UNSPECIFIED_ERROR;
     int32_t result;             // result of fcn calls
     atmel_buffer_in_t buin;     // buffer in for storing read mem
     enum atmel_memory_unit_enum mem_segment = args->com_read_data.segment;
@@ -575,11 +596,13 @@ static int32_t execute_dump( dfu_device_t *device,
             break;
         default:
             fprintf( stderr, "Dump not currenlty supported for this memory.\n" );
+            retval = ARGUMENT_ERROR;
             goto error;
     }
 
     if( 0 != atmel_init_buffer_in(&buin, mem_size, page_size) ) {
         DEBUG("ERROR initializing a buffer.\n");
+        retval = BUFFER_INIT_ERROR;
         goto error;
     }
 
@@ -595,6 +618,7 @@ static int32_t execute_dump( dfu_device_t *device,
                     mem_segment, args->quiet)) ) {
         DEBUG("ERROR: could not read memory, err %d.\n", result);
         security_message();
+        retval = FLASH_READ_ERROR;
         goto error;
     }
 
@@ -647,7 +671,7 @@ static int32_t execute_dump( dfu_device_t *device,
 
     fflush( stdout );
 
-    retval = 0;
+    retval = SUCCESS;
 
 error:
     if( NULL != buin.data ) {
@@ -775,5 +799,5 @@ int32_t execute_command( dfu_device_t *device,
             fprintf( stderr, "Not supported at this time.\n" );
     }
 
-    return -1;
+    return ARGUMENT_ERROR;
 }
