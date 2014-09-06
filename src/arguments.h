@@ -37,6 +37,17 @@
  *  launch [--no-reset]
  */
 
+// ERROR CODES :
+#define SUCCESS                             0
+#define UNSPECIFIED_ERROR                   1
+#define ARGUMENT_ERROR                      2
+#define DEVICE_ACCESS_ERROR                 3
+#define BUFFER_INIT_ERROR                   4
+#define FLASH_READ_ERROR                    5
+#define FLASH_WRITE_ERROR                   6
+#define VALIDATION_ERROR_IN_REGION          7
+#define VALIDATION_ERROR_OUTSIDE_REGION     8
+
 extern int debug;
 
 enum targets_enum { tar_at89c51snd1c,

@@ -45,7 +45,7 @@ libusb_context *usbcontext;
 int main( int argc, char **argv )
 {
     static const char *progname = PACKAGE;
-    int retval = 0;
+    int retval = SUCCESS;
     int status;
     dfu_device_t dfu_device;
     struct programmer_arguments args;
@@ -61,16 +61,16 @@ int main( int argc, char **argv )
     status = parse_arguments(&args, argc, argv);
     if( status < 0 ) {
         /* Exit with an error. */
-        return 1;
+        return ARGUMENT_ERROR;
     } else if (status > 0) {
         /* It was handled by parse_arguments. */
-        return 0;
+        return SUCCESS;
     }
 
 #ifdef HAVE_LIBUSB_1_0
     if (libusb_init(&usbcontext)) {
         fprintf( stderr, "%s: can't init libusb.\n", progname );
-        return 1;
+        return DEVICE_ACCESS_ERROR;
     }
 #else
     usb_init();
@@ -92,17 +92,14 @@ int main( int argc, char **argv )
 
     if( NULL == device ) {
         fprintf( stderr, "%s: no device present.\n", progname );
-        retval = 1;
+        retval = DEVICE_ACCESS_ERROR;
         goto error;
     }
 
-    if( 0 != execute_command(&dfu_device, &args) ) {
+    if( 0 != (retval = execute_command(&dfu_device, &args)) ) {
         /* command issued a specific diagnostic already */
-        retval = 1;
         goto error;
     }
-
-    retval = 0;
 
 error:
     if( NULL != dfu_device.handle ) {
@@ -122,7 +119,7 @@ error:
                 args.com_launch_config.noreset == 0) ) {
             fprintf( stderr, "%s: failed to release interface %d.\n",
                              progname, dfu_device.interface );
-            retval = 1;
+            retval = DEVICE_ACCESS_ERROR;
         }
     }
 
@@ -132,7 +129,7 @@ error:
 #else
         if( 0 != usb_close(dfu_device.handle) ) {
             fprintf( stderr, "%s: failed to close the handle.\n", progname );
-            retval = 1;
+            retval = DEVICE_ACCESS_ERROR;
         }
 #endif
     }
