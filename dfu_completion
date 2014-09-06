@@ -1,0 +1,110 @@
+# dfu_completion file, partial of dfu_programmer script
+
+TARGETS=$( echo $TARGET_INFO | sed 's/::[xX0-9A-Fa-f]*//g' )
+
+COMMANDS=(launch read erase flash setsecure config get getfuse setfuse)
+
+_dfu-programmer () {
+  local i filetype
+  local cur cmd prev target
+  local flags
+  local eeprom_size
+
+  export cur=${COMP_WORDS[COMP_CWORD]}
+  export target=${COMP_WORDS[1]}
+  export cmd=${COMP_WORDS[2]}
+  export prev=${COMP_WORDS[COMP_CWORD - 1]}
+
+  COMPREPLY=()   # Array variable storing the possible completions.
+
+  if [[ "$COMP_CWORD" == "1" ]]; then
+    COMPREPLY=( $( compgen -W "$TARGETS" -- $cur ) )
+  fi
+
+  if [[ "$COMP_CWORD" == "2" ]]; then
+    COMPREPLY=( $( compgen -W "${COMMANDS[*]}" -- $cur ) )
+  fi
+
+  if [[ "$COMP_CWORD" > "2" ]]; then
+
+    case "$cmd" in
+      launch)
+        if [[ "$COMP_CWORD" == "3" ]]; then
+          COMPREPLY=( $( compgen -W '--no-reset' -- $cur ) )
+        fi
+        ;;
+      read)
+        # only either user or eeprom should be displayed based on if device has
+        # either feature -- or either one is selected when both features exist
+        flags="--force --user --eeprom --bin"
+        eeprom_size=$( echo $TARGET_INFO | sed "s/.* $target:://" | sed 's/ .*//' )
+        if [[ "$eeprom_size" == 0 ]]; then
+          flags=$( echo $flags | sed 's/--eeprom//' )
+        fi
+        COMPREPLY=( $( compgen -W "$flags" -- $cur ) )
+        ;;
+      erase)
+        COMPREPLY=( $( compgen -W '--force --suppress-validation' -- $cur ) )
+        ;;
+      flash)
+        filetype="hex"
+        flags="--force --user --eeprom --bin --suppress-validation --suppress-bootloader-mem --serial="
+        eeprom_size=$( echo $TARGET_INFO | sed "s/.* $target:://" | sed 's/ .*//' )
+        if [[ "$eeprom_size" == 0 ]]; then
+          flags=$( echo $flags | sed 's/--eeprom//' )
+        fi
+        for (( i = 3; i < COMP_CWORD; i++ )); do
+          if [[ "${COMP_WORDS[i]}" == *.@(bin|hex) ]]; then
+            filetype="none"
+            flags=$( echo $flags | sed 's/--bin//' )
+          elif [[ "${COMP_WORDS[i]}" == --bin ]]; then
+            if [[ filetype != none ]]; then
+              filetype="bin"
+            fi
+            flags=$( echo $flags | sed 's/--bin//' )
+          elif [[ "${COMP_WORDS[i]}" == --@(user|eeprom) ]]; then
+            flags=$( echo $flags | sed 's/--user//' )
+            flags=$( echo $flags | sed 's/--eeprom//' )
+          else
+            flags=$( echo $flags | sed "s/${COMP_WORDS[i]}//" )
+          fi
+        done
+        COMPREPLY=( $( compgen -W "$flags" -- $cur ) )
+        if [[ $filetype != none ]]; then
+          #COMPREPLY+=( $( compgen -f -X "!*.$filetype" -- $cur ) )
+          COMPREPLY+=( $( compgen -o plusdirs -f -X "!*.$filetype" -- $cur ) )
+        fi
+
+        #if [[ ${#COMPREPLY[@]} == 1 && ${COMPREPLY[0]} != "--"*"=" ]] ; then
+        # make sure there isn't a trailing space for directories
+        if [[ ${#COMPREPLY[@]} == 1 ]]; then
+          if [[ -d ${COMPREPLY[0]} ]]; then
+            COMPREPLY[0]=$( echo ${COMPREPLY[0]} | sed 's/$/\//' )
+            # If there's only one option, without =, then allow a space
+            compopt -o nospace
+          fi
+          if [[ ${COMPREPLY[0]} == "--"*"=" ]]; then
+            compopt -o nospace
+          fi
+        fi
+
+        ;;
+      setsecure)
+        ;;
+      configure)
+        ;;
+      get)
+        ;;
+      getfuse)
+        COMPREPLY=( $( compgen -W 'LOCK EPFL BOOTPROT BODLEVEL BODHYST BODEN ISP_BOD_EN ISP_IO_COND_EN ISP_FORCE' -- $cur ) )
+        ;;
+      setfuse)
+        COMPREPLY=( $( compgen -W 'LOCK EPFL BOOTPROT BODLEVEL BODHYST BODEN ISP_BOD_EN ISP_IO_COND_EN ISP_FORCE' -- $cur ) )
+        ;;
+    esac
+  fi
+
+  return 0
+}
+
+complete -F _dfu-programmer dfu-programmer

@@ -16,3 +16,6 @@ src/*.o
 src/*.exe
 src/*.hex
 *.tar.gz
+
+# tab completion file
+dfu_programmer
