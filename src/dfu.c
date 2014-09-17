@@ -117,14 +117,6 @@ static void dfu_msg_response_output( const char *function, const int32_t result 
  */
 
 // ________  F U N C T I O N S  _______________________________
-void* rpl_malloc( size_t n ) {
-    if( 0 == n ) {
-        n = 1;
-    }
-
-    return malloc( n );
-}
-
 int32_t dfu_detach( dfu_device_t *device, const int32_t timeout ) {
     int32_t result;
 
@@ -852,3 +844,14 @@ static void dfu_msg_response_output( const char *function,
         DEBUG( "%s 0x%08x (%d)\n", msg, result, result );
     }
 }
+
+#ifdef malloc
+#undef malloc
+void* rpl_malloc( size_t n ) {
+    if( 0 == n ) {
+        n = 1;
+    }
+
+    return malloc( n );
+}
+#endif
