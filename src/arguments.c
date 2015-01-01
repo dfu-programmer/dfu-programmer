@@ -356,7 +356,7 @@ static void usage()
     fprintf( stderr,
 "   read: Read the program memory in flash and output non-blank pages in ihex\n"
 "         format.  Use --force to output the entire memory and --bin for binary\n"
-"         output.  User page and eeprom are selected using --user and --eprom\n");
+"         output.  User page and eeprom are selected using --user and --eeprom\n");
     fprintf( stderr,
 "  erase: Erase memory contents if the chip is not blank or always with --force\n");
     fprintf( stderr,
