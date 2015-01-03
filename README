@@ -94,7 +94,7 @@ Build procedure for Windows
   [ If the source was checked-out from GitHub, run the following command ]
   $ ./bootstrap.sh
 
-  $ ./configure --disable-libusb_1_0
+  $ ./configure
 
   $ make
 

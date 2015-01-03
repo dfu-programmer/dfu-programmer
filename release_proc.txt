@@ -18,6 +18,11 @@ Update info files
 To create the source tarball
 ============================
 
+  If building the tarball on Windows you need to install pkg-config.
+  Get the lite version (without dependencies) from here:
+  http://sourceforge.net/projects/pkgconfiglite
+  The files need to go into MinGW/bin and MinGW/share/aclocal.
+  
   After updating the version information in configure.ac
 
   ./bootstrap.sh
