@@ -2,7 +2,7 @@ Update info files
 =================
 
   Make sure the following files are up to date:
-  - ChangeLog.txt
+  - NEWS
   - AUTHORS
   - README
   - docs/dfu-programmer.1

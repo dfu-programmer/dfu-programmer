@@ -62,6 +62,7 @@ Contributors:
         - update --help -h text
         - also a lot of formatting updates (sorry)
         - More info in README
+        - Add autocomplete for Ubuntu
     - Simon Large
         - fix atmel_reset function
         - get rid of compiler warnings around fprintf statements
@@ -89,3 +90,5 @@ Contributors:
         - improvements to progress bar
     - John Szakmeister
         - Fix exit status of help-related options and improve start sequence
+    - Alban Bedel
+        - Fix infinite loop using rpl_malloc
