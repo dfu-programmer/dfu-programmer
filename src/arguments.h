@@ -167,7 +167,6 @@ struct programmer_arguments {
     uint32_t flash_address_bottom;      /*     excludes bootloader region  */
     uint32_t bootloader_top;            /* top of the bootloader region    */
     uint32_t bootloader_bottom;         /* bottom of the bootloader region */
-    dfu_bool bootloader_at_highmem;
     size_t flash_page_size;             /* size of a page in bytes         */
     dfu_bool initial_abort;
     dfu_bool honor_interfaceclass;
