@@ -42,6 +42,13 @@ Atmel chips with USB support.
 %{_datadir}/hal/fdi/information/20thirdparty/10-dfu-programmer.fdi
 
 %changelog
+* Wed Feb 04 2015 Simon Large - 0.7.2-1
+- Fix memory bounds used for XMega targets.
+* Sat Jan 03 2015 Simon Large - 0.7.1-1
+- Fix use of mandatory filename ChangeLog in distribution tarball
+- Fix infinite loop in rpl_malloc
+- Add experimental support for autocomplete on Ubuntu
+- Fix exit status of help-related options and improve start sequence
 * Sat Aug 02 2014 Simon Large - 0.7.0-1
 - Add support for atmega16c4 and atmega32c4
 - Fix device erase for bootloaders which return busy status
