@@ -69,7 +69,7 @@
 #define PROGRESS_END    "]  "
 #define PROGRESS_ERROR  " X  "
 
-extern int debug;
+extern int debug;       /* defined in main.c */
 
 // ________  P R O T O T Y P E S  _______________________________
 static int32_t atmel_read_command( dfu_device_t *device,
@@ -81,7 +81,7 @@ static int32_t atmel_read_command( dfu_device_t *device,
  */
 
 static int32_t __atmel_flash_block( dfu_device_t *device,
-                                    atmel_buffer_out_t *bout,
+                                    intel_buffer_out_t *bout,
                                     const dfu_bool eeprom );
 /* flash the contents of memory into a block of memory.  it is assumed that the
  * appropriate page has already been selected.  start and end are the start and
@@ -112,15 +112,8 @@ static int32_t __atmel_blank_page_check( dfu_device_t *device,
  * returns a negative number if the blank check fails
  */
 
-static int32_t atmel_flash_prep_buffer( atmel_buffer_out_t *bout );
-/* prepare the buffer so that valid data fills each page that contains data.
- * unassigned data in buffer is given a value of 0xff (blank memory)
- * the buffer pointer must align with the beginning of a flash page
- * return 0 on success, -1 if assigning data would extend flash above size
- */
-
 static int32_t __atmel_read_block( dfu_device_t *device,
-                                   atmel_buffer_in_t *buin,
+                                   intel_buffer_in_t *buin,
                                    const dfu_bool eeprom );
 /* assumes block does not cross 64 b page boundaries and ideally alligs
  * with flash pages. appropriate memory type and 64kb page has already
@@ -128,7 +121,7 @@ static int32_t __atmel_read_block( dfu_device_t *device,
  * data between data_start and data_end
  */
 
-static inline void __print_progress( atmel_buffer_info_t *info,
+static inline void __print_progress( intel_buffer_info_t *info,
                                         uint32_t *progress );
 /* calculate how many progress indicator steps to print and print them
  * update progress value
@@ -138,7 +131,7 @@ static inline void __print_progress( atmel_buffer_info_t *info,
 static int32_t atmel_read_command( dfu_device_t *device,
                                    const uint8_t data0,
                                    const uint8_t data1 ) {
-    atmel_buffer_in_t buin;
+    intel_buffer_in_t buin;
     uint8_t buffer[4];
 
     TRACE( "%s( %p, 0x%02x, 0x%02x )\n", __FUNCTION__, device, data0, data1 );
@@ -202,7 +195,7 @@ static int32_t atmel_read_command( dfu_device_t *device,
     }
 }
 
-static inline void __print_progress( atmel_buffer_info_t *info,
+static inline void __print_progress( intel_buffer_info_t *info,
                                         uint32_t *progress ) {
     if ( !(debug > ATMEL_DEBUG_THRESHOLD) ) {
         while ( ((info->block_end - info->data_start + 1) * 32) > *progress ) {
@@ -212,117 +205,9 @@ static inline void __print_progress( atmel_buffer_info_t *info,
     }
 }
 
-int32_t atmel_validate_buffer( atmel_buffer_in_t *buin,
-                               atmel_buffer_out_t *bout,
-                               dfu_bool quiet) {
-    int32_t i;
-    int32_t invalid_data_region = 0;
-    int32_t invalid_outside_data_region = 0;
-
-    DEBUG( "Validating image from byte 0x%X to 0x%X.\n",
-            bout->info.valid_start, bout->info.valid_end );
-
-    if( !quiet ) fprintf( stderr, "Validating...  " );
-    for( i = bout->info.valid_start; i <= bout->info.valid_end; i++ ) {
-        if(  bout->data[i] <= UINT8_MAX ) {
-            // Memory should have been programmed here
-            if( ((uint8_t) bout->data[i]) != buin->data[i] ) {
-                if ( !invalid_data_region ) {
-                    if( !quiet ) fprintf( stderr, "ERROR\n" );
-                    DEBUG( "Image did not validate at byte: 0x%X of 0x%X.\n", i,
-                            bout->info.valid_end - bout->info.valid_start + 1 );
-                    DEBUG( "Wanted 0x%02x but read 0x%02x.\n",
-                            0xff & bout->data[i], buin->data[i] );
-                    DEBUG( "suppressing additional warnings.\n");
-                }
-                invalid_data_region++;
-            }
-        } else {
-            // Memory should be blank here
-            if( 0xff != buin->data[i] ) {
-                if ( !invalid_data_region ) {
-                    DEBUG( "Outside program region: byte 0x%X epected 0xFF.\n", i);
-                    DEBUG( "but read 0x%02X.  supressing additional warnings.\n",
-                            buin->data[i] );
-                }
-                invalid_outside_data_region++;
-            }
-        }
-    }
-
-    if( !quiet ) {
-        if ( 0 == invalid_data_region + invalid_outside_data_region ) {
-            fprintf( stderr, "Success\n" );
-        } else {
-            fprintf( stderr,
-                    "%d invalid bytes in program region, %d outside region.\n",
-                    invalid_data_region, invalid_outside_data_region );
-        }
-    }
-
-    return invalid_data_region ?
-        -1 * invalid_data_region : invalid_outside_data_region;
-}
-
-int32_t atmel_init_buffer_out(atmel_buffer_out_t *bout,
-        size_t total_size, size_t page_size ) {
-    uint32_t i;
-    if ( !total_size || !page_size ) {
-        DEBUG("What are you thinking... size must be > 0.\n");
-        return -1;
-    }
-
-    bout->info.total_size = total_size;
-    bout->info.page_size = page_size;
-    bout->info.data_start = UINT32_MAX;      // invalid data start
-    bout->info.data_end = 0;
-    bout->info.valid_start = 0;
-    bout->info.valid_end = total_size - 1;
-    bout->info.block_start = 0;
-    bout->info.block_end = 0;
-    // allocate the memory
-    bout->data = (uint16_t *) malloc( total_size * sizeof(uint16_t) );
-    if( NULL == bout->data ) {
-        DEBUG( "ERROR allocating 0x%X bytes of memory.\n",
-                total_size * sizeof(uint16_t));
-        return -2;
-    }
-
-    // initialize buffer to 0xFFFF (invalid / unassigned data)
-    for( i = 0; i < total_size; i++ ) {
-        bout->data[i] = UINT16_MAX;
-    }
-    return 0;
-}
-
-int32_t atmel_init_buffer_in(atmel_buffer_in_t *buin,
-        size_t total_size, size_t page_size ) {
-    // TODO : is there a way to combine this and above? maybe typecast to an
-    // in or out buffer from a char pointer?
-    buin->info.total_size = total_size;
-    buin->info.page_size = page_size;
-    buin->info.data_start = 0;
-    buin->info.data_end = total_size - 1;
-    buin->info.valid_start = 0;
-    buin->info.valid_end = total_size - 1;
-    buin->info.block_start = 0;
-    buin->info.block_end = 0;
-
-    buin->data = (uint8_t *) malloc( total_size );
-    if( NULL == buin->data ) {
-        DEBUG( "ERROR allocating 0x%X bytes of memory.\n", total_size );
-        return -2;
-    }
-
-    // initialize buffer to 0xFF (blank / unassigned data)
-    memset( buin->data, UINT8_MAX, total_size );
-
-    return 0;
-}
-
 int32_t atmel_read_fuses( dfu_device_t *device,
                            atmel_avr32_fuses_t *info ) {
-    atmel_buffer_in_t buin;
+    intel_buffer_in_t buin;
     uint8_t buffer[32];
     int i;
 
@@ -333,13 +218,13 @@ int32_t atmel_read_fuses( dfu_device_t *device,
 
     if( NULL == device ) {
         DEBUG( "invalid arguments.\n" );
-        return -1;
+        return ARGUMENT_ERROR;
     }
 
     if( !(ADC_AVR32 & device->type) ) {
         DEBUG( "target does not support fuse operation.\n" );
         fprintf( stderr, "target does not support fuse operation.\n" );
-        return -1;
+        return ARGUMENT_ERROR;
     }
 
     if( 0 != atmel_select_memory_unit(device, mem_config) ) {
@@ -516,7 +401,7 @@ int32_t atmel_set_fuse( dfu_device_t *device,
     int32_t address;
     int8_t numbytes;
     int8_t i;
-    atmel_buffer_out_t bout;
+    intel_buffer_out_t bout;
 
     if( NULL == device ) {
         DEBUG( "invalid arguments.\n" );
@@ -687,7 +572,7 @@ int32_t atmel_set_config( dfu_device_t *device,
 }
 
 static int32_t __atmel_read_block( dfu_device_t *device,
-                                   atmel_buffer_in_t *buin,
+                                   intel_buffer_in_t *buin,
                                    const dfu_bool eeprom ) {
     uint8_t command[6] = { 0x03, 0x00, 0x00, 0x00, 0x00, 0x00 };
     int32_t result;
@@ -743,7 +628,7 @@ static int32_t __atmel_read_block( dfu_device_t *device,
 }
 
 int32_t atmel_read_flash( dfu_device_t *device,
-                          atmel_buffer_in_t *buin,
+                          intel_buffer_in_t *buin,
                           const uint8_t mem_segment,
                           const dfu_bool quiet ) {
     uint8_t mem_page = 0;           // tracks the current memory page
@@ -1151,35 +1036,7 @@ static int32_t atmel_select_page( dfu_device_t *device,
     return 0;
 }
 
-static int32_t atmel_flash_prep_buffer( atmel_buffer_out_t *bout ) {
-    uint16_t *page;
-    int32_t i;
-
-    TRACE( "%s( %p )\n", __FUNCTION__, bout );
-
-    // increment pointer by page_size * sizeof(int16) until page_start >= end
-    for( page = bout->data;
-            page < &bout->data[bout->info.valid_end];
-            page = &page[bout->info.page_size] ) {
-        // check if there is valid data on this page
-        for( i = 0; i < bout->info.page_size; i++ ) {
-            if( page[i] <= UINT8_MAX )
-                break;
-        }
-
-        if( bout->info.page_size != i ) {
-            /* There was valid data in the block & we need to make
-             * sure there is no unassigned data.  */
-            for( i = 0; i < bout->info.page_size; i++ ) {
-                if( page[i] > UINT8_MAX )
-                    page[i] = 0xff;         // 0xff is blank
-            }
-        }
-    }
-    return 0;
-}
-
-int32_t atmel_user( dfu_device_t *device, atmel_buffer_out_t *bout ) {
+int32_t atmel_user( dfu_device_t *device, intel_buffer_out_t *bout ) {
     int32_t result = 0;
 
     TRACE( "%s( %p, %p )\n", __FUNCTION__, device, bout );
@@ -1214,7 +1071,7 @@ int32_t atmel_user( dfu_device_t *device, atmel_buffer_out_t *bout ) {
 int32_t atmel_secure( dfu_device_t *device ) {
     int32_t result = 0;
     uint16_t buffer[1];
-    atmel_buffer_out_t bout;
+    intel_buffer_out_t bout;
     TRACE( "%s( %p )\n", __FUNCTION__, device );
 
     /* Select SECURITY page */
@@ -1245,7 +1102,7 @@ int32_t atmel_getsecure( dfu_device_t *device ) {
     uint8_t buffer[1];
     TRACE( "%s( %p )\n", __FUNCTION__, device );
 
-    atmel_buffer_in_t buin;
+    intel_buffer_in_t buin;
 
     // init the necessary parts of buin
     buin.info.block_start = 0;
@@ -1280,7 +1137,7 @@ int32_t atmel_getsecure( dfu_device_t *device ) {
 }
 
 int32_t atmel_flash( dfu_device_t *device,
-                     atmel_buffer_out_t *bout,
+                     intel_buffer_out_t *bout,
                      const dfu_bool eeprom,
                      const dfu_bool force,
                      const dfu_bool quiet ) {
@@ -1311,7 +1168,7 @@ int32_t atmel_flash( dfu_device_t *device,
     // for each page with data, fill unassigned values on the page with 0xFF
     // bout->data[0] always aligns with a flash page boundary irrespective
     // of where valid_start is located
-    if( 0 != atmel_flash_prep_buffer( bout ) ) {
+    if( 0 != intel_flash_prep_buffer( bout ) ) {
         if( !quiet )
             fprintf( stderr, "Program Error, use debug for more info.\n" );
         return -2;
@@ -1547,7 +1404,7 @@ static void atmel_flash_populate_header( uint8_t *header,
 }
 
 static int32_t __atmel_flash_block( dfu_device_t *device,
-                                    atmel_buffer_out_t *bout,
+                                    intel_buffer_out_t *bout,
                                     const dfu_bool eeprom ) {
     // from doc7618, AT90 / ATmega app note protocol:
     const size_t length = bout->info.block_end - bout->info.block_start + 1;
@@ -1601,8 +1458,8 @@ static int32_t __atmel_flash_block( dfu_device_t *device,
     /* for programming flash or eeprom for xmega or avr32, header[1] = 0x00 */
     /* for programming eeprom, memory was selected in atmel_flash */
     if( ADC_XMEGA & device->type ) {
-	header[1] = 0x00; 
-    } 
+	header[1] = 0x00;
+    }
 
     // Copy the data
     for( i = 0; i < length; i++ ) {

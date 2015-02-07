@@ -28,6 +28,7 @@
 #include "commands.h"
 #include "arguments.h"
 #include "intel_hex.h"
+#include "stm32.h"
 #include "atmel.h"
 #include "util.h"
 
@@ -41,7 +42,7 @@ static int security_bit_state;
 
 // ________  P R O T O T Y P E S  _______________________________
 static int32_t execute_validate( dfu_device_t *device,
-                                 atmel_buffer_out_t *bout,
+                                 intel_buffer_out_t *bout,
                                  uint8_t mem_segment,
                                  dfu_bool quiet );
 /* provide an out buffer to validate and whether this is from
@@ -72,8 +73,8 @@ static int32_t execute_erase( dfu_device_t *device,
                               struct programmer_arguments *args ) {
     int32_t result = SUCCESS;
 
-    if( !args->com_erase_data.force ) {
-        if ( 0 == atmel_blank_check( device, args->flash_address_bottom,
+    if( !(GRP_STM32 & args->device_type) && !args->com_erase_data.force ) {
+        if( 0 == atmel_blank_check( device, args->flash_address_bottom,
                                              args->flash_address_top,
                                              args->quiet ) ) {
             if ( !args->quiet ) {
@@ -86,11 +87,18 @@ static int32_t execute_erase( dfu_device_t *device,
     DEBUG( "erase 0x%X bytes.\n",
            (args->flash_address_top - args->flash_address_bottom) );
 
-    if( 0 != (result = atmel_erase_flash( device, ATMEL_ERASE_ALL, args->quiet )) ) {
+    if( GRP_STM32 & args->device_type ) {
+        result = stm32_erase_flash( device, args->quiet );
+    } else {
+        result = atmel_erase_flash( device, ATMEL_ERASE_ALL, args->quiet );
+    }
+
+    if( 0 != result ) {
         return result;
     }
 
-    if ( !args->com_erase_data.suppress_validation ) {
+    if( !(GRP_STM32 & args->device_type) &&
+            !args->com_erase_data.suppress_validation ) {
         result = atmel_blank_check( device, args->flash_address_bottom,
                                             args->flash_address_top,
                                             args->quiet );
@@ -104,7 +112,8 @@ static int32_t execute_setsecure( dfu_device_t *device,
 
     if( ADC_AVR32 != args->device_type ) {
         DEBUG( "target doesn't support security bit set.\n" );
-        fprintf( stderr, "target doesn't support security bit set.\n" );
+        fprintf( stderr,  "Operation not supported on %s\n",
+                args->device_type_string );
         return ARGUMENT_ERROR;
     }
 
@@ -113,10 +122,10 @@ static int32_t execute_setsecure( dfu_device_t *device,
     if( result < 0 ) {
         DEBUG( "Error while setting security bit. (%d)\n", result );
         fprintf( stderr, "Error setting security bit.\n" );
-        return -1;
+        return UNSPECIFIED_ERROR;
     }
 
-    return 0;
+    return SUCCESS;
 }
 
 // TODO : split this into a new command (no file is needed) - also general
@@ -125,11 +134,13 @@ static int32_t execute_setsecure( dfu_device_t *device,
 // otherwise, the secion will end up '\0' unless a page erase is used.. so may
 // need to keep this part of the flash command, but specify that serialize data
 // 'wins' over data from the hex file
-static int32_t serialize_memory_image( atmel_buffer_out_t *bout,
+static int32_t serialize_memory_image( intel_buffer_out_t *bout,
                                      struct programmer_arguments *args ) {
     uint32_t target_offset = 0;
     if( args->command == com_user )
         target_offset = ATMEL_USER_PAGE_OFFSET;
+    else if( args->device_type & GRP_STM32 )
+        target_offset = STM32_FLASH_OFFSET;
 
     if ( NULL != args->com_flash_data.serial_data ) {
         int16_t *serial_data = args->com_flash_data.serial_data;
@@ -140,22 +151,22 @@ static int32_t serialize_memory_image( atmel_buffer_out_t *bout,
         for( i=0; i < length; ++i ) {
             if ( 0 != intel_process_data(bout, serial_data[i],
                         target_offset, offset + i) ) {
-                return -1;
+                return BUFFER_INIT_ERROR;
             }
         }
     }
-    return 0;
+    return SUCCESS;
 }
 
 static int32_t execute_validate( dfu_device_t *device,
-                                 atmel_buffer_out_t *bout,
+                                 intel_buffer_out_t *bout,
                                  uint8_t mem_segment,
                                  const dfu_bool quiet ) {
     int32_t retval = UNSPECIFIED_ERROR;
     int32_t result;             // result of fcn calls
-    atmel_buffer_in_t buin;     // buffer in for storing read mem
+    intel_buffer_in_t buin;     // buffer in for storing read mem
 
-    if( 0 != atmel_init_buffer_in(&buin, bout->info.total_size,
+    if( 0 != intel_init_buffer_in(&buin, bout->info.total_size,
                                             bout->info.page_size ) ) {
         DEBUG("ERROR initializing a buffer.\n");
         retval = BUFFER_INIT_ERROR;
@@ -164,14 +175,19 @@ static int32_t execute_validate( dfu_device_t *device,
     buin.info.data_start = bout->info.valid_start;
     buin.info.data_end = bout->info.valid_end;
 
-    if( 0 !=  (result = atmel_read_flash(device, &buin,
-                                         mem_segment, quiet)) ) {
+    if( device->type & GRP_STM32 ) {
+        result = stm32_read_flash( device, &buin, mem_segment, quiet );
+    } else {
+        result = atmel_read_flash( device, &buin, mem_segment, quiet );
+    }
+
+    if( 0 != result ) {
         DEBUG("ERROR: could not read memory, err %d.\n", result);
         retval = FLASH_READ_ERROR;
         goto error;
     }
 
-    if( 0 != (result = atmel_validate_buffer( &buin, bout, quiet )) ) {
+    if( 0 != (result = intel_validate_buffer( &buin, bout, quiet )) ) {
         if( result < 0 ) {
             retval = VALIDATION_ERROR_IN_REGION;
         } else {
@@ -193,7 +209,7 @@ error:
     return retval;
 }
 
-static void print_flash_usage( atmel_buffer_info_t *info ) {
+static void print_flash_usage( intel_buffer_info_t *info ) {
     fprintf( stderr,
             "0x%X bytes written into 0x%X bytes memory (%.02f%%).\n",
             info->data_end - info->data_start + 1,
@@ -207,22 +223,25 @@ static int32_t execute_flash( dfu_device_t *device,
     int32_t  retval = UNSPECIFIED_ERROR;
     int32_t  result;
     uint32_t  i;
-    atmel_buffer_out_t bout;
+    intel_buffer_out_t bout;
     size_t   memory_size;
     size_t   page_size;
     enum atmel_memory_unit_enum mem_type = args->com_flash_data.segment;
     uint32_t target_offset = 0;
 
-    // assign the correct memory size
+    /* assign the correct memory size */
     switch ( mem_type ) {
         case mem_flash:
+            if( args->device_type & GRP_STM32 ) {
+                target_offset = STM32_FLASH_OFFSET;
+            }
             memory_size = args->memory_address_top + 1;
             page_size = args->flash_page_size;
             break;
         case mem_eeprom:
             if( 0 == args->eeprom_memory_size ) {
                 fprintf( stderr, "This device has no eeprom.\n" );
-                return -1;
+                return ARGUMENT_ERROR;
             }
             memory_size = args->eeprom_memory_size;
             page_size = args->eeprom_page_size;
@@ -239,12 +258,12 @@ static int32_t execute_flash( dfu_device_t *device,
             }
             break;
         default:
-            memory_size = 0;
-            page_size = 0;
+            DEBUG("Unknown memory type %d\n", mem_type);
+            return ARGUMENT_ERROR;
     }
 
     // ----------------- CONVERT HEX FILE TO BINARY -------------------------
-    if( 0 != atmel_init_buffer_out(&bout, memory_size, page_size) ) {
+    if( 0 != intel_init_buffer_out(&bout, memory_size, page_size) ) {
         DEBUG("ERROR initializing a buffer.\n");
         retval = BUFFER_INIT_ERROR;
         goto error;
@@ -349,12 +368,18 @@ static int32_t execute_flash( dfu_device_t *device,
     }
 
     // ------------------ WRITE PROGRAM DATA -------------------------------
-    if ( mem_type == mem_user ) {
+    if( mem_type == mem_user ) {
         result = atmel_user( device, &bout );
     } else {
-        result = atmel_flash(device, &bout,
-                mem_type == mem_eeprom ? true : false,
-                args->com_flash_data.force, args->quiet);
+        if( args->device_type & GRP_STM32 ) {
+            result = stm32_write_flash( device, &bout,
+                    mem_type == mem_eeprom ? true : false,
+                    args->com_flash_data.force, args->quiet );
+        } else {
+            result = atmel_flash(device, &bout,
+                    mem_type == mem_eeprom ? true : false,
+                    args->com_flash_data.force, args->quiet);
+        }
     }
     if( 0 != result ) {
         DEBUG( "Error writing %s data. (err %d)\n", "memory", result );
@@ -397,13 +422,19 @@ static int32_t execute_getfuse( dfu_device_t *device,
     if( !(ADC_AVR32 & args->device_type) ) {
         DEBUG( "target doesn't support fuse set operation.\n" );
         fprintf( stderr, "target doesn't support fuse set operation.\n" );
-        return -1;
+        return ARGUMENT_ERROR;
     }
 
     /* Check AVR32 security bit in order to provide a better error message. */
     security_check( device );
 
-    status = atmel_read_fuses( device, &info );
+    if( args->device_type & GRP_STM32 ) {
+        fprintf( stderr, "Operation not supported on %s.\n",
+                args->device_type_string );
+        return ARGUMENT_ERROR;
+    } else {
+        status = atmel_read_fuses( device, &info );
+    }
 
     if( 0 != status ) {
         DEBUG( "Error reading %s config information.\n",
@@ -470,7 +501,13 @@ static int32_t execute_get( dfu_device_t *device,
     /* Check AVR32 security bit in order to provide a better error message. */
     security_check( device );
 
-    status = atmel_read_config( device, &info );
+    if( args->device_type & GRP_STM32 ) {
+        fprintf( stderr, "Operation not supported on %s.\n",
+                args->device_type_string );
+        return -1;
+    } else {
+        status = atmel_read_config( device, &info );
+    }
 
     if( 0 != status ) {
         DEBUG( "Error reading %s config information.\n",
@@ -571,7 +608,7 @@ static int32_t execute_dump( dfu_device_t *device,
     int32_t i = 0;
     int32_t retval = UNSPECIFIED_ERROR;
     int32_t result;             // result of fcn calls
-    atmel_buffer_in_t buin;     // buffer in for storing read mem
+    intel_buffer_in_t buin;     // buffer in for storing read mem
     enum atmel_memory_unit_enum mem_segment = args->com_read_data.segment;
     size_t mem_size = 0;
     size_t page_size = 0;
@@ -583,7 +620,11 @@ static int32_t execute_dump( dfu_device_t *device,
         case mem_flash:
             mem_size = args->memory_address_top + 1;
             page_size = args->flash_page_size;
-            if( ADC_AVR32 == args->device_type ) target_offset = 0x80000000;
+            if( ADC_AVR32 == args->device_type ) {
+                target_offset = 0x80000000;
+            } else if( GRP_STM32 & args->device_type ) {
+                target_offset = STM32_FLASH_OFFSET;
+            }
             break;
         case mem_eeprom:
             mem_size = args->eeprom_memory_size;
@@ -600,7 +641,7 @@ static int32_t execute_dump( dfu_device_t *device,
             goto error;
     }
 
-    if( 0 != atmel_init_buffer_in(&buin, mem_size, page_size) ) {
+    if( 0 != intel_init_buffer_in(&buin, mem_size, page_size) ) {
         DEBUG("ERROR initializing a buffer.\n");
         retval = BUFFER_INIT_ERROR;
         goto error;
@@ -611,11 +652,15 @@ static int32_t execute_dump( dfu_device_t *device,
         buin.info.data_end = args->flash_address_top;
     }
 
-    /* Check AVR32 security bit in order to provide a better error message. */
-    security_check( device );   // avr32 has no eeprom, but OK
+    if( args->device_type & GRP_STM32 ) {
+        result = stm32_read_flash(device, &buin, mem_segment, args->quiet);
+    } else {
+        /* Check AVR32 security bit in order to provide a better error message */
+        security_check( device );   // avr32 has no eeprom, but OK
+        result = atmel_read_flash(device, &buin, mem_segment, args->quiet);
+    }
 
-    if( 0 != (result = atmel_read_flash(device, &buin,
-                    mem_segment, args->quiet)) ) {
+    if( 0 != result ) {
         DEBUG("ERROR: could not read memory, err %d.\n", result);
         security_message();
         retval = FLASH_READ_ERROR;
@@ -688,17 +733,17 @@ static int32_t execute_setfuse( dfu_device_t *device,
     int32_t name = args->com_setfuse_data.name;
 
     /* only ADC_AVR32 seems to support fuse operation */
-    if( !(ADC_AVR32 & args->device_type) ) {
+    if( !(ADC_AVR32 & args->device_type) || (GRP_STM32 & args->device_type) ) {
+        fprintf( stderr,  "Operation not supported on %s\n",
+                args->device_type_string );
         DEBUG( "target doesn't support fuse set operation.\n" );
-        fprintf( stderr, "target doesn't support fuse set operation.\n" );
         return -1;
     }
 
     /* Check AVR32 security bit in order to provide a better error message. */
     security_check( device );
 
-    if( 0 != atmel_set_fuse(device, name, value) )
-    {
+    if( 0 != atmel_set_fuse(device, name, value) ) {
         DEBUG( "Fuse set failed.\n" );
         fprintf( stderr, "Fuse set failed.\n" );
         security_message();
@@ -714,8 +759,9 @@ static int32_t execute_configure( dfu_device_t *device,
     int32_t name = args->com_configure_data.name;
 
     if( ADC_8051 != args->device_type ) {
+        fprintf( stderr, "Operation not supported on %s\n",
+                args->device_type_string );
         DEBUG( "target doesn't support configure operation.\n" );
-        fprintf( stderr, "target doesn't support configure operation.\n" );
         return -1;
     }
 
@@ -737,7 +783,9 @@ static int32_t execute_configure( dfu_device_t *device,
 
 static int32_t execute_launch( dfu_device_t *device,
                                   struct programmer_arguments *args ) {
-    if ( args->com_launch_config.noreset ) {
+    if( args->device_type & GRP_STM32 ) {
+        return stm32_start_app( device, args->quiet );
+    } else if( args->com_launch_config.noreset ) {
         return atmel_start_app_noreset( device );
     } else {
         return atmel_start_app_reset( device );
