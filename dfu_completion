@@ -2,7 +2,7 @@
 
 TARGETS=$( echo $TARGET_INFO | sed 's/::[xX0-9A-Fa-f]*//g' )
 
-COMMANDS=(launch read erase flash setsecure config get getfuse setfuse)
+COMMANDS=(launch read erase flash setsecure config get getfuse setfuse hex2bin bin2hex)
 
 _dfu-programmer () {
   local i filetype
@@ -28,6 +28,28 @@ _dfu-programmer () {
   if [[ "$COMP_CWORD" > "2" ]]; then
 
     case "$cmd" in
+      hex2bin)
+        filetype="hex"
+
+        if [[ $filetype != none ]]; then
+          #COMPREPLY+=( $( compgen -f -X "!*.$filetype" -- $cur ) )
+          COMPREPLY+=( $( compgen -o plusdirs -f -X "!*.$filetype" -- $cur ) )
+        fi
+
+        # make sure there isn't a trailing space for directories
+        if [[ ${#COMPREPLY[@]} == 1 ]]; then
+          if [[ -d ${COMPREPLY[0]} ]]; then
+            COMPREPLY[0]=$( echo ${COMPREPLY[0]} | sed 's/$/\//' )
+            # If there's only one option, without =, then allow a space
+            compopt -o nospace
+          fi
+          if [[ ${COMPREPLY[0]} == "--"*"=" ]]; then
+            compopt -o nospace
+          fi
+        fi
+        ;;
+      bin2hex)
+        ;;
       launch)
         if [[ "$COMP_CWORD" == "3" ]]; then
           COMPREPLY=( $( compgen -W '--no-reset' -- $cur ) )
