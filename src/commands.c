@@ -222,7 +222,7 @@ static int32_t execute_hex2bin( dfu_device_t *device,
         struct programmer_arguments *args ) {
     int32_t  retval = -1;
     uint32_t  i;
-    atmel_buffer_out_t bout;
+    intel_buffer_out_t bout;
     size_t   memory_size;
     size_t   page_size;
     uint32_t target_offset = 0;
@@ -231,7 +231,7 @@ static int32_t execute_hex2bin( dfu_device_t *device,
     page_size = args->flash_page_size;
 
     // ----------------- CONVERT HEX FILE TO BINARY -------------------------
-    if( 0 != atmel_init_buffer_out(&bout, memory_size, page_size) ) {
+    if( 0 != intel_init_buffer_out(&bout, memory_size, page_size) ) {
         DEBUG("ERROR initializing a buffer.\n");
         goto error;
     }
@@ -265,7 +265,7 @@ error:
 static int32_t execute_bin2hex( dfu_device_t *device,
         struct programmer_arguments *args ) {
     int32_t retval = -1;        // return value for this fcn
-    atmel_buffer_in_t buin;     // buffer in for storing read mem
+    intel_buffer_in_t buin;     // buffer in for storing read mem
     enum atmel_memory_unit_enum mem_segment = args->com_convert_data.segment;
     size_t mem_size = 0;
     size_t page_size = 0;
@@ -298,7 +298,7 @@ static int32_t execute_bin2hex( dfu_device_t *device,
             goto error;
     }
 
-    if( 0 != atmel_init_buffer_in(&buin, mem_size, page_size) ) {
+    if( 0 != intel_init_buffer_in(&buin, mem_size, page_size) ) {
         DEBUG("ERROR initializing a buffer.\n");
         goto error;
     }
