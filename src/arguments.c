@@ -51,6 +51,8 @@
 #define BL_EXTRA        2   /* Bootloader at top in separate memory area */
 #define BL_SPECIFIC     3   /* Any value greater than this is a specific start address */
 
+extern int debug;       /* defined in main.c */
+
 struct option_mapping_structure {
     const char *name;
     int32_t value;

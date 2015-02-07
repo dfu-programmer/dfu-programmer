@@ -69,7 +69,7 @@
 #define PROGRESS_END    "]  "
 #define PROGRESS_ERROR  " X  "
 
-extern int debug;
+extern int debug;       /* defined in main.c */
 
 // ________  P R O T O T Y P E S  _______________________________
 static int32_t atmel_read_command( dfu_device_t *device,
@@ -218,13 +218,13 @@ int32_t atmel_read_fuses( dfu_device_t *device,
 
     if( NULL == device ) {
         DEBUG( "invalid arguments.\n" );
-        return -1;
+        return ARGUMENT_ERROR;
     }
 
     if( !(ADC_AVR32 & device->type) ) {
         DEBUG( "target does not support fuse operation.\n" );
         fprintf( stderr, "target does not support fuse operation.\n" );
-        return -1;
+        return ARGUMENT_ERROR;
     }
 
     if( 0 != atmel_select_memory_unit(device, mem_config) ) {

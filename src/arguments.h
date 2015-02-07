@@ -37,18 +37,16 @@
  *  launch [--no-reset]
  */
 
-// ERROR CODES :
-#define SUCCESS                             0
-#define UNSPECIFIED_ERROR                   1
-#define ARGUMENT_ERROR                      2
-#define DEVICE_ACCESS_ERROR                 3
-#define BUFFER_INIT_ERROR                   4
-#define FLASH_READ_ERROR                    5
-#define FLASH_WRITE_ERROR                   6
-#define VALIDATION_ERROR_IN_REGION          7
-#define VALIDATION_ERROR_OUTSIDE_REGION     8
-
-extern int debug;
+enum return_codes_enum {
+    SUCCESS = 0,
+    UNSPECIFIED_ERROR,                  /* general error */
+    ARGUMENT_ERROR,                     /* invalid command for target etc. */
+    DEVICE_ACCESS_ERROR,                /* security bit etc. */
+    BUFFER_INIT_ERROR,                  /* hex files problems etc. */
+    FLASH_READ_ERROR,
+    FLASH_WRITE_ERROR,
+    VALIDATION_ERROR_IN_REGION,
+    VALIDATION_ERROR_OUTSIDE_REGION };
 
 enum targets_enum { tar_at89c51snd1c,
                     tar_at89c51snd2c,

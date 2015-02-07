@@ -122,10 +122,10 @@ static int32_t execute_setsecure( dfu_device_t *device,
     if( result < 0 ) {
         DEBUG( "Error while setting security bit. (%d)\n", result );
         fprintf( stderr, "Error setting security bit.\n" );
-        return -1;
+        return UNSPECIFIED_ERROR;
     }
 
-    return 0;
+    return SUCCESS;
 }
 
 // TODO : split this into a new command (no file is needed) - also general
@@ -151,11 +151,11 @@ static int32_t serialize_memory_image( intel_buffer_out_t *bout,
         for( i=0; i < length; ++i ) {
             if ( 0 != intel_process_data(bout, serial_data[i],
                         target_offset, offset + i) ) {
-                return -1;
+                return BUFFER_INIT_ERROR;
             }
         }
     }
-    return 0;
+    return SUCCESS;
 }
 
 static int32_t execute_validate( dfu_device_t *device,
@@ -241,7 +241,7 @@ static int32_t execute_flash( dfu_device_t *device,
         case mem_eeprom:
             if( 0 == args->eeprom_memory_size ) {
                 fprintf( stderr, "This device has no eeprom.\n" );
-                return -1;
+                return ARGUMENT_ERROR;
             }
             memory_size = args->eeprom_memory_size;
             page_size = args->eeprom_page_size;
@@ -259,7 +259,7 @@ static int32_t execute_flash( dfu_device_t *device,
             break;
         default:
             DEBUG("Unknown memory type %d\n", mem_type);
-            return -1;
+            return ARGUMENT_ERROR;
     }
 
     // ----------------- CONVERT HEX FILE TO BINARY -------------------------
@@ -422,7 +422,7 @@ static int32_t execute_getfuse( dfu_device_t *device,
     if( !(ADC_AVR32 & args->device_type) ) {
         DEBUG( "target doesn't support fuse set operation.\n" );
         fprintf( stderr, "target doesn't support fuse set operation.\n" );
-        return -1;
+        return ARGUMENT_ERROR;
     }
 
     /* Check AVR32 security bit in order to provide a better error message. */
@@ -431,7 +431,7 @@ static int32_t execute_getfuse( dfu_device_t *device,
     if( args->device_type & GRP_STM32 ) {
         fprintf( stderr, "Operation not supported on %s.\n",
                 args->device_type_string );
-        return -1;
+        return ARGUMENT_ERROR;
     } else {
         status = atmel_read_fuses( device, &info );
     }

@@ -85,9 +85,15 @@ static inline void print_progress( intel_buffer_info_t *info,
    * update progress value
    */
 
+static int32_t stm32_erase( dfu_device_t *device, uint8_t *command,
+                            uint8_t command_length, dfu_bool quiet );
+  /* erase, erase page, and read unprotect all share this functionality
+   * although with different commands
+   */
+
 
 //___ V A R I A B L E S ______________________________________________________
-extern int debug;
+extern int debug;       /* defined in main.c */
 
 /* FIXME : these should be read from usb device descriptor because they are
  * device specififc */
@@ -265,43 +271,47 @@ static inline void print_progress( intel_buffer_info_t *info,
   }
 }
 
-
-//___ F U N C T I O N S ______________________________________________________
-int32_t stm32_erase_flash( dfu_device_t *device, dfu_bool quiet ) {
-  TRACE( "%s( %p, %s )\n", __FUNCTION__, device, quiet ? "ture" : "false" );
-  uint8_t command[] = { ERASE_CMD };
-  uint8_t length = 1;
+static int32_t stm32_erase( dfu_device_t *device, uint8_t *command,
+                            uint8_t command_length, dfu_bool quiet ) {
   int32_t status;
-
-  if( !quiet ) {
-    fprintf( stderr, "Erasing flash...  " );
-    DEBUG("\n");
-  }
-
   dfu_set_transaction_num( 0 );     /* set wValue to zero */
-  if( length != dfu_download(device, length, command) ) {
+  if( command_length != dfu_download(device, command_length, command) ) {
     if( !quiet ) fprintf( stderr, "ERROR\n" );
     DEBUG( "dfu_download failed\n" );
-    return -3;
+    return UNSPECIFIED_ERROR;
   }
 
   /* call dfu get status to trigger command */
   if( (status = stm32_get_status(device)) ) {
     if( !quiet ) fprintf( stderr, "ERROR\n" );
     DEBUG("Error %d triggering %s\n", status, __FUNCTION__);
-    return -3;
+    return UNSPECIFIED_ERROR;
   }
 
-  /* It can take a while to erase the chip so 10 seconds before giving up */
+  /* check status again for erase status, this can take a while */
   if( (status = stm32_get_status(device)) ) {
     DEBUG("Error %d: %s unsuccessful\n", status, __FUNCTION__);
     if( !quiet ) fprintf( stderr, "ERROR\n" );
-    return -4;
+    return UNSPECIFIED_ERROR;
   } else {
     if( !quiet ) fprintf( stderr, "DONE\n" );
   }
 
-  return 0;
+  return SUCCESS;
+}
+
+//___ F U N C T I O N S ______________________________________________________
+int32_t stm32_erase_flash( dfu_device_t *device, dfu_bool quiet ) {
+  TRACE( "%s( %p, %s )\n", __FUNCTION__, device, quiet ? "ture" : "false" );
+  uint8_t command[] = { ERASE_CMD };
+  uint8_t length = 1;
+
+  if( !quiet ) {
+    fprintf( stderr, "Erasing flash...  " );
+    DEBUG("\n");
+  }
+
+  return stm32_erase( device, command, length, quiet );
 }
 
 int32_t stm32_page_erase( dfu_device_t *device, uint32_t address,
@@ -309,7 +319,6 @@ int32_t stm32_page_erase( dfu_device_t *device, uint32_t address,
   TRACE( "%s( %p, 0x%X, %s )\n", __FUNCTION__, device, address,
       quiet ? "ture" : "false" );
   uint8_t length = 5;
-  int32_t status;
 
   uint8_t command[5] = {
     ERASE_CMD,
@@ -319,30 +328,7 @@ int32_t stm32_page_erase( dfu_device_t *device, uint32_t address,
     (uint8_t) (0xff & ((address)>>24))      // page MSB
   };
 
-  dfu_set_transaction_num( 0 );     /* set wValue to zero */
-  if( length != dfu_download(device, length, command) ) {
-    if( !quiet ) fprintf( stderr, "ERROR\n" );
-    DEBUG( "dfu_download failed\n" );
-    return -3;
-  }
-
-  /* call dfu get status to trigger command */
-  if( (status = stm32_get_status(device)) ) {
-    if( !quiet ) fprintf( stderr, "ERROR\n" );
-    DEBUG("Error %d triggering %s\n", status, __FUNCTION__);
-    return -3;
-  }
-
-  /* It can take a while to erase the chip so 10 seconds before giving up */
-  if( (status = stm32_get_status(device)) ) {
-    DEBUG("Error %d: %s unsuccessful\n", status, __FUNCTION__);
-    if( !quiet ) fprintf( stderr, "ERROR\n" );
-    return -4;
-  } else {
-    if( !quiet ) fprintf( stderr, "DONE\n" );
-  }
-
-  return 0;
+  return stm32_erase( device, command, length, quiet );
 }
 
 int32_t stm32_start_app( dfu_device_t *device, dfu_bool quiet ) {
@@ -352,13 +338,13 @@ int32_t stm32_start_app( dfu_device_t *device, dfu_bool quiet ) {
   /* set address pointer (jump target) to start address */
   if( (status = stm32_set_address_ptr( device, STM32_FLASH_OFFSET )) ) {
     DEBUG("Error setting address pointer\n");
-    return -1;
+    return UNSPECIFIED_ERROR;
   }
 
   /* check dfu status for ok to send */
   if( (status = stm32_get_status(device)) ) {
     DEBUG("Error %d getting status on start\n", status);
-    return -1;
+    return UNSPECIFIED_ERROR;
   }
 
   if( !quiet ) fprintf( stderr, "Launching program...  \n" );
@@ -366,16 +352,16 @@ int32_t stm32_start_app( dfu_device_t *device, dfu_bool quiet ) {
   if( 0 != dfu_download(device, 0, NULL) ) {
     if( !quiet ) fprintf( stderr, "ERROR\n" );
     DEBUG( "dfu_download failed\n" );
-    return -3;
+    return UNSPECIFIED_ERROR;
   }
 
   /* call dfu get status to trigger command */
   if( (status = stm32_get_status(device)) ) {
     DEBUG("Error %d triggering %s\n", status, __FUNCTION__);
-    return -3;
+    return UNSPECIFIED_ERROR;
   }
 
-  return 0;
+  return SUCCESS;
 }
 
 int32_t stm32_read_flash( dfu_device_t *device, intel_buffer_in_t *buin,
@@ -389,13 +375,13 @@ int32_t stm32_read_flash( dfu_device_t *device, intel_buffer_in_t *buin,
   uint8_t mem_section = 0;       // tracks the current memory page
   uint32_t progress = 0;      // used to indicate progress
   int32_t status;
-  int32_t retval = -1;      // the return value for this function
+  int32_t retval = UNSPECIFIED_ERROR;   // the return value for this function
 
   if( (NULL == buin) || (NULL == device) ) {
     DEBUG( "invalid arguments.\n" );
     if( !quiet )
       fprintf( stderr, "Program Error, use debug for more info.\n" );
-    return -1;
+    return ARGUMENT_ERROR;
   }
 
   if( !quiet ) {
@@ -422,7 +408,7 @@ int32_t stm32_read_flash( dfu_device_t *device, intel_buffer_in_t *buin,
       if( (status = stm32_set_address_ptr(device,
               STM32_FLASH_OFFSET + address_offset)) ) {
         DEBUG("Error setting address 0x%X\n", address_offset);
-        retval = -3;
+        retval = UNSPECIFIED_ERROR;
         goto finally;
       }
       dfu_set_transaction_num( 2 ); /* sets block offset 0 */
@@ -448,7 +434,7 @@ int32_t stm32_read_flash( dfu_device_t *device, intel_buffer_in_t *buin,
             &buin->data[buin->info.block_start] )) ) {
       DEBUG( "Error reading block 0x%X to 0x%X: err %d.\n",
           buin->info.block_start, buin->info.block_end, status );
-      retval = ( status == -10 ) ? -10 : -5;
+      retval = ( status == -10 ) ? DEVICE_ACCESS_ERROR : FLASH_READ_ERROR;
       /* read protect error code in read_block is -10 */
       goto finally;
     }
@@ -463,11 +449,11 @@ int32_t stm32_read_flash( dfu_device_t *device, intel_buffer_in_t *buin,
 
     if( !quiet ) print_progress( &buin->info, &progress );
   }
-  retval = 0;
+  retval = SUCCESS;
 
 finally:
   if ( !quiet ) {
-    if( 0 == retval ) {
+    if( SUCCESS == retval ) {
       if ( debug <= STM32_DEBUG_THRESHOLD ) {
         fprintf( stderr, "] " );
       }
@@ -477,10 +463,10 @@ finally:
         fprintf( stderr, " X  ");
       }
       fprintf( stderr, "ERROR\n" );
-      if( retval==-3 )
+      if( retval==DEVICE_ACCESS_ERROR )
         fprintf( stderr,
             "Memory access error, use debug for more info.\n" );
-      else if( retval==-5 )
+      else if( retval==FLASH_READ_ERROR )
         fprintf( stderr,
             "Memory read error, use debug for more info.\n" );
     }
@@ -500,7 +486,7 @@ int32_t stm32_write_flash( dfu_device_t *device, intel_buffer_out_t *bout,
   uint8_t  reset_address_flag;  // reset address offset required
   uint16_t  xfer_size = 0;      // the size of a transfer
   uint8_t mem_section = 0;   // tracks the current memory page
-  int32_t retval = -1;  // the return value for this function
+  int32_t retval = UNSPECIFIED_ERROR;   // the return value for this function
   uint8_t buffer[STM32_MAX_TRANSFER_SIZE];     // buffer holding out data
   int32_t status;
 
@@ -509,13 +495,13 @@ int32_t stm32_write_flash( dfu_device_t *device, intel_buffer_out_t *bout,
     DEBUG( "ERROR: Invalid arguments, device/buffer pointer is NULL.\n" );
     if( !quiet )
       fprintf( stderr, "Program Error, use debug for more info.\n" );
-    return -1;
+    return ARGUMENT_ERROR;
   } else if( bout->info.valid_start > bout->info.valid_end ) {
     DEBUG( "ERROR: No valid target memory, end 0x%X before start 0x%X.\n",
         bout->info.valid_end, bout->info.valid_start );
     if( !quiet )
       fprintf( stderr, "Program Error, use debug for more info.\n" );
-    return -1;
+    return BUFFER_INIT_ERROR;
   }
 
   /* for each page with data, fill unassigned values on the page with 0xFF
@@ -524,7 +510,7 @@ int32_t stm32_write_flash( dfu_device_t *device, intel_buffer_out_t *bout,
   if( 0 != intel_flash_prep_buffer( bout ) ) {
     if( !quiet )
       fprintf( stderr, "Program Error, use debug for more info.\n" );
-    return -2;
+    return BUFFER_INIT_ERROR;
   }
 
   /* determine the limits of where actual data resides in the buffer */
@@ -561,12 +547,12 @@ int32_t stm32_write_flash( dfu_device_t *device, intel_buffer_out_t *bout,
     DEBUG( "ERROR: Data exists outside of the valid target flash region.\n" );
     if( !quiet )
       fprintf( stderr, "Hex file error, use debug for more info.\n" );
-    return -1;
+    return BUFFER_INIT_ERROR;
   } else if( bout->info.data_start == UINT32_MAX ) {
     DEBUG( "ERROR: No valid data to flash.\n" );
     if( !quiet )
       fprintf( stderr, "Hex file error, use debug for more info.\n" );
-    return -1;
+    return BUFFER_INIT_ERROR;
   }
 
   if( !quiet ) {
@@ -592,7 +578,7 @@ int32_t stm32_write_flash( dfu_device_t *device, intel_buffer_out_t *bout,
       if( (status = stm32_set_address_ptr(device,
               STM32_FLASH_OFFSET + address_offset)) ) {
         DEBUG("Error setting address 0x%X\n", address_offset);
-        retval = -3;
+        retval = DEVICE_ACCESS_ERROR;
         goto finally;
       }
       dfu_set_transaction_num( 2 ); /* sets block offset 0 */
@@ -628,7 +614,7 @@ int32_t stm32_write_flash( dfu_device_t *device, intel_buffer_out_t *bout,
 
     if( (status = stm32_write_block( device, xfer_size, buffer )) ) {
       DEBUG( "Error flashing the block: err %d.\n", status );
-      retval = -4;
+      retval = FLASH_WRITE_ERROR;
       goto finally;
     }
 
@@ -649,11 +635,11 @@ int32_t stm32_write_flash( dfu_device_t *device, intel_buffer_out_t *bout,
     // display progress in 32 increments (if not hidden)
     if ( !quiet ) print_progress( &bout->info, &progress );
   }
-  retval = 0;
+  retval = SUCCESS;
 
 finally:
   if ( !quiet ) {
-    if( 0 == retval ) {
+    if( SUCCESS == retval ) {
       if ( debug <= STM32_DEBUG_THRESHOLD ) {
         fprintf( stderr, "] " );
       }
@@ -663,10 +649,10 @@ finally:
         fprintf( stderr, " X  ");
       }
       fprintf( stderr, "ERROR\n" );
-      if( retval==-3 )
+      if( retval==DEVICE_ACCESS_ERROR )
         fprintf( stderr,
             "Memory access error, use debug for more info.\n" );
-      else if( retval==-4 )
+      else if( retval==FLASH_WRITE_ERROR )
         fprintf( stderr,
             "Memory write error, use debug for more info.\n" );
     }
@@ -685,7 +671,7 @@ int32_t stm32_get_commands( dfu_device_t *device ) {
   /* check status before read */
   if( (result = stm32_get_status(device)) ) {
     DEBUG("Status Error %d before read\n", result );
-    return -2;
+    return UNSPECIFIED_ERROR;
   }
 
   dfu_set_transaction_num( 0 );
@@ -694,12 +680,14 @@ int32_t stm32_get_commands( dfu_device_t *device ) {
     dfu_status_t status;
 
     DEBUG( "dfu_upload result: %d\n", result );
+    result = UNSPECIFIED_ERROR;
     if( 0 == dfu_get_status(device, &status) ) {
       if( status.bStatus == DFU_STATUS_OK ) {
         DEBUG("DFU Status OK, state %d\n", status.bState);
       } else if( status.bStatus == DFU_STATUS_ERROR_VENDOR ) {
         DEBUG("Device is read protected\n");
         /* status = dfuERROR and state = errVENDOR */
+        result = DEVICE_ACCESS_ERROR;
       } else {
         DEBUG("Unknown error status %d / state %d\n",
             status.bStatus, status.bState );
@@ -717,7 +705,7 @@ int32_t stm32_get_commands( dfu_device_t *device ) {
     fprintf( stdout, "  0x%02X\n", buffer[i] );
   }
 
-  return 0;
+  return SUCCESS;
 }
 
 int32_t stm32_get_configuration( dfu_device_t *device ) {
@@ -730,12 +718,12 @@ int32_t stm32_get_configuration( dfu_device_t *device ) {
           stm32_sector_addresses[mem_st_option_bytes])) ) {
     DEBUG("Error (%d) setting address 0x%X\n",
         status, stm32_sector_addresses[mem_st_option_bytes]);
-    return -1;
+    return UNSPECIFIED_ERROR;
   }
 
   if( (status = stm32_read_block(device, STM32_OPTION_BYTES_SIZE, buffer)) ) {
     DEBUG("Error (%d) reading option buffer block\n", status );
-    return -2;
+    return FLASH_READ_ERROR;
   }
 
   fprintf( stdout, "There are %d option bytes:\n", STM32_OPTION_BYTES_SIZE );
@@ -745,44 +733,20 @@ int32_t stm32_get_configuration( dfu_device_t *device ) {
   }
   fprintf( stdout, "\n" );
 
-  return 0;
+  return SUCCESS;
 }
 
 int32_t stm32_read_unprotect( dfu_device_t *device, dfu_bool quiet ) {
-  TRACE("%s( %p )\n", __FUNCTION__, device);
+  TRACE( "%s( %p, %s )\n", __FUNCTION__, device, quiet ? "ture" : "false" );
   uint8_t command[] = { READ_UNPROTECT };
   uint8_t length = 1;
-  int32_t status;
 
   if( !quiet ) {
     fprintf( stderr, "Read Unprotect, Erasing flash...  " );
     DEBUG("\n");
   }
 
-  dfu_set_transaction_num( 0 );     /* set wValue to zero */
-  if( length != dfu_download(device, length, command) ) {
-    if( !quiet ) fprintf( stderr, "ERROR\n" );
-    DEBUG( "dfu_download failed\n" );
-    return -3;
-  }
-
-  /* call dfu get status to trigger command */
-  if( (status = stm32_get_status(device)) ) {
-    if( !quiet ) fprintf( stderr, "ERROR\n" );
-    DEBUG("Error %d triggering %s\n", status, __FUNCTION__);
-    return -3;
-  }
-
-  /* It can take a while to erase the chip so 10 seconds before giving up */
-  if( (status = stm32_get_status(device)) ) {
-    DEBUG("Error %d: %s unsuccessful\n", status, __FUNCTION__);
-    if( !quiet ) fprintf( stderr, "ERROR\n" );
-    return -4;
-  } else {
-    if( !quiet ) fprintf( stderr, "DONE\n" );
-  }
-
-  return 0;
+  return stm32_erase( device, command, length, quiet );
 }
 
 // vim: shiftwidth=2
