@@ -4,7 +4,7 @@ dfu\-programmer \- USB firmware upgrading for Atmel microcontrollers
 .nh
 .SH SYNOPSIS
 .B dfu\-programmer
-target[:usb-bus,usb-addr] command [options] [parameters]
+target[:usb\-bus,usb\-addr] command [options] [parameters]
 .br
 .B dfu\-programmer
 \-\-help
@@ -16,7 +16,7 @@ target[:usb-bus,usb-addr] command [options] [parameters]
 \-\-version
 .SH DESCRIPTION
 .B dfu\-programmer
-is a multi-platform command line Device Firmware Upgrade (DFU) based programmer
+is a multi\-platform command line Device Firmware Upgrade (DFU) based programmer
 for the flash memory on Atmel AVR, AVR32, XMEGA and 8051 based microcontrollers
 which ship with a USB boot loader.
 It supports In System Programming (ISP) for developers and potentially
@@ -39,7 +39,7 @@ These chip names are used as the command line "target" parameter.
 at89c51snd1c, at89c51snd2c, at89c5130, at89c5131,
 at89c5132
 .IP "AVR based controllers:"
-at90usb1287, at90usb1286, at90usb1287-4k, at90usb1286-4k,
+at90usb1287, at90usb1286, at90usb1287\-4k, at90usb1286\-4k,
 at90usb647, at90usb646, at90usb162, at90usb82,
 atmega32u6, atmega32u4, atmega32u2, atmega16u4,
 atmega16u2, atmega8u2
@@ -81,7 +81,7 @@ commands which write to the microcontroller will perform
 a validation step that rereads the data which was written,
 compares it to the expected result, and reports any errors.
 .PP
-Note that unlike Atmel's BatchISP program, dfu-programmer will
+Note that unlike Atmel's BatchISP program, dfu\-programmer will
 only perform a single operation at a time. Erasing and programming
 require separate commands.
 .HP
@@ -226,8 +226,8 @@ group in order to have access to the device without needing to be root.
 .SH AUTHOR
 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
 .SH SEE ALSO
-.UR dfu-programmer.sourceforge.net
-http://dfu-programmer.sourceforge.net
+.UR dfu\-programmer.sourceforge.net
+http://dfu\-programmer.sourceforge.net
 .UR USB DFU Bootloader Datasheet (8052, AVR)
 http://www.atmel.com/Images/doc7618.pdf
 .UR AVR32 UC3 USB DFU Bootloader Protocol
@@ -237,7 +237,7 @@ http://www.atmel.com/Images/doc8457.pdf
 .UR AVR32 UC3 USB DFU Bootloader
 http://www.atmel.com/Images/doc7745.pdf
 .SH COPYRIGHT
-Copyright (C) 2005-2014 Weston Schmidt
+Copyright (C) 2005\-2015 Weston Schmidt
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -251,4 +251,4 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
-Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110\-1301, USA
