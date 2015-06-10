@@ -887,6 +887,7 @@ error:
 
 int32_t atmel_start_app_reset( dfu_device_t *device ) {
     uint8_t command[3] = { 0x04, 0x03, 0x00 };
+    int32_t retval;
 
     TRACE( "%s( %p )\n", __FUNCTION__, device );
 
@@ -895,8 +896,8 @@ int32_t atmel_start_app_reset( dfu_device_t *device ) {
         return -1;
     }
 
-    if( 0 != dfu_download(device, 0, NULL) ) {
-        DEBUG( "dfu_download failed.\n" );
+    if( 0 != (retval = dfu_download(device, 0, NULL)) ) {
+        DEBUG( "dfu_download failed (rv=%d).\n", retval );
         return -2;
     }
 
