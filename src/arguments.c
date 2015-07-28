@@ -280,6 +280,7 @@ static void list_targets(int mode)
             case ADC_AVR:   dev_type_name = "AVR";   break;
             case ADC_AVR32: dev_type_name = "AVR32"; break;
             case ADC_XMEGA: dev_type_name = "XMEGA"; break;
+            case DC_STM32:  dev_type_name = "STM32F4"; break;
             default:        dev_type_name = NULL;    break;
             }
             if( dev_type_name != NULL ) {
