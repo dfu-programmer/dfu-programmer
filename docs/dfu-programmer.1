@@ -114,6 +114,8 @@ Erase first checks if the memory is blank unless \-\-force flag is set.
 [(flash)|\-\-user|\-\-eeprom]
 [\-\-suppress\-validation]
 [\-\-suppress\-bootloader\-mem]
+[\-\-validate\-first]
+[\-\-ignore\-outside]
 [\-\-serial=hexbytes:offset]
 file or STDIN
 .br
@@ -141,6 +143,16 @@ on. There must be an even number of hex digits, but the sequence can
 be any length. The offset is assumed to be given in hex if it starts
 with a "0x" prefix, octal if it begins with a "0", otherwise is it
 assumed to be decimal.
+.PP
+\-\-validate\-first add a validate before writing the flash memory. If the
+validate succeeds (i.e. the firmware in the chip is the same as the one
+given as input), then no further operations are done, and the flash is
+reported as successfull.
+.PP
+\-\-ignore\-outside changes the validate behavior to ignore any error
+outside the programming region. This can be useful for programming a single
+part of the chip (where errors outside region are expected) without ignoring
+the validate result.
 .HP
 .B setsecure
 .br

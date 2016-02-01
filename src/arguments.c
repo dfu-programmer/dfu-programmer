@@ -358,6 +358,8 @@ static void usage()
     fprintf( stderr, "        flash        [--force] [(flash)|--user|--eeprom]\n"
                      "                     [--suppress-validation]\n"
                      "                     [--suppress-bootloader-mem]\n"
+                     "                     [--validate-first]\n"
+                     "                     [--ignore-outside]\n"
                      "                     [--serial=hexdigits:offset] {file|STDIN}\n" );
     fprintf( stderr, "        setsecure\n" );
     fprintf( stderr, "        configure {BSB|SBV|SSB|EB|HSB}"
@@ -568,6 +570,46 @@ static int32_t assign_global_options( struct programmer_arguments *args,
                 case com_eflash:
                 case com_user:
                     args->com_flash_data.suppress_validation = 1;
+                    break;
+                default:
+                    /* not supported. */
+                    return -1;
+            }
+            break;
+        }
+    }
+
+    /* Find '--validate-first' if it is here - even though it is not
+     * used by all this is easier. */
+    for( i = 0; i < argc; i++ ) {
+        if( 0 == strcmp("--validate-first", argv[i]) ) {
+            *argv[i] = '\0';
+
+            switch( args->command ) {
+                case com_flash:
+                case com_eflash:
+                case com_user:
+                    args->com_flash_data.validate_first = 1;
+                    break;
+                default:
+                    /* not supported. */
+                    return -1;
+            }
+            break;
+        }
+    }
+
+    /* Find '--ignore-outside' if it is here - even though it is not
+     * used by all this is easier. */
+    for( i = 0; i < argc; i++ ) {
+        if( 0 == strcmp("--ignore-outside", argv[i]) ) {
+            *argv[i] = '\0';
+
+            switch( args->command ) {
+                case com_flash:
+                case com_eflash:
+                case com_user:
+                    args->com_flash_data.ignore_outside = 1;
                     break;
                 default:
                     /* not supported. */
