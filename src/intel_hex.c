@@ -376,7 +376,7 @@ error:
     }
 
     if( retval & !quiet ) {
-        fprintf( stderr, "See --debug=%u or greater for more information.\n",
+        fprintf( stderr, "See --debug=%d or greater for more information.\n",
                 IHEX_DEBUG_THRESHOLD + 1 );
     }
 
