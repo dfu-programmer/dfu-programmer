@@ -70,7 +70,7 @@ _dfu-programmer () {
         ;;
       flash)
         filetype="hex"
-        flags="--force --user --eeprom --bin --suppress-validation --suppress-bootloader-mem --serial="
+        flags="--force --user --eeprom --bin --suppress-validation --suppress-bootloader-mem --validate-first --ignore-outside --serial="
         eeprom_size=$( echo $TARGET_INFO | sed "s/.* $target:://" | sed 's/ .*//' )
         if [[ "$eeprom_size" == 0 ]]; then
           flags=$( echo $flags | sed 's/--eeprom//' )
