@@ -197,7 +197,7 @@ static int32_t atmel_read_command( dfu_device_t *device,
 
 static inline void __print_progress( intel_buffer_info_t *info,
                                         uint32_t *progress ) {
-    if ( !(debug > ATMEL_DEBUG_THRESHOLD) ) {
+    if ( !(debug > ATMEL_DEBUG_THRESHOLD) && isatty(2) ) {
         while ( ((info->block_end - info->data_start + 1) * 32) > *progress ) {
             fprintf( stderr, PROGRESS_BAR );
             *progress += info->data_end - info->data_start + 1;
@@ -663,13 +663,13 @@ int32_t atmel_read_flash( dfu_device_t *device,
     }
 
     if( !quiet ) {
-        if( debug <= ATMEL_DEBUG_THRESHOLD ) {
+        if( debug <= ATMEL_DEBUG_THRESHOLD && isatty(2) ) {
             // NOTE: From here on we should go to finally on error
             fprintf( stderr, PROGRESS_METER );
         }
         fprintf( stderr, "Reading 0x%X bytes...\n",
                 buin->info.data_end - buin->info.data_start + 1 );
-        if( debug <= ATMEL_DEBUG_THRESHOLD ) {
+        if( debug <= ATMEL_DEBUG_THRESHOLD && isatty(2) ) {
             // NOTE: From here on we should go to finally on error
             fprintf( stderr, PROGRESS_START );
         }
@@ -723,12 +723,12 @@ int32_t atmel_read_flash( dfu_device_t *device,
 finally:
     if ( !quiet ) {
         if( 0 == retval ) {
-            if ( debug <= ATMEL_DEBUG_THRESHOLD ) {
+            if ( debug <= ATMEL_DEBUG_THRESHOLD && isatty(2) ) {
                 fprintf( stderr, PROGRESS_END );
             }
             fprintf( stderr, "Success\n" );
         } else {
-            if ( debug <= ATMEL_DEBUG_THRESHOLD ) {
+            if ( debug <= ATMEL_DEBUG_THRESHOLD && isatty(2) ) {
                 fprintf( stderr, PROGRESS_ERROR );
             }
             fprintf( stderr, "ERROR\n" );
@@ -1237,13 +1237,13 @@ int32_t atmel_flash( dfu_device_t *device,
     }
 
     if( !quiet ) {
-        if( debug <= ATMEL_DEBUG_THRESHOLD ) {
+        if( debug <= ATMEL_DEBUG_THRESHOLD && isatty(2) ) {
             // NOTE: from here on we need to run finally block
             fprintf( stderr, PROGRESS_METER );
         }
         fprintf( stderr, "Programming 0x%X bytes...\n",
                 bout->info.data_end - bout->info.data_start + 1 );
-        if( debug <= ATMEL_DEBUG_THRESHOLD ) {
+        if( debug <= ATMEL_DEBUG_THRESHOLD && isatty(2) ) {
             // NOTE: from here on we need to run finally block
             fprintf( stderr, PROGRESS_START );
         }
@@ -1309,12 +1309,12 @@ int32_t atmel_flash( dfu_device_t *device,
 finally:
     if ( !quiet ) {
         if( 0 == retval ) {
-            if ( debug <= ATMEL_DEBUG_THRESHOLD ) {
+            if ( debug <= ATMEL_DEBUG_THRESHOLD && isatty(2) ) {
                 fprintf( stderr, PROGRESS_END );
             }
             fprintf( stderr, "Success\n" );
         } else {
-            if ( debug <= ATMEL_DEBUG_THRESHOLD ) {
+            if ( debug <= ATMEL_DEBUG_THRESHOLD && isatty(2) ) {
                 fprintf( stderr, PROGRESS_ERROR );
             }
             fprintf( stderr, "ERROR\n" );
