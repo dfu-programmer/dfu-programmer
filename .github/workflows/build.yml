@@ -16,23 +16,27 @@ jobs:
 
     steps:
       - name: Dependencies
+        shell: bash
         run: |
-          C:/msys64/usr/bin/pacman --noconfirm -S automake-wrapper
-          C:/msys64/usr/bin/pacman --noconfirm -S autoconf-wrapper
+          /c/msys64/usr/bin/pacman --noconfirm -S automake-wrapper
+          /c/msys64/usr/bin/pacman --noconfirm -S autoconf-wrapper
 
       - uses: actions/checkout@v3
 
       - name: bootstrap
+        shell: bash
         run: |
-          C:/msys64/usr/bin/aclocal -I m4
-          C:/msys64/usr/bin/autoheader
-          C:/msys64/usr/bin/automake --foreign --add-missing --copy
-          C:/msys64/usr/bin/autoconf
+          /c/msys64/usr/bin/aclocal -I m4
+          /c/msys64/usr/bin/autoheader
+          /c/msys64/usr/bin/automake --foreign --add-missing --copy
+          /c/msys64/usr/bin/autoconf
 
       - name: configure
+        shell: bash
         run: ./configure --disable-libusb_1_0
 
       - name: make
+        shell: bash
         run: make
       
       - run: src/dfu-programmer.exe --help
