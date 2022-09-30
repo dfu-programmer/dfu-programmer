@@ -11,6 +11,8 @@ jobs:
     runs-on: windows-latest
 
     steps:
+    - run: pacman -S automake-wrapper --noconfirm
+
     - uses: actions/checkout@v3
 
     - name: bootstrap
@@ -36,6 +38,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - run: apt-get install -y libusb-dev
+
     - uses: actions/checkout@v3
 
     - name: bootstrap
@@ -57,6 +61,8 @@ jobs:
     runs-on: macos-latest
 
     steps:
+    - run: brew install automake
+
     - uses: actions/checkout@v3
 
     - name: bootstrap
