@@ -15,16 +15,19 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - run: C:/msys64/usr/bin/pacman -S automake-wrapper --noconfirm
+      - name: Dependencies
+        run: |
+          C:/msys64/usr/bin/pacman --noconfirm -S automake-wrapper
+          C:/msys64/usr/bin/pacman --noconfirm -S autoconf-wrapper
 
       - uses: actions/checkout@v3
 
       - name: bootstrap
         run: |
-          aclocal -I m4
-          autoheader
-          automake --foreign --add-missing --copy
-          autoconf
+          C:/msys64/usr/bin/aclocal -I m4
+          C:/msys64/usr/bin/autoheader
+          C:/msys64/usr/bin/automake --foreign --add-missing --copy
+          C:/msys64/usr/bin/autoconf
 
       - name: configure
         run: ./configure --disable-libusb_1_0
