@@ -15,7 +15,7 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - run: pacman -S automake-wrapper --noconfirm
+      - run: C:/msys64/usr/bin/pacman -S automake-wrapper --noconfirm
 
       - uses: actions/checkout@v3
 
