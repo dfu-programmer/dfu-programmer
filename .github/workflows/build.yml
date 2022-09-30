@@ -1,0 +1,77 @@
+name: Build dfu-programmer
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  Windows:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: bootstrap
+      run: |
+        aclocal -I m4
+        autoheader
+        automake --foreign --add-missing --copy
+        autoconf
+
+    - name: configure
+      run: ./configure --disable-libusb_1_0
+
+    - name: make
+      run: make
+
+    - name: Upload a Build Artifact
+      uses: actions/upload-artifact@v3.1.0
+      with:
+        name: dfu-programmer
+        path: src/dfu-programmer.exe
+
+  Linux:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: bootstrap
+      run: ./bootstrap.sh
+
+    - name: configure
+      run: ./configure
+
+    - name: make
+      run: make
+
+    - name: Upload a Build Artifact
+      uses: actions/upload-artifact@v3.1.0
+      with:
+        name: dfu-programmer
+        path: src/dfu-programmer
+
+  macOS:
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: bootstrap
+      run: ./bootstrap.sh
+
+    - name: configure
+      run: ./configure
+
+    - name: make
+      run: make
+
+    - run: ls -lr
+
+    - name: Upload a Build Artifact
+      uses: actions/upload-artifact@v3.1.0
+      with:
+        name: dfu-programmer
+        path: src/dfu-programmer
