@@ -31,6 +31,8 @@ jobs:
 
       - name: make
         run: make
+      
+      - run: src/dfu-programmer.exe --help
 
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v3.1.0
@@ -54,6 +56,8 @@ jobs:
 
       - name: make
         run: make
+      
+      - run: src/dfu-programmer --help
 
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v3.1.0
@@ -77,8 +81,8 @@ jobs:
 
       - name: make
         run: make
-
-      - run: ls -lr
+      
+      - run: src/dfu-programmer --help
 
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v3.1.0
