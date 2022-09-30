@@ -1,83 +1,87 @@
 name: Build dfu-programmer
 
+# concurrency:
+#   group: ${{ github.workflow }}-${{ github.ref }}
+#   cancel-in-progress: true
+
 on:
   push:
-    branches: [ "master" ]
+    branches: ["master"]
   pull_request:
-    branches: [ "master" ]
+    branches: ["master"]
 
 jobs:
   Windows:
     runs-on: windows-latest
 
     steps:
-    - run: pacman -S automake-wrapper --noconfirm
+      - run: pacman -S automake-wrapper --noconfirm
 
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-    - name: bootstrap
-      run: |
-        aclocal -I m4
-        autoheader
-        automake --foreign --add-missing --copy
-        autoconf
+      - name: bootstrap
+        run: |
+          aclocal -I m4
+          autoheader
+          automake --foreign --add-missing --copy
+          autoconf
 
-    - name: configure
-      run: ./configure --disable-libusb_1_0
+      - name: configure
+        run: ./configure --disable-libusb_1_0
 
-    - name: make
-      run: make
+      - name: make
+        run: make
 
-    - name: Upload a Build Artifact
-      uses: actions/upload-artifact@v3.1.0
-      with:
-        name: dfu-programmer
-        path: src/dfu-programmer.exe
+      - name: Upload a Build Artifact
+        uses: actions/upload-artifact@v3.1.0
+        with:
+          name: dfu-programmer
+          path: src/dfu-programmer.exe
 
   Linux:
     runs-on: ubuntu-latest
 
     steps:
-    - run: apt-get install -y libusb-dev
+      - run: apt-get install -y libusb-dev
 
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-    - name: bootstrap
-      run: ./bootstrap.sh
+      - name: bootstrap
+        run: ./bootstrap.sh
 
-    - name: configure
-      run: ./configure
+      - name: configure
+        run: ./configure
 
-    - name: make
-      run: make
+      - name: make
+        run: make
 
-    - name: Upload a Build Artifact
-      uses: actions/upload-artifact@v3.1.0
-      with:
-        name: dfu-programmer
-        path: src/dfu-programmer
+      - name: Upload a Build Artifact
+        uses: actions/upload-artifact@v3.1.0
+        with:
+          name: dfu-programmer
+          path: src/dfu-programmer
 
   macOS:
     runs-on: macos-latest
 
     steps:
-    - run: brew install automake
+      - run: brew install automake
 
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-    - name: bootstrap
-      run: ./bootstrap.sh
+      - name: bootstrap
+        run: ./bootstrap.sh
 
-    - name: configure
-      run: ./configure
+      - name: configure
+        run: ./configure
 
-    - name: make
-      run: make
+      - name: make
+        run: make
 
-    - run: ls -lr
+      - run: ls -lr
 
-    - name: Upload a Build Artifact
-      uses: actions/upload-artifact@v3.1.0
-      with:
-        name: dfu-programmer
-        path: src/dfu-programmer
+      - name: Upload a Build Artifact
+        uses: actions/upload-artifact@v3.1.0
+        with:
+          name: dfu-programmer
+          path: src/dfu-programmer
