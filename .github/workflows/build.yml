@@ -16,10 +16,9 @@ jobs:
 
     steps:
       - name: Dependencies
-        shell: bash
         run: |
-          /c/msys64/usr/bin/pacman --noconfirm -S automake-wrapper
-          /c/msys64/usr/bin/pacman --noconfirm -S autoconf-wrapper
+          C:/msys64/usr/bin/pacman --noconfirm -S automake-wrapper
+          C:/msys64/usr/bin/pacman --noconfirm -S autoconf-wrapper
 
       - uses: actions/checkout@v3
 
