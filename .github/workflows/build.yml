@@ -42,7 +42,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - run: apt-get install -y libusb-dev
+      - run: sudo apt-get install -y libusb-dev
 
       - uses: actions/checkout@v3
 
