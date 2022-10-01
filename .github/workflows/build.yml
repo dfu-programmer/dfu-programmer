@@ -23,7 +23,7 @@ jobs:
       - name: bootstrap
         shell: bash
         run: |
-          export PATH=/c/msys64/usr/bin:$PATH
+          export PATH=$PATH:/c/msys64/usr/bin
           which aclocal
           aclocal -I m4
           autoheader
