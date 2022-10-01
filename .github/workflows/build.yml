@@ -28,7 +28,7 @@ jobs:
         run: |
           export PATH=$PATH:/c/msys64/usr/bin
           ls -l /c/msys64/usr/bin/aclocal
-          ls -l /usr/share/automake-1.16/Automake/Config.pm
+          ls -l /c/msys64/usr/share/automake-1.16/Automake/Config.pm || :
           aclocal -I m4
           autoheader
           automake --foreign --add-missing --copy
