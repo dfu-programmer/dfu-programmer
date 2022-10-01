@@ -17,6 +17,8 @@ jobs:
         run: |
           C:/msys64/usr/bin/pacman --noconfirm -S automake-wrapper
           C:/msys64/usr/bin/pacman --noconfirm -S autoconf-wrapper
+          pacman -Ql automake-wrapper
+          pacman -Ql autoconf-wrapper
 
       - uses: actions/checkout@v3
 
