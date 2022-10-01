@@ -26,6 +26,7 @@ jobs:
       - name: bootstrap
         shell: bash
         run: |
+          which aclocal
           aclocal -I m4
           autoheader
           automake --foreign --add-missing --copy
