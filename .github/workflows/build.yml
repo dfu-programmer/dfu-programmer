@@ -32,6 +32,7 @@ jobs:
         env:
           PERL5LIB: |
             /c/msys64/usr/share/automake-1.16
+            /c/msys64/usr/share/autoconf-2.71
         run: |
           export PATH=$PATH:/c/msys64/usr/bin
           echo bootstrapping...
