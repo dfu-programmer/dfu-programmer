@@ -36,7 +36,21 @@ jobs:
         run: |
           export PATH=$PATH:/c/msys64/usr/bin
           echo bootstrapping...
-          ./bootstrap.sh
+
+          # ./bootstrap.sh
+
+          echo aclocal
+          aclocal -I m4
+
+          echo autoheader
+          autoheader
+
+          echo automake
+          automake --foreign --add-missing --copy
+
+          echo autoconf
+          autoconf
+
 
       - name: configure
         shell: bash
