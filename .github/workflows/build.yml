@@ -22,6 +22,8 @@ jobs:
 
           dir C:\ProgramData\chocolatey\lib\pkgconfiglite
           dir C:\ProgramData\chocolatey\lib\pkgconfiglite\tools
+          dir C:\ProgramData\chocolatey\lib\pkgconfiglite\tools\*
+          dir C:\ProgramData\chocolatey\lib\pkgconfiglite\tools\*\*
 
           mv C:\ProgramData\chocolatey\lib\pkgconfiglite\tools\*\share\aclocal C:\MSYS64\mingw64\share\
 
