@@ -1,7 +1,7 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ(2.59)
+AC_PREREQ([2.71])
 AC_INIT([dfu-programmer],[0.7.2],[],[],[https://github.com/dfu-programmer/dfu-programmer])
 AC_CONFIG_AUX_DIR(m4)
 AC_CONFIG_SRCDIR([src/atmel.c])
@@ -18,7 +18,7 @@ AC_PROG_CC
 dnl Enable libusb-1.0, if available
 disable_libusb_1_0=no
 AC_ARG_ENABLE(libusb_1_0,
-    AC_HELP_STRING([--disable-libusb_1_0], [disable libusb-1.0 support even if available]),
+    AS_HELP_STRING([--disable-libusb_1_0],[disable libusb-1.0 support even if available]),
     [ if test "x$enableval" = "xno"; then disable_libusb_1_0=yes; fi ], [])
 
 dnl If libusb-1.0 is enabled and available, prefer that to the old libusb
@@ -65,7 +65,15 @@ fi
 
 
 # Checks for header files.
-AC_HEADER_STDC
+m4_warn([obsolete],
+[The preprocessor macro `STDC_HEADERS' is obsolete.
+  Except in unusual embedded environments, you can safely include all
+  ISO C90 headers unconditionally.])dnl
+# Autoupdate added the next two lines to ensure that your configure
+# script's behavior did not change.  They are probably safe to remove.
+AC_CHECK_INCLUDES_DEFAULT
+AC_PROG_EGREP
+
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
