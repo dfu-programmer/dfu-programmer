@@ -15,7 +15,11 @@ jobs:
     steps:
       - name: Dependencies
         run: |
+          C:/msys64/usr/bin/pacman --noconfirm -S automake-wrapper
+          C:/msys64/usr/bin/pacman --noconfirm -S autoconf-wrapper
+
           choco install pkgconfiglite
+          mv C:\ProgramData\chocolatey\lib\pkgconfiglite\tools\share\aclocal C:\MSYS64\mingw64\share\
 
       - uses: actions/checkout@v3
 
@@ -24,10 +28,7 @@ jobs:
         run: |
           export PATH=$PATH:/c/msys64/usr/bin
           echo bootstrapping...
-          aclocal -I m4
-          autoheader
-          automake --foreign --add-missing --copy
-          autoconf
+          ./bootstrap.sh
 
       - name: configure
         shell: bash
