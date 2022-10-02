@@ -39,7 +39,7 @@ jobs:
 
           # ./bootstrap.sh
 
-          find /usr /c/msys64 -xdev -path "*/Automake/Config.pm" || find /usr /c/msys64 -path "*/Automake/Config.pm"
+          find /usr /c/msys64 -path "*/Automake/Config.pm" -exec ls -l {} \;
 
           sleep 1
 
