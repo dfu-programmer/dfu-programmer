@@ -30,15 +30,15 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: bootstrap
-        shell: C:\msys64\usr\bin\mintty --exec ./bootstrap.sh
+        shell: C:/msys64/usr/bin/mintty.exe --exec ./bootstrap.sh
         run: ''
 
       - name: configure
-        shell: C:\msys64\usr\bin\mintty --exec ./configure --disable-dependency-tracking --disable-libusb_1_0
+        shell: C:/msys64/usr/bin/mintty.exe --exec ./configure --disable-dependency-tracking --disable-libusb_1_0
         run: ''
 
       - name: make
-        shell: C:\msys64\usr\bin\mintty --exec make
+        shell: C:/msys64/usr/bin/mintty.exe --exec make
         run: ''
 
       - run: src/dfu-programmer.exe --help
@@ -50,7 +50,7 @@ jobs:
           path: src/dfu-programmer.exe
 
       - name: make dist
-        shell: C:\msys64\usr\bin\mintty --exec make dist
+        shell: C:/msys64/usr/bin/mintty.exe --exec make dist
         run: ''
 
       - name: Upload .zip
