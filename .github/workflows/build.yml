@@ -29,6 +29,8 @@ jobs:
 
       - name: bootstrap
         shell: bash
+        env:
+          PERL5LIB: /c/msys64/usr/share/automake-1.16
         run: |
           export PATH=$PATH:/c/msys64/usr/bin
           echo bootstrapping...
