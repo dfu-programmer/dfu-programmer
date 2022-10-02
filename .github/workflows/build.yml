@@ -39,6 +39,8 @@ jobs:
 
           # ./bootstrap.sh
 
+          find / -path "*/Automake/Config.pm" -print
+
           echo aclocal
           aclocal -I m4
 
