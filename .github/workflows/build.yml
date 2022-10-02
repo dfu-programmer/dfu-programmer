@@ -15,34 +15,26 @@ jobs:
     steps:
       - name: Dependencies
         run: |
-          C:/msys64/usr/bin/pacman --noconfirm -S automake-wrapper autoconf-wrapper
+          C:/msys64/usr/bin/pacman --noconfirm -S automake-wrapper autoconf-wrapper make mingw-w64-x86_64-libusb-compat-git
+          # mingw-w64-x86_64-gcc
 
-          choco install pkgconfiglite
+          # choco install pkgconfiglite
 
-          dir C:\ProgramData\chocolatey\lib\pkgconfiglite
-          dir C:\ProgramData\chocolatey\lib\pkgconfiglite\tools
-          dir C:\ProgramData\chocolatey\lib\pkgconfiglite\tools\*
-          dir C:\ProgramData\chocolatey\lib\pkgconfiglite\tools\*\*
+          # dir C:\ProgramData\chocolatey\lib\pkgconfiglite
+          # dir C:\ProgramData\chocolatey\lib\pkgconfiglite\tools
+          # dir C:\ProgramData\chocolatey\lib\pkgconfiglite\tools\*
+          # dir C:\ProgramData\chocolatey\lib\pkgconfiglite\tools\*\*
 
-          mv C:\ProgramData\chocolatey\lib\pkgconfiglite\tools\*\share\aclocal C:\MSYS64\mingw64\share\
+          # mv C:\ProgramData\chocolatey\lib\pkgconfiglite\tools\*\share\aclocal C:\MSYS64\mingw64\share\
 
       - uses: actions/checkout@v3
 
       - name: bootstrap
-        shell: bash
-        env:
-          PERL5LIB: /c/msys64/usr/share/automake-1.16 /c/msys64/usr/share/autoconf-2.71
+        shell: C:\msys64\usr\bin\mintty {0}
         run: |
-          export PATH=$PATH:/c/msys64/usr/bin
           echo bootstrapping...
 
           # ./bootstrap.sh
-
-          find /usr /c/msys64 -path "*/Automake/Config.pm" -exec ls -l {} \;
-
-          sleep 1
-
-          mount c:/mingw /mingw
 
           echo aclocal
           aclocal -I m4
