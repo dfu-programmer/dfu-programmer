@@ -15,21 +15,14 @@ jobs:
     steps:
       - name: Dependencies
         run: |
-          C:/msys64/usr/bin/pacman --noconfirm -S automake-wrapper
-          C:/msys64/usr/bin/pacman --noconfirm -S autoconf-wrapper
-          C:/msys64/usr/bin/pacman -Ql automake-wrapper
-          C:/msys64/usr/bin/pacman -Ql autoconf-wrapper
-          C:/msys64/usr/bin/pacman -Ql automake1.16
+          choco install pkgconfiglite
 
       - uses: actions/checkout@v3
 
       - name: bootstrap
         shell: bash
-        env:
-          PERL5LIB: /c/msys64/usr/share/automake-1.16
         run: |
           export PATH=$PATH:/c/msys64/usr/bin
-          ls -l /usr/share/automake-1.16 2> /dev/null || echo "making link" && ln /c/msys64/usr/share/automake-1.16 /usr/share/ || :
           echo bootstrapping...
           aclocal -I m4
           autoheader
