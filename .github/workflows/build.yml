@@ -49,7 +49,7 @@ jobs:
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v3.1.0
         with:
-          name: Windows dfu-programmer
+          name: dfu-programmer for Windows x64
           path: src/dfu-programmer.exe
 
   Linux:
@@ -74,7 +74,7 @@ jobs:
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v3.1.0
         with:
-          name: Linux dfu-programmer
+          name: dfu-programmer for Linux x64
           path: src/dfu-programmer
 
   macOS:
@@ -99,5 +99,5 @@ jobs:
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v3.1.0
         with:
-          name: macOS dfu-programmer
+          name: dfu-programmer for macOS Universal
           path: src/dfu-programmer
