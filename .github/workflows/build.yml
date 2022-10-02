@@ -31,7 +31,9 @@ jobs:
 
       - name: bootstrap
         shell: C:/msys64/usr/bin/mintty.exe -l - --exec {0}
-        run: ./bootstrap.sh
+        run: |
+          export PATH=$PATH:/c/msys64/usr/bin
+          ./bootstrap.sh
 
       - name: configure
         shell: C:/msys64/usr/bin/mintty.exe -l - --exec {0}
