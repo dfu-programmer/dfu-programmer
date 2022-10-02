@@ -15,8 +15,7 @@ jobs:
     steps:
       - name: Dependencies
         run: |
-          C:/msys64/usr/bin/pacman --noconfirm -S automake-wrapper
-          C:/msys64/usr/bin/pacman --noconfirm -S autoconf-wrapper
+          C:/msys64/usr/bin/pacman --noconfirm -S automake-wrapper autoconf-wrapper
 
           choco install pkgconfiglite
 
