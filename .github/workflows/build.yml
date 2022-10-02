@@ -59,7 +59,7 @@ jobs:
 
       - run: src/dfu-programmer.exe --help
 
-      - name: Upload a Build Artifact
+      - name: Upload dfu-programmer.exe
         uses: actions/upload-artifact@v3.1.0
         with:
           name: dfu-programmer.exe binary for Windows x64
@@ -69,7 +69,11 @@ jobs:
         shell: bash
         run: make dist
 
-        # TODO: Make Windows binary zip
+      - name: Upload .zip
+        uses: actions/upload-artifact@v3.1.0
+        with:
+          name: dfu-programmer for Windows
+          path: '*.zip'
 
   Linux:
     runs-on: ubuntu-latest
