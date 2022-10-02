@@ -34,7 +34,7 @@ jobs:
         run: |
           echo $PATH
           export PATH=/c/msys64/usr/bin:$PATH
-          ./bootstrap.sh
+          ./bootstrap.sh 2>&1
 
       - name: configure
         shell: C:/msys64/usr/bin/mintty.exe --hold never --log - --exec {0}
