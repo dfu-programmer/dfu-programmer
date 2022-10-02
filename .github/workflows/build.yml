@@ -19,6 +19,10 @@ jobs:
           C:/msys64/usr/bin/pacman --noconfirm -S autoconf-wrapper
 
           choco install pkgconfiglite
+
+          dir C:\ProgramData\chocolatey\lib\pkgconfiglite
+          dir C:\ProgramData\chocolatey\lib\pkgconfiglite\tools
+
           mv C:\ProgramData\chocolatey\lib\pkgconfiglite\tools\share\aclocal C:\MSYS64\mingw64\share\
 
       - uses: actions/checkout@v3
