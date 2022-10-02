@@ -41,6 +41,8 @@ jobs:
 
           find /usr /c/msys64 -xdev -path "*/Automake/Config.pm" || find /usr /c/msys64 -path "*/Automake/Config.pm"
 
+          sleep 1
+
           echo aclocal
           aclocal -I m4
 
