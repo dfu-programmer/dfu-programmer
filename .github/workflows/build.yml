@@ -31,12 +31,15 @@ jobs:
 
       - name: bootstrap
         shell: C:\msys64\usr\bin\mintty --exec ./bootstrap.sh
+        run: ''
 
       - name: configure
         shell: C:\msys64\usr\bin\mintty --exec ./configure --disable-dependency-tracking --disable-libusb_1_0
+        run: ''
 
       - name: make
         shell: C:\msys64\usr\bin\mintty --exec make
+        run: ''
 
       - run: src/dfu-programmer.exe --help
 
@@ -48,6 +51,7 @@ jobs:
 
       - name: make dist
         shell: C:\msys64\usr\bin\mintty --exec make dist
+        run: ''
 
       - name: Upload .zip
         uses: actions/upload-artifact@v3.1.0
