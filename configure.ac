@@ -6,7 +6,7 @@ AC_INIT([dfu-programmer],[0.7.2],[],[],[https://github.com/dfu-programmer/dfu-pr
 AC_CONFIG_AUX_DIR(m4)
 AC_CONFIG_SRCDIR([src/atmel.c])
 AM_INIT_AUTOMAKE
-AM_CONFIG_HEADER([src/config.h])
+AC_CONFIG_HEADERS([src/config.h])
 
 AM_MAINTAINER_MODE
 
