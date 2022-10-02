@@ -1,7 +1,7 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ([2.71])
+AC_PREREQ([2.59])
 AC_INIT([dfu-programmer],[0.7.2],[],[],[https://github.com/dfu-programmer/dfu-programmer])
 AC_CONFIG_AUX_DIR(m4)
 AC_CONFIG_SRCDIR([src/atmel.c])
