@@ -27,7 +27,10 @@ jobs:
         shell: bash
         run: |
           export PATH=$PATH:/c/msys64/usr/bin
-          ls -l /usr/share/automake-1.16 || ln -s /c/msys64/usr/share/automake-1.16 /usr/share/
+          ls -l / || :
+          ls -l /usr || :
+          ls -l /usr/share || :
+          ls -l /usr/share/automake-1.16 || mkdir -p /usr/share && ln -s /c/msys64/usr/share/automake-1.16 /usr/share/
           aclocal -I m4
           autoheader
           automake --foreign --add-missing --copy
