@@ -30,6 +30,7 @@ jobs:
         run: |
           export PATH=$PATH:/c/msys64/usr/bin
           ls -l /usr/share/automake-1.16 2> /dev/null || echo "making link" && ln -s /c/msys64/usr/share/automake-1.16 /usr/share/ || :
+          echo bootstrapping...
           aclocal -I m4
           autoheader
           automake --foreign --add-missing --copy
