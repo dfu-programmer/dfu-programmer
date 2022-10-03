@@ -46,6 +46,8 @@ jobs:
 
           make
 
+          ls -lR
+
       - run: src/dfu-programmer.exe --help
 
       - name: Upload dfu-programmer.exe
