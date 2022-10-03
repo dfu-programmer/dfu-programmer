@@ -48,10 +48,11 @@ jobs:
       
       - name: Prep dist
         run: |
+          mkdir dist
           mv COPYING_GPL.txt usb/
-          mv usb ../
-          cp src/dfu-programmer.exe ../
-          cp docs/dfu-programmer.html ../
+          mv usb dist/
+          cp src/dfu-programmer.exe dist/
+          cp docs/dfu-programmer.html dist/
 
       - name: make dist
         shell: C:/msys64/usr/bin/bash.exe --noprofile --norc -e -o pipefail {0}
@@ -63,7 +64,7 @@ jobs:
         uses: actions/upload-artifact@v3.1.0
         with:
           name: dfu-programmer for Windows
-          path: ../
+          path: dist
 
       - name: Run with bash
         shell: C:/msys64/usr/bin/bash.exe --noprofile --norc -e -o pipefail {0}
