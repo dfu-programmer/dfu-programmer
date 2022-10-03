@@ -12,11 +12,14 @@ jobs:
   Windows:
     runs-on: windows-latest
 
+    defaults:
+      run:
+        shell: C:/msys64/usr/bin/bash.exe --noprofile --norc -e -x -o pipefail {0}
+
     steps:
       - uses: actions/checkout@v3
 
       - name: Dependencies, bootstrap, configure, and make
-        shell: C:/msys64/usr/bin/bash.exe --noprofile --norc -e -x -o pipefail {0}
         run: |
           export PATH=/usr/bin:/mingw32/bin:/usr/local/bin
 
@@ -45,6 +48,7 @@ jobs:
 
       - name: Extract Atmel FLIP
         run: 7z x ${{ steps.flip.outputs.filename }} usb COPYING_GPL.txt
+        shell: pwsh
       
       - name: Test
         run: |
@@ -61,7 +65,6 @@ jobs:
           cp docs/dfu-programmer.html dist/
 
       - name: make dist
-        shell: C:/msys64/usr/bin/bash.exe --noprofile --norc -e -o pipefail {0}
         run: |
           export PATH=/usr/bin:/mingw32/bin:/usr/local/bin
           make dist
@@ -73,7 +76,6 @@ jobs:
           path: dist
 
       - name: Run with bash
-        shell: C:/msys64/usr/bin/bash.exe --noprofile --norc -e -o pipefail {0}
         run: |
           export PATH=/usr/bin:/mingw32/bin:/usr/local/bin
           src/dfu-programmer.exe --help
