@@ -3,10 +3,12 @@
 set -e
 set -x
 
-aclocal -I m4
-autoheader
-automake --foreign --add-missing --copy
-autoconf
+aclocal -I m4 2>&1
+autoheader 2>&1
+automake --foreign --add-missing --copy 2>&1
+autoconf 2>&1
+
+echo "done"
 
 if [ "$(echo `uname`)" = "Linux" ]; then
     TARGET_START_LINE=$( grep START_TARGET_LIST_LINE -n src/arguments.c  | \
