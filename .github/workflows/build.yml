@@ -13,29 +13,16 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - name: Dependencies
-        run: |
-          C:/msys64/usr/bin/pacman --noconfirm -S automake-wrapper autoconf-wrapper make mingw-w64-x86_64-gcc mingw-w64-x86_64-ruby-pkg-config
-
-          echo "Ignore the 'error: command (/usr/bin/sh ...'  above"
-
-        # mingw-w64-x86_64-gcc
-
-        # choco install pkgconfiglite
-
-        # dir C:\ProgramData\chocolatey\lib\pkgconfiglite
-        # dir C:\ProgramData\chocolatey\lib\pkgconfiglite\tools
-        # dir C:\ProgramData\chocolatey\lib\pkgconfiglite\tools\*
-        # dir C:\ProgramData\chocolatey\lib\pkgconfiglite\tools\*\*
-
-        # mv C:\ProgramData\chocolatey\lib\pkgconfiglite\tools\*\share\aclocal C:\MSYS64\mingw64\share\
-
       - uses: actions/checkout@v3
 
-      - name: Bootstrap, configure, and make
+      - name: Dependencies, bootstrap, configure, and make
         shell: C:/msys64/usr/bin/bash.exe --noprofile --norc -e -x -o pipefail {0}
         run: |
           export PATH=/usr/bin:/mingw64/bin:/usr/local/bin
+
+          C:/msys64/usr/bin/pacman --noconfirm -S automake-wrapper autoconf-wrapper make mingw-w64-x86_64-gcc mingw-w64-x86_64-ruby-pkg-config
+          echo "Ignore the 'error: command (/usr/bin/sh ...'  above"
+
           ./bootstrap.sh 2>&1
 
           cp windows/usb.h /mingw64/include/
