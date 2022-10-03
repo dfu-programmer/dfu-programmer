@@ -56,7 +56,6 @@ jobs:
           name: dfu-programmer for Windows
           path: "*.zip"
 
-
       - name: Run with bash
         shell: C:/msys64/usr/bin/bash.exe --noprofile --norc -e -o pipefail {0}
         run: |
