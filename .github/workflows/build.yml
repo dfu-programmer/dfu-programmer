@@ -25,6 +25,8 @@ jobs:
 
           ./bootstrap.sh 2>&1
 
+          find /mingw64 -type f -name libusb.a
+
           cp windows/usb.h /mingw64/include/
           cp windows/libusb.a /mingw64/lib/gcc/
 
