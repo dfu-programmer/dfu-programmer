@@ -41,6 +41,8 @@ jobs:
           rm /mingw64/include/usb.h
           ln -snf /mingw64/include/libusb-compat/usb.h /mingw64/include/
 
+          cp windows/libusb.a /mingw64/lib/
+
           ./configure --disable-dependency-tracking --disable-libusb_1_0
           gcc -xc -E -v /dev/null
 
