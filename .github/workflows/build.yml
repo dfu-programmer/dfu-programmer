@@ -18,7 +18,7 @@ jobs:
       - name: Dependencies, bootstrap, configure, and make
         shell: C:/msys64/usr/bin/bash.exe --noprofile --norc -e -x -o pipefail {0}
         run: |
-          export PATH=/usr/bin:/mingw64/bin:/usr/local/bin
+          export PATH=/usr/bin:/mingw32/bin:/usr/local/bin
 
           pacman --noconfirm -S automake-wrapper autoconf-wrapper make mingw-w64-i686-gcc
 
@@ -26,8 +26,8 @@ jobs:
 
           find /mingw64 -type f -name libusb.a
 
-          cp windows/usb.h /mingw64/include/
-          cp windows/libusb.a /mingw64/lib/
+          cp windows/usb.h /mingw32/include/
+          cp windows/libusb.a /mingw32/lib/
 
           ./configure --disable-dependency-tracking --disable-libusb_1_0
           gcc -xc -E -v /dev/null
@@ -47,7 +47,7 @@ jobs:
       - name: make dist
         shell: C:/msys64/usr/bin/bash.exe --noprofile --norc -e -o pipefail {0}
         run: |
-          export PATH=/usr/bin:/mingw64/bin:/usr/local/bin
+          export PATH=/usr/bin:/mingw32/bin:/usr/local/bin
           make dist
 
       - name: Upload .zip
@@ -59,7 +59,7 @@ jobs:
       - name: Run with bash
         shell: C:/msys64/usr/bin/bash.exe --noprofile --norc -e -o pipefail {0}
         run: |
-          export PATH=/usr/bin:/mingw64/bin:/usr/local/bin
+          export PATH=/usr/bin:/mingw32/bin:/usr/local/bin
           src/dfu-programmer.exe --help
 
   Linux:
