@@ -47,7 +47,7 @@ jobs:
       - name: make dist
         shell: C:/msys64/usr/bin/bash.exe --noprofile --norc -e -o pipefail {0}
         run: |
-          export PATH=$(node -e "console.log('$(echo $PATH)'.replace('/c/Program Files/Git/cmd:/c/Program Files/Git/mingw64/bin:/c/Program Files/Git/usr/bin','/c/msys64/usr/bin'))")
+          export PATH=/usr/bin:/mingw64/bin:/usr/local/bin
           make dist
 
       - name: Upload .zip
@@ -59,7 +59,7 @@ jobs:
       - name: Run with bash
         shell: C:/msys64/usr/bin/bash.exe --noprofile --norc -e -o pipefail {0}
         run: |
-          export PATH=$(node -e "console.log('$(echo $PATH)'.replace('/c/Program Files/Git/cmd:/c/Program Files/Git/mingw64/bin:/c/Program Files/Git/usr/bin','/c/msys64/usr/bin'))")
+          export PATH=/usr/bin:/mingw64/bin:/usr/local/bin
           src/dfu-programmer.exe --help
 
   Linux:
