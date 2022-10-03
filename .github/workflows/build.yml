@@ -53,6 +53,7 @@ jobs:
         shell: pwsh
 
       - name: Test
+        shell: pwsh
         run: |
           # We only build x86 version, for now. The dll needs to be renamed too.
           cp usb/x86/libusb0_x86.dll src/libusb0.dll
@@ -60,6 +61,7 @@ jobs:
           src/dfu-programmer.exe --help
 
       - name: Prep dist
+        shell: pwsh
         run: |
           mkdir dist
           mv COPYING_GPL.txt usb/
