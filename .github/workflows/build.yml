@@ -35,7 +35,7 @@ jobs:
       - name: Bootstrap, configure, and make
         shell: C:/msys64/usr/bin/bash.exe --noprofile --norc -e -x -o pipefail {0}
         run: |
-          export PATH=/c/msys64/usr/bin
+          export PATH=/c/msys64/usr/bin:/mingw64/bin
           ./bootstrap.sh 2>&1
           ./configure --disable-dependency-tracking --disable-libusb_1_0
           gcc -xc -E -v /dev/null
