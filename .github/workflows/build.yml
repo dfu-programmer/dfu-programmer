@@ -68,7 +68,7 @@ jobs:
         run: |
           mkdir dist
 
-          # Don't forget the liscense
+          # Don't forget the license
           mv COPYING_GPL.txt usb/
 
           # Not sure where this version number comes from
