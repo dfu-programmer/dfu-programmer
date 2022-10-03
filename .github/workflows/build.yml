@@ -89,6 +89,12 @@ jobs:
       - name: make dist
         run: make dist
 
+      - name: Upload tarball
+        uses: actions/upload-artifact@v3.1.0
+        with:
+          name: dfu-programmer for Linux
+          path: "*.tar.gz"
+
   macOS:
     runs-on: macos-latest
 
@@ -116,3 +122,9 @@ jobs:
 
       - name: make dist
         run: make dist
+
+      - name: Upload tarball
+        uses: actions/upload-artifact@v3.1.0
+        with:
+          name: dfu-programmer for macOS
+          path: "*.tar.gz"
