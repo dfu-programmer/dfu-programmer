@@ -35,9 +35,9 @@ jobs:
       - name: bootstrap
         shell: C:/msys64/usr/bin/mintty.exe --hold never --log - --exec {0}
         run: |
-          echo $PATH
+          echo Path is: $PATH
           export PATH=$(node -e "console.log('$(echo $PATH)'.replace('/c/Program Files/Git/cmd:/c/Program Files/Git/mingw64/bin:/c/Program Files/Git/usr/bin','/c/msys64/usr/bin'))")
-          echo $PATH
+          echo Path is: $PATH
           ./bootstrap.sh 2>&1
 
       - name: Check configure exists
