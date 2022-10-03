@@ -20,8 +20,7 @@ jobs:
         run: |
           export PATH=/usr/bin:/mingw64/bin:/usr/local/bin
 
-          C:/msys64/usr/bin/pacman --noconfirm -S automake-wrapper autoconf-wrapper make mingw-w64-x86_64-gcc mingw-w64-x86_64-ruby-pkg-config
-          echo "Ignore the 'error: command (/usr/bin/sh ...'  above"
+          pacman --noconfirm -S automake-wrapper autoconf-wrapper make mingw-w64-x86_64-gcc mingw-w64-x86_64-ruby-pkg-config
 
           ./bootstrap.sh 2>&1
 
