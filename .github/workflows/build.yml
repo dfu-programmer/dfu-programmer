@@ -25,6 +25,7 @@ jobs:
           export PATH=/usr/bin:/mingw32/bin:/usr/local/bin
 
           # While some of these are already available, mixing cygwin (chocolatey) and msys64 is problematic. So we install what we need.
+          # Currently only 32-bit version of libusb.a is available, so we need to use a 32-bit version of gcc.
           pacman --noconfirm -S automake-wrapper autoconf-wrapper make mingw-w64-i686-gcc
 
           ./bootstrap.sh
