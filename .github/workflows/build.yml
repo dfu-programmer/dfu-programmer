@@ -44,7 +44,14 @@ jobs:
           url: https://ww1.microchip.com/downloads/en/DeviceDoc/Flip%20Installer%20-%203.4.7.112.exe
 
       - name: Extract Atmel FLIP
-        run: 7z x ${{ steps.flip.outputs.filename }} usb
+        run: 7z x ${{ steps.flip.outputs.filename }} usb COPYING_GPL.txt
+      
+      - name: Prep dist
+        run: |
+          mv COPYING_GPL.txt usb/
+          mv usb ../
+          cp src/dfu-programmer.exe ../
+          cp docs/dfu-programmer.html ../
 
       - name: make dist
         shell: C:/msys64/usr/bin/bash.exe --noprofile --norc -e -o pipefail {0}
@@ -56,7 +63,7 @@ jobs:
         uses: actions/upload-artifact@v3.1.0
         with:
           name: dfu-programmer for Windows
-          path: "*.zip"
+          path: ../
 
       - name: Run with bash
         shell: C:/msys64/usr/bin/bash.exe --noprofile --norc -e -o pipefail {0}
