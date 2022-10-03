@@ -19,16 +19,16 @@ jobs:
 
           echo "Ignore the 'error: command (/usr/bin/sh ...'  above"
 
-          # mingw-w64-x86_64-gcc
+        # mingw-w64-x86_64-gcc
 
-          # choco install pkgconfiglite
+        # choco install pkgconfiglite
 
-          # dir C:\ProgramData\chocolatey\lib\pkgconfiglite
-          # dir C:\ProgramData\chocolatey\lib\pkgconfiglite\tools
-          # dir C:\ProgramData\chocolatey\lib\pkgconfiglite\tools\*
-          # dir C:\ProgramData\chocolatey\lib\pkgconfiglite\tools\*\*
+        # dir C:\ProgramData\chocolatey\lib\pkgconfiglite
+        # dir C:\ProgramData\chocolatey\lib\pkgconfiglite\tools
+        # dir C:\ProgramData\chocolatey\lib\pkgconfiglite\tools\*
+        # dir C:\ProgramData\chocolatey\lib\pkgconfiglite\tools\*\*
 
-          # mv C:\ProgramData\chocolatey\lib\pkgconfiglite\tools\*\share\aclocal C:\MSYS64\mingw64\share\
+        # mv C:\ProgramData\chocolatey\lib\pkgconfiglite\tools\*\share\aclocal C:\MSYS64\mingw64\share\
 
       - uses: actions/checkout@v3
 
