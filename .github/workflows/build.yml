@@ -30,11 +30,7 @@ jobs:
 
           ./bootstrap.sh
 
-          # Per README instructions
-          cp windows/usb.h    /mingw32/include/
-          cp windows/libusb.a /mingw32/lib/
-
-          ./configure --disable-libusb_1_0
+          ./configure
 
           make
 
@@ -57,8 +53,6 @@ jobs:
       - name: Test
         shell: pwsh
         run: |
-          # We only build x86 version, for now. The dll needs to be renamed too.
-          cp usb/x86/libusb0_x86.dll src/libusb0.dll
 
           src/dfu-programmer.exe --version
           src/dfu-programmer.exe --help
