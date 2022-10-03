@@ -432,8 +432,8 @@ static int32_t assign_target( struct programmer_arguments *args,
               int address = 0;
               if( 2 != sscanf(&value[name_len+1], "%i,%i", &bus, &address) )
                 return -1;
-              if (bus <= 0) return -1;
-              if (address <= 0) return -1;
+              if (bus < 0) return -1;
+              if (address < 0) return -1;
               args->bus_id = bus + 1;
               args->device_address = address;
             }
