@@ -84,7 +84,7 @@ jobs:
         uses: actions/upload-artifact@v3.1.0
         with:
           name: dfu-programmer for Windows
-          path: '*.zip'
+          path: "*.zip"
 
   Linux:
     runs-on: ubuntu-latest
