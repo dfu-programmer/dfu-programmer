@@ -27,7 +27,7 @@ jobs:
           find /mingw64 -type f -name libusb.a
 
           cp windows/usb.h /mingw64/include/
-          cp windows/libusb.a /mingw64/lib/gcc/
+          cp windows/libusb.a /mingw64/lib/
 
           ./configure --disable-dependency-tracking --disable-libusb_1_0
           gcc -xc -E -v /dev/null
