@@ -436,7 +436,7 @@ retry:
                             && (usb_bus->location >> 24)+1 == bus_number)))
                 {
                     int32_t tmp;
-                    DEBUG( "found device at USB:%d,%d\n", device->devnum, (usb_bus->location >> 24) );
+                    DEBUG( "found device at USB:%d,%d\n", (usb_bus->location >> 24), device->devnum );
                     /* We found a device that looks like it matches...
                      * let's try to find the DFU interface, open the device
                      * and claim it. */
