@@ -32,36 +32,13 @@ jobs:
 
       - uses: actions/checkout@v3
 
-      - name: bootstrap
+      - name: Bootstrap, configure, and make
         shell: C:/msys64/usr/bin/bash.exe --noprofile --norc -e -x -o pipefail {0}
         run: |
-          echo Path is: $PATH
           export PATH=$(node -e "console.log('$(echo $PATH)'.replace('/c/Program Files/Git/cmd:/c/Program Files/Git/mingw64/bin:/c/Program Files/Git/usr/bin','/c/msys64/usr/bin'))")
-          echo Path is: $PATH
           ./bootstrap.sh 2>&1
-
-      - name: Check configure exists
-        shell: bash
-        run: ls -l configure
-
-      - name: configure
-        shell: C:/msys64/usr/bin/bash.exe --noprofile --norc -e -o pipefail {0}
-        run: |
-          echo Path is: $PATH
-          export PATH=$(node -e "console.log('$(echo $PATH)'.replace('/c/Program Files/Git/cmd:/c/Program Files/Git/mingw64/bin:/c/Program Files/Git/usr/bin','/c/msys64/usr/bin'))")
-          echo Path is: $PATH
           ./configure --disable-dependency-tracking --disable-libusb_1_0
-
-      - name: Check makefile exists
-        shell: bash
-        run: ls -l Makefile
-
-      - name: make
-        shell: C:/msys64/usr/bin/bash.exe --noprofile --norc -e -o pipefail {0}
-        run: |
-          echo Path is: $PATH
-          export PATH=$(node -e "console.log('$(echo $PATH)'.replace('/c/Program Files/Git/cmd:/c/Program Files/Git/mingw64/bin:/c/Program Files/Git/usr/bin','/c/msys64/usr/bin'))")
-          echo Path is: $PATH
+          gcc -xc -E -v /dev/null
           make
 
       - run: src/dfu-programmer.exe --help
@@ -75,9 +52,7 @@ jobs:
       - name: make dist
         shell: C:/msys64/usr/bin/bash.exe --noprofile --norc -e -o pipefail {0}
         run: |
-          echo Path is: $PATH
           export PATH=$(node -e "console.log('$(echo $PATH)'.replace('/c/Program Files/Git/cmd:/c/Program Files/Git/mingw64/bin:/c/Program Files/Git/usr/bin','/c/msys64/usr/bin'))")
-          echo Path is: $PATH
           make dist
 
       - name: Upload .zip
