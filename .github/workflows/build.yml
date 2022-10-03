@@ -20,7 +20,7 @@ jobs:
         run: |
           export PATH=/usr/bin:/mingw64/bin:/usr/local/bin
 
-          pacman --noconfirm -S automake-wrapper autoconf-wrapper make mingw-w64-x86_64-gcc mingw-w64-x86_64-ruby-pkg-config
+          pacman --noconfirm -S automake-wrapper autoconf-wrapper make mingw-w64-i686-gcc
 
           ./bootstrap.sh 2>&1
 
