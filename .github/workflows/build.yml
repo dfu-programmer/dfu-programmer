@@ -46,6 +46,12 @@ jobs:
       - name: Extract Atmel FLIP
         run: 7z x ${{ steps.flip.outputs.filename }} usb COPYING_GPL.txt
       
+      - name: Test
+        run: |
+          cp usb/x86/libusb0_x86.dll src/libusb0.dll
+          src/dfu-programmer.exe --version
+          src/dfu-programmer.exe --help
+      
       - name: Prep dist
         run: |
           mkdir dist
