@@ -27,7 +27,11 @@
 #include <stdlib.h>
 #include <stddef.h>
 #ifdef HAVE_LIBUSB_1_0
+#if defined(_WIN32)
+#include <libusb-1.0/libusb.h>
+#else
 #include <libusb.h>
+#endif
 #else
 #include <usb.h>
 #endif
