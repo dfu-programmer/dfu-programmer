@@ -1,0 +1,10 @@
+{
+	"configurations": [
+		{
+			"name": "mingw32 gcc",
+			"defines": ["__VSCODE__"],
+			"compilerPath": "C:/msys64/mingw64/bin/gcc.exe",
+		}
+	],
+	"version": 4
+}
