@@ -51,6 +51,7 @@ jobs:
       - run: echo $PATH
 
       - run: src/dfu-programmer.exe --help
+        shell: bash
 
       - name: Upload dfu-programmer.exe
         uses: actions/upload-artifact@v3.1.0
