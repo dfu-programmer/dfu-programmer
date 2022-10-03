@@ -50,9 +50,6 @@ jobs:
 
       - run: echo $PATH
 
-      - run: src/dfu-programmer.exe --help
-        shell: bash
-
       - name: Upload dfu-programmer.exe
         uses: actions/upload-artifact@v3.1.0
         with:
@@ -70,6 +67,9 @@ jobs:
         with:
           name: dfu-programmer for Windows
           path: "*.zip"
+
+      - run: src/dfu-programmer.exe --help
+        shell: bash
 
   Linux:
     runs-on: ubuntu-latest
