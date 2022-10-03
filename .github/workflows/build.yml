@@ -15,7 +15,7 @@ jobs:
     steps:
       - name: Dependencies
         run: |
-          C:/msys64/usr/bin/pacman --noconfirm -S automake-wrapper autoconf-wrapper make mingw-w64-x86_64-libusb-compat-git mingw-w64-x86_64-libusb
+          C:/msys64/usr/bin/pacman --noconfirm -S automake-wrapper autoconf-wrapper make mingw-w64-x86_64-libusb-compat-git mingw-w64-x86_64-libusb mingw-w64-x86_64-gcc
 
           echo "Ignore the 'error: command (/usr/bin/sh ...'  above"
 
