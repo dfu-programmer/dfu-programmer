@@ -46,7 +46,11 @@ jobs:
 
       - name: configure
         shell: C:/msys64/usr/bin/bash.exe --noprofile --norc -e -o pipefail {0}
-        run: ./configure --disable-dependency-tracking --disable-libusb_1_0
+        run: |
+          echo Path is: $PATH
+          export PATH=$(node -e "console.log('$(echo $PATH)'.replace('/c/Program Files/Git/cmd:/c/Program Files/Git/mingw64/bin:/c/Program Files/Git/usr/bin','/c/msys64/usr/bin'))")
+          echo Path is: $PATH
+          ./configure --disable-dependency-tracking --disable-libusb_1_0
 
       - name: Check makefile exists
         shell: bash
@@ -54,7 +58,11 @@ jobs:
 
       - name: make
         shell: C:/msys64/usr/bin/bash.exe --noprofile --norc -e -o pipefail {0}
-        run: make
+        run: |
+          echo Path is: $PATH
+          export PATH=$(node -e "console.log('$(echo $PATH)'.replace('/c/Program Files/Git/cmd:/c/Program Files/Git/mingw64/bin:/c/Program Files/Git/usr/bin','/c/msys64/usr/bin'))")
+          echo Path is: $PATH
+          make
 
       - run: src/dfu-programmer.exe --help
 
@@ -66,7 +74,11 @@ jobs:
 
       - name: make dist
         shell: C:/msys64/usr/bin/bash.exe --noprofile --norc -e -o pipefail {0}
-        run: make dist
+        run: |
+          echo Path is: $PATH
+          export PATH=$(node -e "console.log('$(echo $PATH)'.replace('/c/Program Files/Git/cmd:/c/Program Files/Git/mingw64/bin:/c/Program Files/Git/usr/bin','/c/msys64/usr/bin'))")
+          echo Path is: $PATH
+          make dist
 
       - name: Upload .zip
         uses: actions/upload-artifact@v3.1.0
