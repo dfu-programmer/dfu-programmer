@@ -44,6 +44,16 @@ jobs:
           name: dfu-programmer.exe binary for Windows x64
           path: src/dfu-programmer.exe
 
+
+      - name: Download Atmel FLIP
+        uses: suisei-cn/actions-download-file@v1.0.1
+        id: flip
+        with:
+          url: https://ww1.microchip.com/downloads/en/DeviceDoc/Flip%20Installer%20-%203.4.7.112.exe
+
+      - name: Extract Atmel FLIP
+        run: 7z x ${{ steps.flip.outputs.downloadPath }} usb
+
       - name: make dist
         shell: C:/msys64/usr/bin/bash.exe --noprofile --norc -e -o pipefail {0}
         run: |
