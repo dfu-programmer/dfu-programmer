@@ -24,26 +24,18 @@ jobs:
 
           ./bootstrap.sh 2>&1
 
-          find /mingw64 -type f -name libusb.a
-
           cp windows/usb.h /mingw32/include/
           cp windows/libusb.a /mingw32/lib/
 
           ./configure --disable-libusb_1_0
-          gcc -xc -E -v /dev/null
 
           make
-
-          ls -lR
-
-      - run: echo $PATH
 
       - name: Upload dfu-programmer.exe
         uses: actions/upload-artifact@v3.1.0
         with:
           name: dfu-programmer.exe binary for Windows x64
           path: src/dfu-programmer.exe
-
 
       - name: Download Atmel FLIP
         uses: suisei-cn/actions-download-file@v1.0.1
