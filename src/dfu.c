@@ -349,7 +349,7 @@ retry:
         if( (vendor  == descriptor.idVendor) &&
             (product == descriptor.idProduct) &&
             ((bus_number == 0)
-             || ((libusb_get_bus_number(device) == bus_number) &&
+             || ((libusb_get_bus_number(device)+1 == bus_number) &&
                  (libusb_get_device_address(device) == device_address))) )
         {
             int32_t tmp;
@@ -433,7 +433,7 @@ retry:
                     && (product == device->descriptor.idProduct)
                     && ((bus_number == 0)
                         || (device->devnum == device_address
-                            && (usb_bus->location >> 24) == bus_number)))
+                            && (usb_bus->location >> 24)+1 == bus_number)))
                 {
                     int32_t tmp;
                     DEBUG( "found device at USB:%d,%d\n", device->devnum, (usb_bus->location >> 24) );

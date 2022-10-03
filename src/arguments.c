@@ -434,7 +434,7 @@ static int32_t assign_target( struct programmer_arguments *args,
                 return -1;
               if (bus <= 0) return -1;
               if (address <= 0) return -1;
-              args->bus_id = bus;
+              args->bus_id = bus + 1;
               args->device_address = address;
             }
             args->device_type = map->device_type;
