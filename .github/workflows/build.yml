@@ -21,9 +21,10 @@ jobs:
 
       - name: Dependencies, bootstrap, configure, and make
         run: |
+          # Fix issues with msys64 and cygwin tools conflicting by just using msys64
           export PATH=/usr/bin:/mingw32/bin:/usr/local/bin
 
-          # While some of these are already available, mixing cygwin (chocolatey) and msys2 is problematic. So we install what we need.
+          # While some of these are already available, mixing cygwin (chocolatey) and msys64 is problematic. So we install what we need.
           pacman --noconfirm -S automake-wrapper autoconf-wrapper make mingw-w64-i686-gcc
 
           ./bootstrap.sh
