@@ -37,11 +37,12 @@ jobs:
         run: |
           export PATH=/usr/bin:/mingw64/bin:/usr/local/bin
           ./bootstrap.sh 2>&1
-          ./configure --disable-dependency-tracking --disable-libusb_1_0
-          gcc -xc -E -v /dev/null
 
           rm /mingw64/include/usb.h
           ln -snf /mingw64/include/libusb-compat/usb.h /mingw64/include/
+
+          ./configure --disable-dependency-tracking --disable-libusb_1_0
+          gcc -xc -E -v /dev/null
 
           make
 
