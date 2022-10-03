@@ -26,7 +26,7 @@ jobs:
           ./bootstrap.sh 2>&1
 
           cp windows/usb.h /mingw64/include/
-          cp windows/libusb.a /mingw64/lib/
+          cp windows/libusb.a /mingw64/lib/gcc/
 
           ./configure --disable-dependency-tracking --disable-libusb_1_0
           gcc -xc -E -v /dev/null
