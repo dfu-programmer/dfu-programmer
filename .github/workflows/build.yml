@@ -36,9 +36,17 @@ jobs:
           export PATH=/c/msys64/usr/bin:$PATH
           ./bootstrap.sh 2>&1
 
+      - name: Check configure exists
+        shell: bash
+        run: ls -l configure
+
       - name: configure
         shell: C:/msys64/usr/bin/mintty.exe --hold never --log - --exec {0}
         run: ./configure --disable-dependency-tracking --disable-libusb_1_0
+
+      - name: Check makefile exists
+        shell: bash
+        run: ls -l Makefile
 
       - name: make
         shell: C:/msys64/usr/bin/mintty.exe --hold never --log - --exec {0}
