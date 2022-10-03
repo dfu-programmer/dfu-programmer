@@ -33,7 +33,7 @@ jobs:
         shell: C:/msys64/usr/bin/mintty.exe --hold never --log - --exec {0}
         run: |
           echo $PATH
-          export PATH=/c/msys64/usr/bin:$PATH
+          export PATH=$PATH:/c/msys64/usr/bin
           ./bootstrap.sh 2>&1
 
       - name: Check configure exists
