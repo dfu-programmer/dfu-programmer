@@ -31,7 +31,7 @@ jobs:
           ./bootstrap.sh
 
           # Per README instructions
-          cp windows/usb.h /mingw32/include/
+          cp windows/usb.h    /mingw32/include/
           cp windows/libusb.a /mingw32/lib/
 
           ./configure --disable-libusb_1_0
@@ -123,7 +123,7 @@ jobs:
       - name: Upload tarball
         uses: actions/upload-artifact@v3.1.0
         with:
-          name: Linux - dfu-programmer sources
+          name: Linux - dfu-programmer dist
           path: "*.tar.gz"
 
   macOS:
@@ -157,5 +157,5 @@ jobs:
       - name: Upload tarball
         uses: actions/upload-artifact@v3.1.0
         with:
-          name: macOS - dfu-programmer sources
+          name: macOS - dfu-programmer dist
           path: "*.tar.gz"
