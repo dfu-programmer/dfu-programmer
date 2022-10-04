@@ -9,7 +9,8 @@ on:
   pull_request:
 
 jobs:
-  Windows:
+  Windows-x32-libusb0:
+    name: Windows x86 with libusb0
     runs-on: windows-latest
 
     defaults:
@@ -21,23 +22,27 @@ jobs:
 
       - name: Dependencies, bootstrap, configure, and make
         run: |
-          # Fix issues with msys64 and cygwin tools conflicting by just using msys64
-          export PATH=/usr/bin:/mingw64/bin:/usr/local/bin
+          # Fix issues with MSYS2 and cygwin tools conflicting by just using MSYS2
+          export PATH=/usr/bin:/mingw32/bin:/usr/local/bin
 
-          # While some of these are already available, mixing cygwin (chocolatey) and msys64 is problematic. So we install what we need.
+          # While some of these are already available, mixing cygwin (chocolatey) and MSYS2 is problematic. So we install what we need.
           # Currently only 32-bit version of libusb.a is available, so we need to use a 32-bit version of gcc.
-          pacman --noconfirm -S automake-wrapper autoconf-wrapper make mingw-w64-x86_64-gcc mingw-w64-x86_64-libusb
+          pacman --noconfirm -S automake-wrapper autoconf-wrapper make mingw-w64-i686-gcc
 
           ./bootstrap.sh
 
-          ./configure
+          # Per README instructions
+          cp windows/usb.h    /mingw32/include/
+          cp windows/libusb.a /mingw32/lib/
+
+          ./configure --disable-libusb_1_0
 
           make
 
       - name: Upload dfu-programmer.exe
         uses: actions/upload-artifact@v3.1.0
         with:
-          name: Windows - dfu-programmer.exe
+          name: Windows x86 - libusb0 - dfu-programmer.exe
           path: src/dfu-programmer.exe
 
       - name: Download Atmel FLIP
@@ -53,6 +58,8 @@ jobs:
       - name: Test
         shell: pwsh
         run: |
+          # We only build x86 version, for now. The dll needs to be renamed too.
+          cp usb/x86/libusb0_x86.dll src/libusb0.dll
 
           src/dfu-programmer.exe --version
           src/dfu-programmer.exe --help
@@ -78,7 +85,7 @@ jobs:
       - name: Upload .zip
         uses: actions/upload-artifact@v3.1.0
         with:
-          name: Windows - dfu-programmer.zip
+          name: Windows x86 - libusb0 - dfu-programmer
           path: dist
 
       - name: make dist
@@ -86,7 +93,135 @@ jobs:
           export PATH=/usr/bin:/mingw32/bin:/usr/local/bin
           make dist
 
+  Windows-x32-libusb1:
+    name: Windows x86 with libusb1
+    runs-on: windows-latest
+
+    defaults:
+      run:
+        shell: C:/msys64/usr/bin/bash.exe --noprofile --norc -e -x -o pipefail {0}
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Dependencies, bootstrap, configure, and make
+        run: |
+          # Fix issues with MSYS2 and cygwin tools conflicting by just using MSYS2
+          export PATH=/usr/bin:/mingw32/bin:/usr/local/bin
+
+          # While some of these are already available, mixing cygwin (chocolatey) and MSYS2 is problematic. So we install what we need.
+          pacman --noconfirm -S automake-wrapper autoconf-wrapper make mingw-w64-i686-gcc mingw-w64-i686-libusb
+
+          ./bootstrap.sh
+
+          ./configure
+
+          make
+
+      - name: Upload dfu-programmer.exe
+        uses: actions/upload-artifact@v3.1.0
+        with:
+          name: Windows x86 - libusb1 - dfu-programmer.exe
+          path: src/dfu-programmer.exe
+
+      - name: Prep dist
+        shell: pwsh
+        run: |
+          mkdir dist
+
+          # The binary
+          cp src/dfu-programmer.exe dist/
+
+          # The docs
+          cp docs/dfu-programmer.html dist/
+
+          # The linked dll
+          cp C:/msys64/mingw32/bin/libusb-1.0.dll dist/
+
+      - name: Test
+        shell: pwsh
+        run: |
+          dist/dfu-programmer.exe --version
+          dist/dfu-programmer.exe --help
+
+      - name: Upload .zip
+        uses: actions/upload-artifact@v3.1.0
+        with:
+          name: Windows x86 - libusb1 - dfu-programmer
+          path: dist
+
+      - name: make dist
+        run: |
+          export PATH=/usr/bin:/mingw32/bin:/usr/local/bin
+          make dist
+
+      # TODO: Do something with dist?
+  Windows-x64-libusb1:
+    name: Windows x64 with libusb1
+    runs-on: windows-latest
+
+    defaults:
+      run:
+        shell: C:/msys64/usr/bin/bash.exe --noprofile --norc -e -x -o pipefail {0}
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Dependencies, bootstrap, configure, and make
+        run: |
+          # Fix issues with MSYS2 and cygwin tools conflicting by just using MSYS2
+          export PATH=/usr/bin:/mingw64/bin:/usr/local/bin
+
+          # While some of these are already available, mixing cygwin (chocolatey) and MSYS2 is problematic. So we install what we need.
+          pacman --noconfirm -S automake-wrapper autoconf-wrapper make mingw-w64-x86_64-gcc mingw-w64-x86_64-libusb
+
+          ./bootstrap.sh
+
+          ./configure
+
+          make
+
+      - name: Upload dfu-programmer.exe
+        uses: actions/upload-artifact@v3.1.0
+        with:
+          name: Windows x64 - libusb1 - dfu-programmer.exe
+          path: src/dfu-programmer.exe
+
+      - name: Prep dist
+        shell: pwsh
+        run: |
+          mkdir dist
+
+          # The binary
+          cp src/dfu-programmer.exe dist/
+
+          # The docs
+          cp docs/dfu-programmer.html dist/
+
+          # The linked dll
+          cp C:/msys64/mingw64/bin/libusb-1.0.dll dist/
+
+      - name: Test
+        shell: pwsh
+        run: |
+          dist/dfu-programmer.exe --version
+          dist/dfu-programmer.exe --help
+
+      - name: Upload .zip
+        uses: actions/upload-artifact@v3.1.0
+        with:
+          name: Windows x64 - libusb1 - dfu-programmer
+          path: dist
+
+      - name: make dist
+        run: |
+          export PATH=/usr/bin:/mingw64/bin:/usr/local/bin
+          make dist
+
+      # TODO: Do something with dist?
+
   Linux:
+    name: Linux x64 with libusb1
     runs-on: ubuntu-latest
 
     steps:
@@ -108,7 +243,7 @@ jobs:
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v3.1.0
         with:
-          name: Linux - dfu-programmer binary
+          name: Linux x64 - libusb1 - dfu-programmer binary
           path: src/dfu-programmer
 
       - name: make dist
@@ -117,10 +252,11 @@ jobs:
       - name: Upload tarball
         uses: actions/upload-artifact@v3.1.0
         with:
-          name: Linux - dfu-programmer dist
+          name: Linux x64 - libusb1 - dfu-programmer dist
           path: "*.tar.gz"
 
   macOS:
+    name: macOS x64 with libusb1
     runs-on: macos-latest
 
     steps:
@@ -142,7 +278,7 @@ jobs:
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v3.1.0
         with:
-          name: macOS - dfu-programmer binary
+          name: macOS - libusb1 - dfu-programmer binary
           path: src/dfu-programmer
 
       - name: make dist
@@ -151,5 +287,5 @@ jobs:
       - name: Upload tarball
         uses: actions/upload-artifact@v3.1.0
         with:
-          name: macOS - dfu-programmer dist
+          name: macOS - libusb1 - dfu-programmer dist
           path: "*.tar.gz"
