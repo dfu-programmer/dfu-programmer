@@ -1,3 +1,10 @@
+== Release 0.7.3 [2022-10-03]
+
+- Fix bug preventing specifying a device with libusb0
+- Fix bug in order device id was printed with libusb0
+- Publish binaries for Windows for libusb1
+- Enable GitHub Actions
+
 == Release 0.7.2 [2015-02-04]
 
 - Fix memory bounds used for XMega targets.
