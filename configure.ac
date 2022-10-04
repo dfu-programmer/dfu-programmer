@@ -63,13 +63,8 @@ if test "$HAVE_USB" = "yes"; then
   fi
 fi
 
-
 # Checks for header files.
-m4_warn([obsolete],
-[The preprocessor macro `STDC_HEADERS' is obsolete.
-  Except in unusual embedded environments, you can safely include all
-  ISO C90 headers unconditionally.])dnl
-
+AC_HEADER_STDC
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
