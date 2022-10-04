@@ -16,8 +16,9 @@ jobs:
     defaults:
       run:
         shell: C:/msys64/usr/bin/bash.exe --noprofile --norc -e -x -o pipefail {0}
-        env:
-          AM_COLOR_TESTS: always
+
+    env:
+      AM_COLOR_TESTS: always
 
     steps:
       - uses: actions/checkout@v3
