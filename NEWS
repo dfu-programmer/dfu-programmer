@@ -5,6 +5,7 @@
 - Publish binaries for Windows for libusb1
 - Enable GitHub Actions
 - Make `./bootstrap.sh` fail if any command fails (and print commands)
+- Update `configure.ac` features
 
 == Release 0.7.2 [2015-02-04]
 
