@@ -20,23 +20,31 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Dependencies, bootstrap, configure, and make
+      - name: Dependencies
         run: |
           # Fix issues with MSYS2 and cygwin tools conflicting by just using MSYS2
-          export PATH=/usr/bin:/mingw32/bin:/usr/local/bin
+          export PATH=/usr/bin:/usr/local/bin
 
-          # While some of these are already available, mixing cygwin (chocolatey) and MSYS2 is problematic. So we install what we need.
-          # Currently only 32-bit version of libusb.a is available, so we need to use a 32-bit version of gcc.
+          # While some of these are already available, they are cygwin versions which are incompatible with MSYS2
           pacman --noconfirm -S automake-wrapper autoconf-wrapper make mingw-w64-i686-gcc
 
+      - name: Bootstrap
+        run: |
+          export PATH=/usr/bin:/usr/local/bin:/mingw32/bin
           ./bootstrap.sh
 
           # Per README instructions
           cp windows/usb.h    /mingw32/include/
           cp windows/libusb.a /mingw32/lib/
 
+      - name: Configure
+        run: |
+          export PATH=/usr/bin:/usr/local/bin:/mingw32/bin
           ./configure --disable-libusb_1_0
 
+      - name: Build
+        run: |
+          export PATH=/usr/bin:/usr/local/bin:/mingw32/bin
           make
 
       - name: Upload dfu-programmer.exe
@@ -104,18 +112,27 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Dependencies, bootstrap, configure, and make
+      - name: Dependencies
         run: |
           # Fix issues with MSYS2 and cygwin tools conflicting by just using MSYS2
-          export PATH=/usr/bin:/mingw32/bin:/usr/local/bin
+          export PATH=/usr/bin:/usr/local/bin
 
-          # While some of these are already available, mixing cygwin (chocolatey) and MSYS2 is problematic. So we install what we need.
+          # While some of these are already available, they are cygwin versions which are incompatible with MSYS2
           pacman --noconfirm -S automake-wrapper autoconf-wrapper make mingw-w64-i686-gcc mingw-w64-i686-libusb
 
+      - name: Bootstrap
+        run: |
+          export PATH=/usr/bin:/usr/local/bin:/mingw32/bin
           ./bootstrap.sh
 
+      - name: Configure
+        run: |
+          export PATH=/usr/bin:/usr/local/bin:/mingw32/bin
           ./configure
 
+      - name: Build
+        run: |
+          export PATH=/usr/bin:/usr/local/bin:/mingw32/bin
           make
 
       - name: Upload dfu-programmer.exe
@@ -167,18 +184,27 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Dependencies, bootstrap, configure, and make
+      - name: Dependencies
         run: |
           # Fix issues with MSYS2 and cygwin tools conflicting by just using MSYS2
-          export PATH=/usr/bin:/mingw64/bin:/usr/local/bin
+          export PATH=/usr/bin:/usr/local/bin
 
-          # While some of these are already available, mixing cygwin (chocolatey) and MSYS2 is problematic. So we install what we need.
+          # While some of these are already available, they are cygwin versions which are incompatible with MSYS2
           pacman --noconfirm -S automake-wrapper autoconf-wrapper make mingw-w64-x86_64-gcc mingw-w64-x86_64-libusb
 
+      - name: Bootstrap
+        run: |
+          export PATH=/usr/bin:/usr/local/bin:/mingw64/bin
           ./bootstrap.sh
 
+      - name: Configure
+        run: |
+          export PATH=/usr/bin:/usr/local/bin:/mingw64/bin
           ./configure
 
+      - name: Build
+        run: |
+          export PATH=/usr/bin:/usr/local/bin:/mingw64/bin
           make
 
       - name: Upload dfu-programmer.exe
