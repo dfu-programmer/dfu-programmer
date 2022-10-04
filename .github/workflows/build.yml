@@ -47,7 +47,7 @@ jobs:
       - name: Build
         run: |
           export PATH=/usr/bin:/usr/local/bin:/mingw32/bin
-          make
+          make -j 4
 
       - name: Upload dfu-programmer.exe
         uses: actions/upload-artifact@v3.1.0
@@ -100,7 +100,7 @@ jobs:
       - name: make dist
         run: |
           export PATH=/usr/bin:/usr/local/bin:/mingw32/bin
-          make dist
+          make -j 4 dist
 
       - name: Get version
         id: version
@@ -159,7 +159,7 @@ jobs:
       - name: Build
         run: |
           export PATH=/usr/bin:/usr/local/bin:/mingw32/bin
-          make
+          make -j 4
 
       - name: Upload dfu-programmer.exe
         uses: actions/upload-artifact@v3.1.0
@@ -195,7 +195,7 @@ jobs:
       - name: make dist
         run: |
           export PATH=/usr/bin:/usr/local/bin:/mingw32/bin
-          make dist
+          make -j 4 dist
 
       - name: Get version
         id: version
