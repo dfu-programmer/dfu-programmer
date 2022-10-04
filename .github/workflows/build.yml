@@ -219,7 +219,6 @@ jobs:
             dfu-programmer-win32-libusb1-${{ steps.version.outputs.version }}.zip
             dfu-programmer-win32-libusb1-${{ steps.version.outputs.version }}.7z
 
-      # TODO: Do something with dist?
   Windows-x64-libusb1:
     name: Windows x64 with libusb1
     runs-on: windows-latest
@@ -310,8 +309,6 @@ jobs:
           files: |
             dfu-programmer-win64-libusb1-${{ steps.version.outputs.version }}.zip
             dfu-programmer-win64-libusb1-${{ steps.version.outputs.version }}.7z
-
-      # TODO: Do something with dist?
 
   Linux:
     name: Linux x64 with libusb1
