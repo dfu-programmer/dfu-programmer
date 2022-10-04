@@ -4,6 +4,7 @@
 - Fix bug in order device id was printed with libusb0
 - Publish binaries for Windows for libusb1
 - Enable GitHub Actions
+- Make `./bootstrap.sh` fail if any command fails (and print commands)
 
 == Release 0.7.2 [2015-02-04]
 

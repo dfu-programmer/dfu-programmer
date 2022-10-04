@@ -1,14 +1,14 @@
 #! /bin/sh
 
-set -e
-set -x
+set -e # exit on error
+set -x # Enable echoing of commands
 
-aclocal -I m4 2>&1
-autoheader 2>&1
-automake --foreign --add-missing --copy 2>&1
-autoconf 2>&1
+aclocal -I m4
+autoheader
+automake --foreign --add-missing --copy
+autoconf
 
-echo "done"
+set +x # Disable echoing of commands
 
 if [ "$(echo `uname`)" = "Linux" ]; then
     TARGET_START_LINE=$( grep START_TARGET_LIST_LINE -n src/arguments.c  | \
