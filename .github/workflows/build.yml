@@ -104,7 +104,9 @@ jobs:
       - name: Get version
         id: version
         shell: bash
-        run: echo ::set-output name=version::${GITHUB_REF#refs/tags/v}
+        run: |
+          echo ::set-output name=version::${GITHUB_REF#refs/tags/v}
+          sed -ne '3,/^== Release/p' NEWS | head -n -2 > CHANGES
 
       - name: Make release zip
         shell: pwsh
@@ -117,6 +119,8 @@ jobs:
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/v')
         with:
+          body_path: CHANGES
+          fail_on_unmatched_files: true
           files: |
             dfu-programmer-${{ steps.version.outputs.version }}.tar.gz
             dfu-programmer-win-${{ steps.version.outputs.version }}.zip
@@ -209,6 +213,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/v')
         with:
+          fail_on_unmatched_files: true
           files: |
             dfu-programmer-win32-libusb1-${{ steps.version.outputs.version }}.zip
             dfu-programmer-win32-libusb1-${{ steps.version.outputs.version }}.7z
@@ -301,6 +306,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/v')
         with:
+          fail_on_unmatched_files: true
           files: |
             dfu-programmer-win64-libusb1-${{ steps.version.outputs.version }}.zip
             dfu-programmer-win64-libusb1-${{ steps.version.outputs.version }}.7z
