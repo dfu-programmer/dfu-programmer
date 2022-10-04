@@ -64,7 +64,7 @@ if test "$HAVE_USB" = "yes"; then
 fi
 
 # Checks for header files.
-AC_HEADER_STDC
+AC_CHECK_HEADERS([stddef.h stdint.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
