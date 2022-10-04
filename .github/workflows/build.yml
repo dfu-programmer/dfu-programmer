@@ -69,7 +69,6 @@ jobs:
           # We only build x86 version, for now. The dll needs to be renamed too.
           cp usb/x86/libusb0_x86.dll src/libusb0.dll
 
-          src/dfu-programmer.exe --version
           src/dfu-programmer.exe --help
 
       - name: Prep dist
@@ -183,7 +182,6 @@ jobs:
       - name: Test
         shell: pwsh
         run: |
-          dist/dfu-programmer.exe --version
           dist/dfu-programmer.exe --help
 
       - name: Upload .zip
@@ -276,7 +274,6 @@ jobs:
       - name: Test
         shell: pwsh
         run: |
-          dist/dfu-programmer.exe --version
           dist/dfu-programmer.exe --help
 
       - name: Upload .zip
