@@ -90,7 +90,7 @@ jobs:
 
       - name: make dist
         run: |
-          export PATH=/usr/bin:/mingw32/bin:/usr/local/bin
+          export PATH=/usr/bin:/usr/local/bin:/mingw32/bin
           make dist
 
   Windows-x32-libusb1:
@@ -152,7 +152,7 @@ jobs:
 
       - name: make dist
         run: |
-          export PATH=/usr/bin:/mingw32/bin:/usr/local/bin
+          export PATH=/usr/bin:/usr/local/bin:/mingw32/bin
           make dist
 
       # TODO: Do something with dist?
@@ -215,7 +215,7 @@ jobs:
 
       - name: make dist
         run: |
-          export PATH=/usr/bin:/mingw64/bin:/usr/local/bin
+          export PATH=/usr/bin:/usr/local/bin:/mingw64/bin
           make dist
 
       # TODO: Do something with dist?
