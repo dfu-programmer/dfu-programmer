@@ -101,6 +101,27 @@ jobs:
           export PATH=/usr/bin:/usr/local/bin:/mingw32/bin
           make dist
 
+      - name: Get version
+        id: version
+        shell: bash
+        run: echo ::set-output name=version::${GITHUB_REF#refs/tags/v}
+
+      - name: Make release zip
+        shell: pwsh
+        working-directory: dist
+        run: |
+          7z a -tzip ../dfu-programmer-win-${{ steps.version.outputs.version }}.zip *
+          7z a -t7z ../dfu-programmer-win-${{ steps.version.outputs.version }}.7z *
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          files: |
+            dfu-programmer-${{ steps.version.outputs.version }}.tar.gz
+            dfu-programmer-win-${{ steps.version.outputs.version }}.zip
+            dfu-programmer-win-${{ steps.version.outputs.version }}.7z
+
   Windows-x32-libusb1:
     name: Windows x86 with libusb1
     runs-on: windows-latest
@@ -171,6 +192,26 @@ jobs:
         run: |
           export PATH=/usr/bin:/usr/local/bin:/mingw32/bin
           make dist
+
+      - name: Get version
+        id: version
+        shell: bash
+        run: echo ::set-output name=version::${GITHUB_REF#refs/tags/v}
+
+      - name: Make release zip
+        shell: pwsh
+        working-directory: dist
+        run: |
+          7z a -tzip ../dfu-programmer-win32-libusb1-${{ steps.version.outputs.version }}.zip *
+          7z a -t7z ../dfu-programmer-win32-libusb1-${{ steps.version.outputs.version }}.7z *
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          files: |
+            dfu-programmer-win32-libusb1-${{ steps.version.outputs.version }}.zip
+            dfu-programmer-win32-libusb1-${{ steps.version.outputs.version }}.7z
 
       # TODO: Do something with dist?
   Windows-x64-libusb1:
@@ -243,6 +284,26 @@ jobs:
         run: |
           export PATH=/usr/bin:/usr/local/bin:/mingw64/bin
           make dist
+
+      - name: Get version
+        id: version
+        shell: bash
+        run: echo ::set-output name=version::${GITHUB_REF#refs/tags/v}
+
+      - name: Make release zip
+        shell: pwsh
+        working-directory: dist
+        run: |
+          7z a -tzip ../dfu-programmer-win64-libusb1-${{ steps.version.outputs.version }}.zip *
+          7z a -t7z ../dfu-programmer-win64-libusb1-${{ steps.version.outputs.version }}.7z *
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          files: |
+            dfu-programmer-win64-libusb1-${{ steps.version.outputs.version }}.zip
+            dfu-programmer-win64-libusb1-${{ steps.version.outputs.version }}.7z
 
       # TODO: Do something with dist?
 
