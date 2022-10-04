@@ -8,6 +8,7 @@
 - Update `configure.ac` features
 - Use an alternate include path for libusb1 on Windows
 - Update uses of deprecated libusb1 functions
+- Added IntelliSense hints for Visual Studio Code
 
 == Release 0.7.2 [2015-02-04]
 

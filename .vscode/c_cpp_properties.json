@@ -1,9 +1,14 @@
 {
 	"configurations": [
 		{
-			"name": "mingw32 gcc",
+			"name": "gcc with libusb1",
 			"defines": ["__VSCODE__", "HAVE_LIBUSB_1_0"],
-			"compilerPath": "C:/msys64/mingw64/bin/gcc.exe",
+			"compilerPath": "C:/msys64/mingw64/bin/gcc.exe"
+		},
+		{
+			"name": "gcc with libusb0",
+			"defines": ["__VSCODE__"],
+			"compilerPath": "C:/msys64/mingw64/bin/gcc.exe"
 		}
 	],
 	"version": 4
