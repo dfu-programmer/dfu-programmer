@@ -179,8 +179,9 @@ jobs:
           # The docs
           cp docs/dfu-programmer.html dist/
 
-          # The linked dll
+          # Libusb 1.0
           cp C:/msys64/mingw32/bin/libusb-1.0.dll dist/
+          cp C:/msys64/mingw32/share/licenses     dist/ -Recurse
 
       - name: Test
         shell: pwsh
@@ -270,8 +271,9 @@ jobs:
           # The docs
           cp docs/dfu-programmer.html dist/
 
-          # The linked dll
+          # Libusb 1.0
           cp C:/msys64/mingw64/bin/libusb-1.0.dll dist/
+          cp C:/msys64/mingw64/share/licenses     dist/ -Recurse
 
       - name: Test
         shell: pwsh
