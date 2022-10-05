@@ -48,7 +48,7 @@ jobs:
       - name: Build
         run: |
           export PATH=/usr/bin:/usr/local/bin:/mingw32/bin
-          make -j 4
+          make -j4
 
       - name: Upload dfu-programmer.exe
         uses: actions/upload-artifact@v3.1.0
@@ -101,7 +101,7 @@ jobs:
       - name: make dist
         run: |
           export PATH=/usr/bin:/usr/local/bin:/mingw32/bin
-          make -j 4 dist
+          make -j4 dist
 
       - name: Get version
         id: version
@@ -163,7 +163,7 @@ jobs:
       - name: Build
         run: |
           export PATH=/usr/bin:/usr/local/bin:/mingw32/bin
-          make -j 4
+          make -j4
 
       - name: Upload dfu-programmer.exe
         uses: actions/upload-artifact@v3.1.0
@@ -200,7 +200,7 @@ jobs:
       - name: make dist
         run: |
           export PATH=/usr/bin:/usr/local/bin:/mingw32/bin
-          make -j 4 dist
+          make -j4 dist
 
       - name: Get version
         id: version
@@ -331,7 +331,7 @@ jobs:
         run: ./configure --disable-dependency-tracking
 
       - name: make
-        run: make
+        run: make -j4
 
       - run: src/dfu-programmer --help
 
@@ -342,7 +342,7 @@ jobs:
           path: src/dfu-programmer
 
       - name: make dist
-        run: make dist
+        run: make -j4 dist
 
       - name: Upload tarball
         uses: actions/upload-artifact@v3.1.0
@@ -366,7 +366,7 @@ jobs:
         run: ./configure --disable-dependency-tracking
 
       - name: make
-        run: make
+        run: make -j4
 
       - run: src/dfu-programmer --help
 
@@ -377,7 +377,7 @@ jobs:
           path: src/dfu-programmer
 
       - name: make dist
-        run: make dist
+        run: make -j4 dist
 
       - name: Upload tarball
         uses: actions/upload-artifact@v3.1.0
