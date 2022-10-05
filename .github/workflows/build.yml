@@ -108,7 +108,10 @@ jobs:
         shell: bash
         run: |
           echo ::set-output name=version::${GITHUB_REF#refs/tags/v}
-          sed -ne '3,/^== Release/p' NEWS | head -n -2 > CHANGES
+
+          echo "## Changes" > CHANGES
+          echo "" >> CHANGES
+          sed -ne '3,/^== Release/p' NEWS | head -n -2 >> CHANGES
 
       - name: Make release zip
         shell: pwsh
