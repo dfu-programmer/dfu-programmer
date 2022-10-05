@@ -40,10 +40,16 @@ jobs:
           cp windows/usb.h    /mingw32/include/
           cp windows/libusb.a /mingw32/lib/
 
+      - name: Override Version
+        if: "!startsWith(github.ref, 'refs/tags/v')"
+        id: override
+        shell: bash
+        run: echo ::set-output 'name=override::PACKAGE_STRING="dfu-programmer ${{ github.ref_name }} ${{ github.sha }}"'
+
       - name: Configure
         run: |
           export PATH=/usr/bin:/usr/local/bin:/mingw32/bin
-          ./configure --disable-dependency-tracking --disable-libusb_1_0
+          ./configure --disable-dependency-tracking --disable-libusb_1_0 ${{ steps.override.outputs.override }}
 
       - name: Build
         run: |
@@ -155,10 +161,16 @@ jobs:
           export PATH=/usr/bin:/usr/local/bin:/mingw32/bin
           ./bootstrap.sh
 
+      - name: Override Version
+        if: "!startsWith(github.ref, 'refs/tags/v')"
+        id: override
+        shell: bash
+        run: echo ::set-output 'name=override::PACKAGE_STRING="dfu-programmer ${{ github.ref_name }} ${{ github.sha }}"'
+
       - name: Configure
         run: |
           export PATH=/usr/bin:/usr/local/bin:/mingw32/bin
-          ./configure --disable-dependency-tracking
+          ./configure --disable-dependency-tracking ${{ steps.override.outputs.override }}
 
       - name: Build
         run: |
@@ -247,10 +259,16 @@ jobs:
           export PATH=/usr/bin:/usr/local/bin:/mingw64/bin
           ./bootstrap.sh
 
+      - name: Override Version
+        if: "!startsWith(github.ref, 'refs/tags/v')"
+        id: override
+        shell: bash
+        run: echo ::set-output 'name=override::PACKAGE_STRING="dfu-programmer ${{ github.ref_name }} ${{ github.sha }}"'
+
       - name: Configure
         run: |
           export PATH=/usr/bin:/usr/local/bin:/mingw64/bin
-          ./configure --disable-dependency-tracking
+          ./configure --disable-dependency-tracking ${{ steps.override.outputs.override }}
 
       - name: Build
         run: |
@@ -327,8 +345,14 @@ jobs:
       - name: bootstrap
         run: ./bootstrap.sh
 
+      - name: Override Version
+        if: "!startsWith(github.ref, 'refs/tags/v')"
+        id: override
+        shell: bash
+        run: echo ::set-output 'name=override::PACKAGE_STRING="dfu-programmer ${{ github.ref_name }} ${{ github.sha }}"'
+
       - name: configure
-        run: ./configure --disable-dependency-tracking
+        run: ./configure --disable-dependency-tracking ${{ steps.override.outputs.override }}
 
       - name: make
         run: make -j4
@@ -362,8 +386,14 @@ jobs:
       - name: bootstrap
         run: ./bootstrap.sh
 
+      - name: Override Version
+        if: "!startsWith(github.ref, 'refs/tags/v')"
+        id: override
+        shell: bash
+        run: echo ::set-output 'name=override::PACKAGE_STRING="dfu-programmer ${{ github.ref_name }} ${{ github.sha }}"'
+
       - name: configure
-        run: ./configure --disable-dependency-tracking
+        run: ./configure --disable-dependency-tracking ${{ steps.override.outputs.override }}
 
       - name: make
         run: make -j4
