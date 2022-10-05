@@ -43,7 +43,7 @@ jobs:
       - name: Configure
         run: |
           export PATH=/usr/bin:/usr/local/bin:/mingw32/bin
-          ./configure --disable-libusb_1_0
+          ./configure --disable-dependency-tracking --disable-libusb_1_0
 
       - name: Build
         run: |
@@ -155,7 +155,7 @@ jobs:
       - name: Configure
         run: |
           export PATH=/usr/bin:/usr/local/bin:/mingw32/bin
-          ./configure
+          ./configure --disable-dependency-tracking
 
       - name: Build
         run: |
@@ -246,7 +246,7 @@ jobs:
       - name: Configure
         run: |
           export PATH=/usr/bin:/usr/local/bin:/mingw64/bin
-          ./configure
+          ./configure --disable-dependency-tracking
 
       - name: Build
         run: |
@@ -323,7 +323,7 @@ jobs:
         run: ./bootstrap.sh
 
       - name: configure
-        run: ./configure
+        run: ./configure --disable-dependency-tracking
 
       - name: make
         run: make
@@ -358,7 +358,7 @@ jobs:
         run: ./bootstrap.sh
 
       - name: configure
-        run: ./configure
+        run: ./configure --disable-dependency-tracking
 
       - name: make
         run: make
