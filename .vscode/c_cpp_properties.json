@@ -1,13 +1,8 @@
 {
 	"configurations": [
 		{
-			"name": "gcc with libusb1",
-			"defines": ["__VSCODE__", "HAVE_LIBUSB_1_0"],
-			"compilerPath": "C:/msys64/mingw64/bin/gcc.exe"
-		},
-		{
-			"name": "gcc with libusb0",
-			"defines": ["__VSCODE__"],
+			"name": "gcc",
+			"defines": ["__VSCODE__", "HAVE_CONFIG_H"],
 			"compilerPath": "C:/msys64/mingw64/bin/gcc.exe"
 		}
 	],
