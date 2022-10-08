@@ -6,7 +6,6 @@
 - Enable GitHub Actions
 - Make `./bootstrap.sh` fail if any command fails (and print commands)
 - Update `configure.ac` features
-- Use an alternate include path for libusb1 on Windows
 - Update uses of deprecated libusb1 functions
 - Added IntelliSense hints for Visual Studio Code
 
