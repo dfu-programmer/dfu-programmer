@@ -56,12 +56,6 @@ jobs:
           export PATH=/usr/bin:/usr/local/bin:/mingw32/bin
           make -j4
 
-      - name: Upload dfu-programmer.exe
-        uses: actions/upload-artifact@v3.1.0
-        with:
-          name: Windows x86 - libusb0 - dfu-programmer.exe
-          path: src/dfu-programmer.exe
-
       - name: Download Atmel FLIP
         uses: suisei-cn/actions-download-file@v1.0.1
         id: flip
@@ -71,14 +65,6 @@ jobs:
       - name: Extract Atmel FLIP
         run: 7z x ${{ steps.flip.outputs.filename }} usb COPYING_GPL.txt
         shell: pwsh
-
-      - name: Test
-        shell: pwsh
-        run: |
-          # We only build x86 version, for now. The dll needs to be renamed too.
-          cp usb/x86/libusb0_x86.dll src/libusb0.dll
-
-          src/dfu-programmer.exe --help
 
       - name: Prep dist
         shell: pwsh
@@ -98,42 +84,38 @@ jobs:
           # The docs
           cp docs/dfu-programmer.html dist/
 
-      - name: Upload .zip
+      - name: Upload dist as Build Artifact
         uses: actions/upload-artifact@v3.1.0
         with:
           name: Windows x86 - libusb0 - dfu-programmer
           path: dist
 
-      - name: make dist
-        run: |
-          export PATH=/usr/bin:/usr/local/bin:/mingw32/bin
-          make -j4 dist
-
       - name: Get version
+        if: startsWith(github.ref, 'refs/tags/v')
         id: version
         shell: bash
-        run: |
-          echo ::set-output name=version::${GITHUB_REF#refs/tags/v}
+        run: echo ::set-output name=version::${GITHUB_REF#refs/tags/v}
 
-          echo "## Changes" > CHANGES
-          echo "" >> CHANGES
-          sed -ne '3,/^== Release/p' NEWS | head -n -2 >> CHANGES
-
-      - name: Make release zip
+      - name: Make release archives of binaries
+        if: startsWith(github.ref, 'refs/tags/v')
         shell: pwsh
         working-directory: dist
         run: |
           7z a -tzip ../dfu-programmer-win-${{ steps.version.outputs.version }}.zip *
           7z a -t7z  ../dfu-programmer-win-${{ steps.version.outputs.version }}.7z  *
 
+      - name: Test
+        shell: pwsh
+        run: |
+          mv dist/dfu-prog-usb-1.2.2/x86/libusb0_x86.dll dist/libusb0.dll
+          dist/dfu-programmer.exe --help
+
       - name: Release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/v')
         with:
-          body_path: CHANGES
           fail_on_unmatched_files: true
           files: |
-            dfu-programmer-${{ steps.version.outputs.version }}.tar.gz
             dfu-programmer-win-${{ steps.version.outputs.version }}.zip
             dfu-programmer-win-${{ steps.version.outputs.version }}.7z
 
@@ -177,12 +159,6 @@ jobs:
           export PATH=/usr/bin:/usr/local/bin:/mingw32/bin
           make -j4
 
-      - name: Upload dfu-programmer.exe
-        uses: actions/upload-artifact@v3.1.0
-        with:
-          name: Windows x86 - libusb1 - dfu-programmer.exe
-          path: src/dfu-programmer.exe
-
       - name: Prep dist
         shell: pwsh
         run: |
@@ -198,28 +174,24 @@ jobs:
           cp C:/msys64/mingw32/bin/libusb-1.0.dll dist/
           cp C:/msys64/mingw32/share/licenses     dist/ -Recurse
 
-      - name: Test
-        shell: pwsh
-        run: |
-          dist/dfu-programmer.exe --help
-
-      - name: Upload .zip
+      - name: Upload dist as Build Artifact
         uses: actions/upload-artifact@v3.1.0
         with:
           name: Windows x86 - libusb1 - dfu-programmer
           path: dist
 
-      - name: make dist
-        run: |
-          export PATH=/usr/bin:/usr/local/bin:/mingw32/bin
-          make -j4 dist
+      - name: Test
+        shell: pwsh
+        run: dist/dfu-programmer.exe --help
 
       - name: Get version
+        if: startsWith(github.ref, 'refs/tags/v')
         id: version
         shell: bash
         run: echo ::set-output name=version::${GITHUB_REF#refs/tags/v}
 
-      - name: Make release zip
+      - name: Make release archives of binaries
+        if: startsWith(github.ref, 'refs/tags/v')
         shell: pwsh
         working-directory: dist
         run: |
@@ -273,13 +245,7 @@ jobs:
       - name: Build
         run: |
           export PATH=/usr/bin:/usr/local/bin:/mingw64/bin
-          make
-
-      - name: Upload dfu-programmer.exe
-        uses: actions/upload-artifact@v3.1.0
-        with:
-          name: Windows x64 - libusb1 - dfu-programmer.exe
-          path: src/dfu-programmer.exe
+          make -j4
 
       - name: Prep dist
         shell: pwsh
@@ -296,28 +262,24 @@ jobs:
           cp C:/msys64/mingw64/bin/libusb-1.0.dll dist/
           cp C:/msys64/mingw64/share/licenses     dist/ -Recurse
 
-      - name: Test
-        shell: pwsh
-        run: |
-          dist/dfu-programmer.exe --help
-
-      - name: Upload .zip
+      - name: Upload dist as Build Artifact
         uses: actions/upload-artifact@v3.1.0
         with:
           name: Windows x64 - libusb1 - dfu-programmer
           path: dist
 
-      - name: make dist
-        run: |
-          export PATH=/usr/bin:/usr/local/bin:/mingw64/bin
-          make dist
+      - name: Test
+        shell: pwsh
+        run: dist/dfu-programmer.exe --help
 
       - name: Get version
+        if: startsWith(github.ref, 'refs/tags/v')
         id: version
         shell: bash
         run: echo ::set-output name=version::${GITHUB_REF#refs/tags/v}
 
-      - name: Make release zip
+      - name: Make release archives of binaries
+        if: startsWith(github.ref, 'refs/tags/v')
         shell: pwsh
         working-directory: dist
         run: |
@@ -348,7 +310,6 @@ jobs:
       - name: Override Version
         if: "!startsWith(github.ref, 'refs/tags/v')"
         id: override
-        shell: bash
         run: echo ::set-output 'name=override::PACKAGE_STRING="dfu-programmer ${{ github.ref_name }} ${{ github.sha }}"'
 
       - name: configure
@@ -357,9 +318,10 @@ jobs:
       - name: make
         run: make -j4
 
-      - run: src/dfu-programmer --help
+      - name: Test
+        run: src/dfu-programmer --help
 
-      - name: Upload a Build Artifact
+      - name: Upload Binary as Build Artifact
         uses: actions/upload-artifact@v3.1.0
         with:
           name: Linux x64 - libusb1 - dfu-programmer binary
@@ -368,11 +330,39 @@ jobs:
       - name: make dist
         run: make -j4 dist
 
-      - name: Upload tarball
+      - name: Get version and Changes
+        if: startsWith(github.ref, 'refs/tags/v')
+        id: version
+        run: |
+          echo ::set-output name=version::${GITHUB_REF#refs/tags/v}
+
+          echo "## Changes" > CHANGES
+          echo "" >> CHANGES
+          sed -ne '3,/^== Release/p' NEWS | head -n -2 >> CHANGES
+
+      - name: Upload Tarball as Build Artifact
         uses: actions/upload-artifact@v3.1.0
         with:
           name: Linux x64 - libusb1 - dfu-programmer dist
           path: "*.tar.gz"
+
+      - name: Make release archives of binaries
+        if: startsWith(github.ref, 'refs/tags/v')
+        working-directory: src
+        run: |
+          7z a -tzip ../dfu-programmer-linux-${{ steps.version.outputs.version }}.zip dfu-programmer
+          7z a -t7z  ../dfu-programmer-linux-${{ steps.version.outputs.version }}.7z  dfu-programmer
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          body_path: CHANGES
+          fail_on_unmatched_files: true
+          files: |
+            dfu-programmer-${{ steps.version.outputs.version }}.tar.gz
+            dfu-programmer-linux-${{ steps.version.outputs.version }}.zip
+            dfu-programmer-linux-${{ steps.version.outputs.version }}.7z
 
   macOS:
     name: macOS x64 with libusb1
@@ -389,7 +379,6 @@ jobs:
       - name: Override Version
         if: "!startsWith(github.ref, 'refs/tags/v')"
         id: override
-        shell: bash
         run: echo ::set-output 'name=override::PACKAGE_STRING="dfu-programmer ${{ github.ref_name }} ${{ github.sha }}"'
 
       - name: configure
@@ -398,9 +387,10 @@ jobs:
       - name: make
         run: make -j4
 
-      - run: src/dfu-programmer --help
+      - name: Test
+        run: src/dfu-programmer --help
 
-      - name: Upload a Build Artifact
+      - name: Upload Binary as Build Artifact
         uses: actions/upload-artifact@v3.1.0
         with:
           name: macOS - libusb1 - dfu-programmer binary
@@ -409,8 +399,29 @@ jobs:
       - name: make dist
         run: make -j4 dist
 
-      - name: Upload tarball
+      - name: Upload Tarball as Build Artifact
         uses: actions/upload-artifact@v3.1.0
         with:
           name: macOS - libusb1 - dfu-programmer dist
           path: "*.tar.gz"
+
+      - name: Get version
+        if: startsWith(github.ref, 'refs/tags/v')
+        id: version
+        run: echo ::set-output name=version::${GITHUB_REF#refs/tags/v}
+
+      - name: Make release archives of binaries
+        if: startsWith(github.ref, 'refs/tags/v')
+        working-directory: src
+        run: |
+          7z a -tzip ../dfu-programmer-macOS-${{ steps.version.outputs.version }}.zip dfu-programmer
+          7z a -t7z  ../dfu-programmer-macOS-${{ steps.version.outputs.version }}.7z  dfu-programmer
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          fail_on_unmatched_files: true
+          files: |
+            dfu-programmer-macOS-${{ steps.version.outputs.version }}.zip
+            dfu-programmer-macOS-${{ steps.version.outputs.version }}.7z
