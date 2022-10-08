@@ -27,11 +27,9 @@ if test "$disable_libusb_1_0" = "no"; then
   ifdef([PKG_CHECK_MODULES],
         [PKG_CHECK_MODULES(LIBUSB_1_0, [ libusb-1.0 >= 1.0.0 ], have_libusb_1_0=yes, have_libusb_1_0=no)],
         [have_libusb_1_0=yes
-  LIBUSB_1_0_CFLAGS='-I${includedir}/libusb-1.0 -I${oldincludedir}/libusb-1.0'
   LIBUSB_1_0_LIBS=-lusb-1.0])
   if test "$have_libusb_1_0" = "yes"; then
     AS_ECHO("using libusb_1.0");
-    CFLAGS="$CFLAGS $LIBUSB_1_0_CFLAGS"
     LIBS="$LIBS $LIBUSB_1_0_LIBS"
     HAVE_USB=yes
   fi
