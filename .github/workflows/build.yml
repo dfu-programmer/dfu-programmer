@@ -338,7 +338,7 @@ jobs:
 
           echo "## Changes" > CHANGES
           echo "" >> CHANGES
-          sed -ne '3,/^== Release/p' NEWS | head -n -2 >> CHANGES
+          sed -ne '2,/^== Release/p' NEWS | head -n -2 >> CHANGES
 
       - name: Upload Tarball as Build Artifact
         uses: actions/upload-artifact@v3.1.0

@@ -1,168 +1,142 @@
 == Release 0.7.3 [2022-10-03]
-
-- Fix bug preventing specifying a device with libusb0
-- Fix bug in order device id was printed with libusb0
-- Publish binaries for Windows for libusb1
-- Enable GitHub Actions
-- Make `./bootstrap.sh` fail if any command fails (and print commands)
-- Update `configure.ac` features
-- Update libusb1 include path
-- Update uses of deprecated libusb1 functions
-- Added IntelliSense hints for Visual Studio Code
+ * Fix bug preventing specifying a device with libusb0
+ * Fix bug in order device id was printed with libusb0
+ * Publish binaries for Windows for libusb1
+ * Enable GitHub Actions
+ * Make `./bootstrap.sh` fail if any command fails (and print commands)
+ * Update `configure.ac` features
+ * Update libusb1 include path
+ * Update uses of deprecated libusb1 functions
+ * Added IntelliSense hints for Visual Studio Code
 
 == Release 0.7.2 [2015-02-04]
+ * Fix memory bounds used for XMega targets.
 
-- Fix memory bounds used for XMega targets.
-
-== Release 0.7.1 [2015-01-03]
-
-- Fix use of mandatory filename ChangeLog in distribution tarball
-- Fix infinite loop in rpl_malloc
-- Add experimental support for autocomplete on Ubuntu
-- Fix exit status of help-related options and improve start sequence
+ == Release 0.7.1 [2015-01-03]
+ * Fix use of mandatory filename ChangeLog in distribution tarball
+ * Fix infinite loop in rpl_malloc
+ * Add experimental support for autocomplete on Ubuntu
+ * Fix exit status of help-related options and improve start sequence
 
 == Release 0.7.0 [2014-08-02]
-
-- Add support for atmega16c4 and atmega32c4
-- Fix device erase for bootloaders which return busy status
-- Better include file defaults for libusb when run bootstrap is run without pkgconfig.
-- Improved status output
-- Add hex dump commands
-- Add blank memory check
-- Major rework of the flash/user/eeprom code
-- Replace start and reset commands with launch
-- Repository and website migrated to GitHub
+ * Add support for atmega16c4 and atmega32c4
+ * Fix device erase for bootloaders which return busy status
+ * Better include file defaults for libusb when run bootstrap is run without pkgconfig.
+ * Improved status output
+ * Add hex dump commands
+ * Add blank memory check
+ * Major rework of the flash/user/eeprom code
+ * Replace start and reset commands with launch
+ * Repository and website migrated to GitHub
 
 == Release 0.6.2 [2013-07-19]
-
-- Use correct default libusb-1.0 path
-- Workaround for "Device not found" errors
+ * Use correct default libusb-1.0 path
+ * Workaround for "Device not found" errors
 
 == Release 0.6.1 [2013-04-04]
-
-- Added support for specifying a USB bus and address
-- Added support for device serialization
-- Fix packaging problem which failed to supply the default path
-  for libusb-1.0 files when built on a machine without that package.
-- Clarified some error messages
+ * Added support for specifying a USB bus and address
+ * Added support for device serialization
+ * Fix packaging problem which failed to supply the default path
+   for libusb-1.0 files when built on a machine without that package.
+ * Clarified some error messages
 
 == Release 0.6.0 [2013-01-29]
-
-- Added support for xmega chips currently supported by FLIP
-- Do not attempt eeprom operations on devices without eeprom
-- Allow setting the security bit on AVR32
-- Add HTML help file for Windows users
-- Added new commands --version, --help, --targets
-- Improved built in help text
-- Improved several error messages
+ * Added support for xmega chips currently supported by FLIP
+ * Do not attempt eeprom operations on devices without eeprom
+ * Allow setting the security bit on AVR32
+ * Add HTML help file for Windows users
+ * Added new commands --version, --help, --targets
+ * Improved built in help text
+ * Improved several error messages
 
 == Release 0.5.5 [2012-12-22]
-
-- Added support for atmega16u2
-- Fixed operation of reset command
-- More reliable autoconf operation
-- Better support for Windows users
-- Fixed erase timeout for AVR32
+ * Added support for atmega16u2
+ * Fixed operation of reset command
+ * More reliable autoconf operation
+ * Better support for Windows users
+ * Fixed erase timeout for AVR32
 
 == Release 0.5.4 [2011-09-22]
-
-- Update RPM sources and commit files previously missed.
+ * Update RPM sources and commit files previously missed.
 
 == Release 0.5.3 [2011-01-17]
-
-- Added support for a number of chips (at32uc3c series, atmega32u2,
-  at32uc3b1512, at32uc3b0512 and atmega8u2).
-- Fixed a few off by 1 errors in flash verification & memory dumping.
-- Added libusb 1.0 support.
-- Applied a number of bug fixes.
+ * Added support for a number of chips (at32uc3c series, atmega32u2,
+   at32uc3b1512, at32uc3b0512 and atmega8u2).
+ * Fixed a few off by 1 errors in flash verification & memory dumping.
+ * Added libusb 1.0 support.
+ * Applied a number of bug fixes.
 
 == Release 0.5.2 [2009-08-23]
-
-- Added ability to read from STDIN.
-- Added ability to configure AVR32 fuses.
-- Applied a number of bug fixes.
-- Fixed AVR device support.
+ * Added ability to read from STDIN.
+ * Added ability to configure AVR32 fuses.
+ * Applied a number of bug fixes.
+ * Fixed AVR device support.
 
 == Release 0.5.1 [2008-12-11]
-
-- Applied patch that fixes AVR32 support so that the trampoline code
-  can be used.
+ * Applied patch that fixes AVR32 support so that the trampoline code
+   can be used.
 
 == Release 0.5.0 [2008-12-04]
-
-- All known Atmel USB AVR/8051/AVR32 chips are now supported.
-- A number of cross platform friendly code changes have been added.
+ * All known Atmel USB AVR/8051/AVR32 chips are now supported.
+ * A number of cross platform friendly code changes have been added.
 
 == Release 0.4.6 [2008-08-30]
-
-- Minor release changes - focused on changing the permission handling.
-  code for fedora
-- This is the last planned 0.4.x release. The next release will be
-  0.5.0 and will be focused on better cross platform support (for
-  windows, etc) in addition to new chips.
+ * Minor release changes - focused on changing the permission handling.
+   code for fedora
+ * This is the last planned 0.4.x release.  The next release will be
+   0.5.0 and will be focused on better cross platform support (for
+   windows, etc) in addition to new chips.
 
 == Release 0.4.5 [2008-08-21]
-
-- Added support for 4K bootloaders on supported chips.
-- Added support for eeprom-dump and eeprom-flash on supported chips.
+ * Added support for 4K bootloaders on supported chips.
+ * Added support for eeprom-dump and eeprom-flash on supported chips.
 
 == Release 0.4.4 [2007-11-20]
-
-- Added new reset command
-- Added out of the box permission changes to allow the console owner
-  to flash a device without needing to be root.
+ * Added new reset command
+ * Added out of the box permission changes to allow the console owner
+   to flash a device without needing to be root.
 
 == Release 0.4.3 [2007-08-13]
-
-- Added support for the at90usb162 and at90usb82 chips.
-- Applied patch for incorrect status string conversion.
+ * Added support for the at90usb162 and at90usb82 chips.
+ * Applied patch for incorrect status string conversion.
 
 == Release 0.4.2 [2007-07-07]
-
-- Minor spec file changes to be Fedora compliant
+ * Minor spec file changes to be Fedora compliant
 
 == Release 0.4.1 [2007-04-30]
-
-- Added support for flashing both memory pages for the at90usb128x
-  chips.
-- Updated the man page.
+ * Added support for flashing both memory pages for the at90usb128x
+   chips.
+ * Updated the man page.
 
 == Release 0.4.0 [2007-01-27]
-
-- Major set of fixes added for the at90xxx chips.
-- Optimized the flashing algorithm that only flashes the blocks needed
-  based on the data being flashed, instead of flashing the entire chip
-  each time (potentially saves s good deal of time during development)
-- The chip should be initialized better than before, increasing the
-  likelihood of a successful operation.
-- Refined the code to allow OS X to compile and run dfu-programmer.
+ * Major set of fixes added for the at90xxx chips.
+ * Optimized the flashing algorithm that only flashes the blocks needed
+   based on the data being flashed, instead of flashing the entire chip
+   each time (potentially saves s good deal of time during development)
+ * The chip should be initialized better than before, increasing the
+   likelihood of a successful operation.
+ * Refined the code to allow OS X to compile and run dfu-programmer.
 
 == Release 0.3.1 [2006-10-22]
-
-- Minor documentation changes and polishing of the spec file to get the
-  project inline with what is needed to be part of the fedora extras.
+ * Minor documentation changes and polishing of the spec file to get the
+   project inline with what is needed to be part of the fedora extras.
 
 == Release 0.3.0 [2006-06-20]
-
-- Added support for (AVR) at90usb1287, at90usb1286, at90usb647, at90usb646
-  chips.
-- Fixes a minor validation bug where the last byte of flash was not being
-  correctly validated.
+ * Added support for (AVR) at90usb1287, at90usb1286, at90usb647, at90usb646
+   chips.
+ * Fixes a minor validation bug where the last byte of flash was not being
+   correctly validated.
 
 == Release 0.2.2 [2006-05-07]
+ * Minor bug fix for a segmentation fault if only the usage is displayed.
 
-- Minor bug fix for a segmentation fault if only the usage is displayed.
-
-== Release 0.2.1 [2005-11-21]
-
-- Minor bug fixes and documentation updates.
+== Release 0.2.1 [2005-11-21] 
+ * Minor bug fixes and documentation updates.
 
 == Release 0.2.0 [2005-09-25]
-
-- Limited support for the at89c5132, at89c5131 and at89c5130 chip is added.
-  where the known limitations now have to do with P1_CF, P3_CF, P4_CF not
-  being supported (read or write).
+ * Limited support for the at89c5132, at89c5131 and at89c5130 chip is added.
+   where the known limitations now have to do with P1_CF, P3_CF, P4_CF not
+   being supported (read or write).
 
 == Release 0.1
-
-- Initial release
+ * Initial release
