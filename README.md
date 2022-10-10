@@ -175,7 +175,7 @@ _Note that `C:\dir` is accessed in MinGW using the path `/c/dir`._
 ### libusb1
 
 The Windows build now supports libusb-1.0.
-If you install the correct package with `pacman`, include and lib files will be installed in the correct locations.
+If you install the correct package with `pacman`, header and lib files will be installed in the correct locations.
 
 - **32-bit:** `pacman -S mingw-w64-i686-libusb`
 - **64-bit:** `pacman -S mingw-w64-x86_64-libusb`
@@ -225,6 +225,6 @@ The libusb-win32 driver has the broadest compatibility with builds of dfu-progra
 | libusb-win32     | ✅          | ✅          | ✅          |
 | USB Serial (CDC) | ❌          | ❌          | ❌          |
 
-### USB on Windows Simplified
+### USB on Windows Map
 
-![USB on Windows Simplified](docs/USB%20on%20Windows.drawio.svg "USB Drivers on Windows")
+![USB on Windows Map](docs/USB-on-Windows.drawio.svg "USB Drivers on Windows")
