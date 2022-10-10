@@ -10,7 +10,7 @@ The project website is http://dfu-programmer.github.io and you can use that to c
 
 ## Currently Supported Chips
 
-8051 based controllers:
+<details><summary>8051 based controllers</summary>
 
 - at89c51snd1c
 - at89c51snd2c
@@ -18,7 +18,8 @@ The project website is http://dfu-programmer.github.io and you can use that to c
 - at89c5131
 - at89c5132
 
-AVR based controllers:
+</details>
+<details><summary>AVR based controllers</summary>
 
 - at90usb1287
 - at90usb1286
@@ -35,7 +36,8 @@ AVR based controllers:
 - atmega16u2
 - atmega8u2
 
-AVR32 based controllers:
+</details>
+<details><summary>AVR32 based controllers</summary>
 
 - at32uc3a0128
 - at32uc3a1128
@@ -75,7 +77,8 @@ AVR32 based controllers:
 - at32uc3c2256
 - at32uc3c2512
 
-XMEGA based controllers:
+</details>
+<details><summary>XMEGA based controllers</summary>
 
 - atxmega64a1u
 - atxmega128a1u
@@ -99,12 +102,15 @@ XMEGA based controllers:
 - atxmega16c4
 - atxmega32c4
 
-Experimental support for ST cortex M4:
+</details>
+<details><summary>Experimental support for ST cortex M4</summary>
 
 - stm32f4_B
 - stm32f4_C
 - stm32f4_E
 - stm32f4_G
+
+</details>
 
 ## Simple install procedure for Unix/Linux/MAC
 
