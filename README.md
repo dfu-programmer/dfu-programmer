@@ -164,17 +164,29 @@ Get them from http://sourceforge.net/projects/mingw/files/.
 See `.github/workflows/build.yml` for examples of building on Windows and the needed tools.
 
 Open the MinGW shell window and change to the dfu-programmer folder.
-Note that C:\dir is accessed in MinGW using the path /c/dir
+_Note that `C:\dir` is accessed in MinGW using the path `/c/dir`._
 
-> If the source was checked-out from GitHub, run the following command
+> If the source was checked-out from GitHub, run:
+>
+> ```bash
+> ./bootstrap.sh
+> ```
+
+### libusb1
+
+The Windows build now supports libusb-1.0.
+If you install the correct package with `pacman`, include and lib files will be installed in the correct locations.
+
+- **32-bit:** `pacman -S mingw-w64-i686-libusb`
+- **64-bit:** `pacman -S mingw-w64-x86_64-libusb`
 
 ```bash
-./bootstrap.sh
+./configure
 ```
 
 ### libusb0
 
-The Windows build uses the libusb-win32 library, which is a port of libusb 0.1.
+The Windows build supports the libusb-win32 library, which is a port of libusb 0.1.
 For convenience these files are included with this distribution, located in the windows sub-directory.
 You need to copy these files to your MinGW install directory if they are not already there:
 
@@ -183,16 +195,6 @@ You need to copy these files to your MinGW install directory if they are not alr
 
 ```bash
 ./configure --disable-libusb_1_0
-```
-
-### libusb1
-
-The Windows build also supports libusb-1.0.
-If you install with the pacman package `mingw-w64-i686-libusb` or `mingw-w64-x86_64-libusb`,
-for the 32-bit or 64-bit builds respectively, include and lib files will be installed in the correct locations.
-
-```bash
-./configure
 ```
 
 ### Build
@@ -207,21 +209,21 @@ The executable will be built in the `dfu-programmer/src/` folder.
 
 ### Atmel FLIP
 
-Atmel's FLIP programmer also uses libusb-win32, so we use the same library here and take advantage of Atmel's official certified driver set.
-The windows driver files can be downloaded as a separate zip file `dfu-prog-usb-x.x.x.zip`.
+Atmel's FLIP programmer also uses libusb-win32, so we can take advantage of Atmel's official certified drivers.
+A copy is included in the libusb0 versions of the Windows distributions (`dfu-programmer-win-*`).
 
 ### Zadig
 
 [Zadig](https://zadig.akeo.ie) is another popular tool for managing the current USB driver for devices on your system.
-It can be used to install the libusb-win32 driver or other popular drivers, including the official WinUSB driver.
+It can be used to install the libusb-win32, libusbK, WinUSB, or "USB Serial (CDC)" drivers.
 The libusb-win32 driver has the broadest compatibility with builds of dfu-programmer, but that is not relevant on libusb1 builds of dfu-programmer.
 
-| Zadig Driver | libusb0 x86 | libusb1 x86 | libusb1 x64 |
-| ------------ | ----------- | ----------- | ----------- |
-| WinUSB       | "no device" | Works       | Works       |
-| libusb-win32 | Works       | Works       | Works       |
-| libusbK      | "no device" | Works       | Works       |
-| CDC          | "no device" | "no device" | "no device" |
+| Zadig Driver     | libusb0 x86 | libusb1 x86 | libusb1 x64 |
+| ---------------- | ----------- | ----------- | ----------- |
+| WinUSB           | ❌          | ✅          | ✅          |
+| libusbK          | ✅          | ✅          | ✅          |
+| libusb-win32     | ✅          | ✅          | ✅          |
+| USB Serial (CDC) | ❌          | ❌          | ❌          |
 
 ### USB on Windows Simplified
 
