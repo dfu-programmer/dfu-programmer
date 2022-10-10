@@ -35,7 +35,8 @@ if test "$disable_libusb_1_0" = "no"; then
   fi
 fi
 
-if test "$have_libusb_1_0" = "no"; then
+AS_IF([test "$have_libusb_1_0" = "no"],
+[
   dnl Fallback to the old libusb
   dnl libusb >= 0.1.8 is required, as we need usb_interrupt_read()
   AS_ECHO("using libusb");
@@ -43,7 +44,7 @@ if test "$have_libusb_1_0" = "no"; then
                   AC_CHECK_LIB(usb, usb_interrupt_read,
                                [LIBS="$LIBS -lusb"
                                 HAVE_USB=yes]))
-fi
+])
 
 dnl The following logic is useful for distributions.  If they force
 dnl USB support with --enable-libusb=yes then configure will fail
