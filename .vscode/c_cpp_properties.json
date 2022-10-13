@@ -4,7 +4,7 @@
 			"name": "gcc",
 			"defines": ["__VSCODE__", "HAVE_CONFIG_H"],
 			"includePath": ["src"],
-			"compilerPath": "C:/msys64/mingw64/bin/gcc.exe"
+			"compilerPath": "gcc"
 		}
 	],
 	"version": 4
