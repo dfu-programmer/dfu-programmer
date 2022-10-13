@@ -119,6 +119,182 @@ jobs:
             dfu-programmer-win-${{ steps.version.outputs.version }}.zip
             dfu-programmer-win-${{ steps.version.outputs.version }}.7z
 
+  Windows-x32-libusb1:
+    name: Windows x86 with libusb1
+    runs-on: windows-latest
+
+    defaults:
+      run:
+        shell: C:/msys64/usr/bin/bash.exe --noprofile --norc -e -x -o pipefail {0}
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Dependencies
+        run: |
+          # Fix issues with MSYS2 and cygwin tools conflicting by just using MSYS2
+          export PATH=/usr/bin:/usr/local/bin
+
+          # While some of these are already available, they are cygwin versions which are incompatible with MSYS2
+          pacman --color always --noconfirm -S automake-wrapper autoconf-wrapper make mingw-w64-i686-gcc mingw-w64-i686-libusb
+
+      - name: Bootstrap
+        run: |
+          export PATH=/usr/bin:/usr/local/bin:/mingw32/bin
+          ./bootstrap.sh
+
+      - name: Override Version
+        if: "!startsWith(github.ref, 'refs/tags/v')"
+        id: override
+        shell: bash
+        run: echo ::set-output 'name=override::PACKAGE_STRING="dfu-programmer ${{ github.ref_name }} ${{ github.sha }}"'
+
+      - name: Configure
+        run: |
+          export PATH=/usr/bin:/usr/local/bin:/mingw32/bin
+          ./configure --disable-dependency-tracking ${{ steps.override.outputs.override }}
+
+      - name: Build
+        run: |
+          export PATH=/usr/bin:/usr/local/bin:/mingw32/bin
+          make -j4
+
+      - name: Prep dist
+        shell: pwsh
+        run: |
+          mkdir dist
+
+          # The binary
+          cp src/dfu-programmer.exe dist/
+
+          # The docs
+          cp docs/dfu-programmer.html dist/
+
+          # Libusb 1.0
+          cp C:/msys64/mingw32/bin/libusb-1.0.dll dist/
+          cp C:/msys64/mingw32/share/licenses     dist/ -Recurse
+
+      - name: Upload dist as Build Artifact
+        uses: actions/upload-artifact@v3.1.0
+        with:
+          name: Windows x86 - libusb1 - dfu-programmer
+          path: dist
+
+      - name: Test
+        shell: pwsh
+        run: dist/dfu-programmer.exe --help
+
+      - name: Get version
+        if: startsWith(github.ref, 'refs/tags/v')
+        id: version
+        shell: bash
+        run: echo ::set-output name=version::${GITHUB_REF#refs/tags/v}
+
+      - name: Make release archives of binaries
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        working-directory: dist
+        run: |
+          7z a -tzip ../dfu-programmer-win32-libusb1-${{ steps.version.outputs.version }}.zip *
+          7z a -t7z  ../dfu-programmer-win32-libusb1-${{ steps.version.outputs.version }}.7z  *
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          fail_on_unmatched_files: true
+          files: |
+            dfu-programmer-win32-libusb1-${{ steps.version.outputs.version }}.zip
+            dfu-programmer-win32-libusb1-${{ steps.version.outputs.version }}.7z
+
+  Windows-x64-libusb1:
+    name: Windows x64 with libusb1
+    runs-on: windows-latest
+
+    defaults:
+      run:
+        shell: C:/msys64/usr/bin/bash.exe --noprofile --norc -e -x -o pipefail {0}
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Dependencies
+        run: |
+          # Fix issues with MSYS2 and cygwin tools conflicting by just using MSYS2
+          export PATH=/usr/bin:/usr/local/bin
+
+          # While some of these are already available, they are cygwin versions which are incompatible with MSYS2
+          pacman --color always --noconfirm -S automake-wrapper autoconf-wrapper make mingw-w64-x86_64-gcc mingw-w64-x86_64-libusb
+
+      - name: Bootstrap
+        run: |
+          export PATH=/usr/bin:/usr/local/bin:/mingw64/bin
+          ./bootstrap.sh
+
+      - name: Override Version
+        if: "!startsWith(github.ref, 'refs/tags/v')"
+        id: override
+        shell: bash
+        run: echo ::set-output 'name=override::PACKAGE_STRING="dfu-programmer ${{ github.ref_name }} ${{ github.sha }}"'
+
+      - name: Configure
+        run: |
+          export PATH=/usr/bin:/usr/local/bin:/mingw64/bin
+          ./configure --disable-dependency-tracking ${{ steps.override.outputs.override }}
+
+      - name: Build
+        run: |
+          export PATH=/usr/bin:/usr/local/bin:/mingw64/bin
+          make -j4
+
+      - name: Prep dist
+        shell: pwsh
+        run: |
+          mkdir dist
+
+          # The binary
+          cp src/dfu-programmer.exe dist/
+
+          # The docs
+          cp docs/dfu-programmer.html dist/
+
+          # Libusb 1.0
+          cp C:/msys64/mingw64/bin/libusb-1.0.dll dist/
+          cp C:/msys64/mingw64/share/licenses     dist/ -Recurse
+
+      - name: Upload dist as Build Artifact
+        uses: actions/upload-artifact@v3.1.0
+        with:
+          name: Windows x64 - libusb1 - dfu-programmer
+          path: dist
+
+      - name: Test
+        shell: pwsh
+        run: dist/dfu-programmer.exe --help
+
+      - name: Get version
+        if: startsWith(github.ref, 'refs/tags/v')
+        id: version
+        shell: bash
+        run: echo ::set-output name=version::${GITHUB_REF#refs/tags/v}
+
+      - name: Make release archives of binaries
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        working-directory: dist
+        run: |
+          7z a -tzip ../dfu-programmer-win64-libusb1-${{ steps.version.outputs.version }}.zip *
+          7z a -t7z  ../dfu-programmer-win64-libusb1-${{ steps.version.outputs.version }}.7z  *
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          fail_on_unmatched_files: true
+          files: |
+            dfu-programmer-win64-libusb1-${{ steps.version.outputs.version }}.zip
+            dfu-programmer-win64-libusb1-${{ steps.version.outputs.version }}.7z
+
   Linux:
     name: Linux x64 with libusb1
     runs-on: ubuntu-latest

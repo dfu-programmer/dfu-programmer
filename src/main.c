@@ -24,7 +24,7 @@
 #include <stdio.h>
 #include <string.h>
 #ifdef HAVE_LIBUSB_1_0
-#include <libusb.h>
+#include <libusb-1.0/libusb.h>
 #else
 #include <usb.h>
 #endif
@@ -78,7 +78,11 @@ int main( int argc, char **argv )
 
     if( debug >= 200 ) {
 #ifdef HAVE_LIBUSB_1_0
+    #if LIBUSB_API_VERSION >= 0x01000106
+        libusb_set_option(usbcontext, LIBUSB_OPTION_LOG_LEVEL, debug);
+    #else
         libusb_set_debug(usbcontext, debug );
+    #endif
 #else
         usb_set_debug( debug );
 #endif

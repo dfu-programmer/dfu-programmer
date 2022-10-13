@@ -95,3 +95,4 @@ Contributors:
         - Fix infinite loop using rpl_malloc
     - Cameron Tacklind
         - GitHub Actions Configuration
+        - Build libusb1 versions for Windows

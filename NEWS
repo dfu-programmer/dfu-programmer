@@ -1,6 +1,9 @@
 == Release 0.8.1 [2022-10-13]
  * Fix bug preventing specifying a device with libusb0
  * Fix bug in order device id was printed with libusb0
+ * Publish Windows binaries with libusb1
+ * Update libusb1 include path
+ * Update uses of deprecated libusb1 functions
 
 == Release 0.8.0 [2016-01-19]
  * Experimental support for ST cortex M4
