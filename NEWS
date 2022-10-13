@@ -1,3 +1,6 @@
+== Release 0.8.0 [2016-01-19]
+ * Experimental support for ST cortex M4
+
 == Release 0.7.2 [2015-02-04]
  * Fix memory bounds used for XMega targets.
 
