@@ -12,7 +12,11 @@ Update info files
   Note that the list of devices shown in README and the docs can be auto-generated
   using dfu-programmer --targets / --targets-tex / --targets-html
 
-  Update the version number in configure.ac and push changes to GitHub.
+  Update the version number in configure.ac and push a tag with the format `vX.Y.Z` to GitHub.
+
+  Actions on GitHub will automatically build the release binaries and tarballs and publish them.
+
+  If you make a mistake in the automated release, simply force push a the tag to point to the new version.
 
 
 To create the source tarball
@@ -61,5 +65,5 @@ Upload
 Web page update
 ===============
 
-  Edit the index.php page in the dfu-programmer.github.io repository. As soon as the changes
+  Update the dfu-programmer.github.io repository. As soon as the changes
   are pushed back to the repo the web page will update.

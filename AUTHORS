@@ -93,3 +93,5 @@ Contributors:
         - Fix exit status of help-related options and improve start sequence
     - Alban Bedel
         - Fix infinite loop using rpl_malloc
+    - Cameron Tacklind
+        - GitHub Actions Configuration

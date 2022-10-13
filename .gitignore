@@ -19,3 +19,7 @@ src/*.hex
 
 # tab completion file
 dfu_programmer
+
+m4/
+
+*~
