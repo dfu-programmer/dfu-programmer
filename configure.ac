@@ -6,7 +6,7 @@ AC_INIT([dfu-programmer],[0.8.0],[],[],[https://github.com/dfu-programmer/dfu-pr
 AC_CONFIG_AUX_DIR(m4)
 AC_CONFIG_SRCDIR([src/atmel.c])
 AM_INIT_AUTOMAKE
-AM_CONFIG_HEADER([src/config.h])
+AC_CONFIG_HEADERS([src/config.h])
 
 AM_MAINTAINER_MODE
 
@@ -18,7 +18,7 @@ AC_PROG_CC
 dnl Enable libusb-1.0, if available
 disable_libusb_1_0=no
 AC_ARG_ENABLE(libusb_1_0,
-    AC_HELP_STRING([--disable-libusb_1_0], [disable libusb-1.0 support even if available]),
+    AS_HELP_STRING([--disable-libusb_1_0],[disable libusb-1.0 support even if available]),
     [ if test "x$enableval" = "xno"; then disable_libusb_1_0=yes; fi ], [])
 
 dnl If libusb-1.0 is enabled and available, prefer that to the old libusb
@@ -37,7 +37,8 @@ if test "$disable_libusb_1_0" = "no"; then
   fi
 fi
 
-if test "$have_libusb_1_0" = "no"; then
+AS_IF([test "$have_libusb_1_0" = "no"],
+[
   dnl Fallback to the old libusb
   dnl libusb >= 0.1.8 is required, as we need usb_interrupt_read()
   AS_ECHO("using libusb");
@@ -45,7 +46,7 @@ if test "$have_libusb_1_0" = "no"; then
                   AC_CHECK_LIB(usb, usb_interrupt_read,
                                [LIBS="$LIBS -lusb"
                                 HAVE_USB=yes]))
-fi
+])
 
 dnl The following logic is useful for distributions.  If they force
 dnl USB support with --enable-libusb=yes then configure will fail
@@ -63,9 +64,8 @@ if test "$HAVE_USB" = "yes"; then
   fi
 fi
 
-
 # Checks for header files.
-AC_HEADER_STDC
+AC_CHECK_HEADERS([stddef.h stdint.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST

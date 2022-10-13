@@ -1,5 +1,9 @@
 == Release 0.8.0 [2016-01-19]
  * Experimental support for ST cortex M4
+ * Enable GitHub Actions for releases [2022-10-13]
+ * Make `./bootstrap.sh` fail if any command fails (and print commands)
+ * Update `configure.ac` features
+ * Added IntelliSense hints for Visual Studio Code
 
 == Release 0.7.2 [2015-02-04]
  * Fix memory bounds used for XMega targets.

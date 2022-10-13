@@ -1,0 +1,251 @@
+name: Build dfu-programmer
+
+# concurrency:
+#   group: ${{ github.workflow }}-${{ github.ref }}
+#   cancel-in-progress: true
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  Windows-x32-libusb0:
+    name: Windows x86 with libusb0
+    runs-on: windows-latest
+
+    defaults:
+      run:
+        shell: C:/msys64/usr/bin/bash.exe --noprofile --norc -e -x -o pipefail {0}
+
+    env:
+      AM_COLOR_TESTS: always
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Dependencies
+        run: |
+          # Fix issues with MSYS2 and cygwin tools conflicting by just using MSYS2
+          export PATH=/usr/bin:/usr/local/bin
+
+          # While some of these are already available, they are cygwin versions which are incompatible with MSYS2
+          pacman --color always --noconfirm -S automake-wrapper autoconf-wrapper make mingw-w64-i686-gcc
+
+      - name: Bootstrap
+        run: |
+          export PATH=/usr/bin:/usr/local/bin:/mingw32/bin
+          ./bootstrap.sh
+
+          # Per README instructions
+          cp windows/usb.h    /mingw32/include/
+          cp windows/libusb.a /mingw32/lib/
+
+      - name: Override Version
+        if: "!startsWith(github.ref, 'refs/tags/v')"
+        id: override
+        shell: bash
+        run: echo ::set-output 'name=override::PACKAGE_STRING="dfu-programmer ${{ github.ref_name }} ${{ github.sha }}"'
+
+      - name: Configure
+        run: |
+          export PATH=/usr/bin:/usr/local/bin:/mingw32/bin
+          ./configure --disable-dependency-tracking --disable-libusb_1_0 ${{ steps.override.outputs.override }}
+
+      - name: Build
+        run: |
+          export PATH=/usr/bin:/usr/local/bin:/mingw32/bin
+          make -j4
+
+      - name: Download Atmel FLIP
+        uses: suisei-cn/actions-download-file@v1.0.1
+        id: flip
+        with:
+          url: https://ww1.microchip.com/downloads/en/DeviceDoc/Flip%20Installer%20-%203.4.7.112.exe
+
+      - name: Extract Atmel FLIP
+        run: 7z x ${{ steps.flip.outputs.filename }} usb COPYING_GPL.txt
+        shell: pwsh
+
+      - name: Prep dist
+        shell: pwsh
+        run: |
+          mkdir dist
+
+          # Don't forget the license
+          mv COPYING_GPL.txt usb/
+
+          # Not sure where this version number comes from
+          mv usb dist/dfu-prog-usb-1.2.2
+          # mv usb dist/
+
+          # The binary
+          cp src/dfu-programmer.exe dist/
+
+          # The docs
+          cp docs/dfu-programmer.html dist/
+
+      - name: Upload dist as Build Artifact
+        uses: actions/upload-artifact@v3.1.0
+        with:
+          name: Windows x86 - libusb0 - dfu-programmer
+          path: dist
+
+      - name: Get version
+        if: startsWith(github.ref, 'refs/tags/v')
+        id: version
+        shell: bash
+        run: echo ::set-output name=version::${GITHUB_REF#refs/tags/v}
+
+      - name: Make release archives of binaries
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        working-directory: dist
+        run: |
+          7z a -tzip ../dfu-programmer-win-${{ steps.version.outputs.version }}.zip *
+          7z a -t7z  ../dfu-programmer-win-${{ steps.version.outputs.version }}.7z  *
+
+      - name: Test
+        shell: pwsh
+        run: |
+          mv dist/dfu-prog-usb-1.2.2/x86/libusb0_x86.dll dist/libusb0.dll
+          dist/dfu-programmer.exe --help
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          fail_on_unmatched_files: true
+          files: |
+            dfu-programmer-win-${{ steps.version.outputs.version }}.zip
+            dfu-programmer-win-${{ steps.version.outputs.version }}.7z
+
+  Linux:
+    name: Linux x64 with libusb1
+    runs-on: ubuntu-latest
+
+    steps:
+      - run: sudo apt-get install -y libusb-dev
+
+      - uses: actions/checkout@v3
+
+      - name: bootstrap
+        run: ./bootstrap.sh
+
+      - name: Override Version
+        if: "!startsWith(github.ref, 'refs/tags/v')"
+        id: override
+        run: echo ::set-output 'name=override::PACKAGE_STRING="dfu-programmer ${{ github.ref_name }} ${{ github.sha }}"'
+
+      - name: configure
+        run: ./configure --disable-dependency-tracking ${{ steps.override.outputs.override }}
+
+      - name: make
+        run: make -j4
+
+      - name: Test
+        run: src/dfu-programmer --help
+
+      - name: Upload Binary as Build Artifact
+        uses: actions/upload-artifact@v3.1.0
+        with:
+          name: Linux x64 - libusb1 - dfu-programmer binary
+          path: src/dfu-programmer
+
+      - name: make dist
+        run: make -j4 dist
+
+      - name: Get version and Changes
+        if: startsWith(github.ref, 'refs/tags/v')
+        id: version
+        run: |
+          echo ::set-output name=version::${GITHUB_REF#refs/tags/v}
+
+          echo "## Changes" > CHANGES
+          echo "" >> CHANGES
+          sed -ne '2,/^== Release/p' NEWS | head -n -2 >> CHANGES
+
+      - name: Upload Tarball as Build Artifact
+        uses: actions/upload-artifact@v3.1.0
+        with:
+          name: Linux x64 - libusb1 - dfu-programmer dist
+          path: "*.tar.gz"
+
+      - name: Make release archives of binaries
+        if: startsWith(github.ref, 'refs/tags/v')
+        working-directory: src
+        run: |
+          7z a -tzip ../dfu-programmer-linux-${{ steps.version.outputs.version }}.zip dfu-programmer
+          7z a -t7z  ../dfu-programmer-linux-${{ steps.version.outputs.version }}.7z  dfu-programmer
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          body_path: CHANGES
+          fail_on_unmatched_files: true
+          files: |
+            dfu-programmer-${{ steps.version.outputs.version }}.tar.gz
+            dfu-programmer-linux-${{ steps.version.outputs.version }}.zip
+            dfu-programmer-linux-${{ steps.version.outputs.version }}.7z
+
+  macOS:
+    name: macOS x64 with libusb1
+    runs-on: macos-latest
+
+    steps:
+      - run: brew install automake
+
+      - uses: actions/checkout@v3
+
+      - name: bootstrap
+        run: ./bootstrap.sh
+
+      - name: Override Version
+        if: "!startsWith(github.ref, 'refs/tags/v')"
+        id: override
+        run: echo ::set-output 'name=override::PACKAGE_STRING="dfu-programmer ${{ github.ref_name }} ${{ github.sha }}"'
+
+      - name: configure
+        run: ./configure --disable-dependency-tracking ${{ steps.override.outputs.override }}
+
+      - name: make
+        run: make -j4
+
+      - name: Test
+        run: src/dfu-programmer --help
+
+      - name: Upload Binary as Build Artifact
+        uses: actions/upload-artifact@v3.1.0
+        with:
+          name: macOS - libusb1 - dfu-programmer binary
+          path: src/dfu-programmer
+
+      - name: make dist
+        run: make -j4 dist
+
+      - name: Upload Tarball as Build Artifact
+        uses: actions/upload-artifact@v3.1.0
+        with:
+          name: macOS - libusb1 - dfu-programmer dist
+          path: "*.tar.gz"
+
+      - name: Get version
+        if: startsWith(github.ref, 'refs/tags/v')
+        id: version
+        run: echo ::set-output name=version::${GITHUB_REF#refs/tags/v}
+
+      - name: Make release archives of binaries
+        if: startsWith(github.ref, 'refs/tags/v')
+        working-directory: src
+        run: |
+          7z a -tzip ../dfu-programmer-macOS-${{ steps.version.outputs.version }}.zip dfu-programmer
+          7z a -t7z  ../dfu-programmer-macOS-${{ steps.version.outputs.version }}.7z  dfu-programmer
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          fail_on_unmatched_files: true
+          files: |
+            dfu-programmer-macOS-${{ steps.version.outputs.version }}.zip
+            dfu-programmer-macOS-${{ steps.version.outputs.version }}.7z

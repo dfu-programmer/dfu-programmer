@@ -86,9 +86,17 @@ Build procedure for Windows
 
   Building Windows apps from source is never quite as simple ...
   Firstly you need to have MinGW and MSys with developer tools.
-  Get them from http://sourceforge.net/projects/mingw/files/
+  Get them from http://sourceforge.net/projects/mingw/files/.
+  See `.github/workflows/build.yml` for examples of building on Windows
+  and the needed tools.
 
-  The windows build uses the libusb-win32 library, which is a
+  Open the MinGW shell window and change to the dfu-programmer folder.
+  Note that C:\dir is accessed in MinGW using the path /c/dir
+
+  [ If the source was checked-out from GitHub, run the following command ]
+  $ ./bootstrap.sh
+
+  The Windows build uses the libusb-win32 library, which is a
   port of libusb 0.1. For convenience these files are included
   with this distribution, located in the windows sub-directory.
   You need to copy these files to your MinGW install directory
@@ -96,12 +104,6 @@ Build procedure for Windows
 
     windows/usb.h -> {path-to-mingw}/include/usb.h
     windows/libusb.a -> {path-to-mingw}/lib/libusb.a
-
-  Open the MinGW shell window and change to the dfu-programmer folder.
-  Note that C:\dir is accessed in MinGW using the path /c/dir
-
-  [ If the source was checked-out from GitHub, run the following command ]
-  $ ./bootstrap.sh
 
   $ ./configure --disable-libusb_1_0
 
@@ -112,7 +114,8 @@ Build procedure for Windows
 
 Windows Driver Files
 ====================
-Atmel's FLIP programmer also uses libusb-win32, so we use the same
-library here and take advantage of Atmel's official certified driver
-set. The windows driver files can be downloaded as a separate zip file
-dfu-prog-usb-x.x.x.zip
+
+  Atmel's FLIP programmer also uses libusb-win32, so we use the same
+  library here and take advantage of Atmel's official certified driver
+  set. The windows driver files can be downloaded as a separate zip file
+  dfu-prog-usb-x.x.x.zip
