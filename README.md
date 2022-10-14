@@ -8,6 +8,8 @@ They are kind enough to provide generally correct specifications this implementa
 
 The project website is http://dfu-programmer.github.io and you can use that to check for updates.
 
+[![Build dfu-programmer](https://github.com/dfu-programmer/dfu-programmer/actions/workflows/build.yml/badge.svg)](https://github.com/dfu-programmer/dfu-programmer/actions/workflows/build.yml)
+
 ## Currently Supported Chips
 
 <details><summary>8051 based controllers</summary>
