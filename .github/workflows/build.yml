@@ -360,7 +360,7 @@ jobs:
           body_path: CHANGES
           fail_on_unmatched_files: true
           files: |
-            dfu-programmer-${{ steps.version.outputs.version }}.tar.gz
+            dfu-programmer-*.tar.gz
             dfu-programmer-linux-${{ steps.version.outputs.version }}.zip
             dfu-programmer-linux-${{ steps.version.outputs.version }}.7z
 
