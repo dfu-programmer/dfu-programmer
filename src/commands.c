@@ -131,7 +131,7 @@ static int32_t execute_setsecure( dfu_device_t *device,
 // TODO : split this into a new command (no file is needed) - also general
 // format of this program is that only 1 command is run at a time.. caveat is
 // that if program sets a section in memory to '\0' and serialize sets it
-// otherwise, the secion will end up '\0' unless a page erase is used.. so may
+// otherwise, the section will end up '\0' unless a page erase is used.. so may
 // need to keep this part of the flash command, but specify that serialize data
 // 'wins' over data from the hex file
 static int32_t serialize_memory_image( intel_buffer_out_t *bout,
@@ -294,7 +294,7 @@ static int32_t execute_bin2hex( dfu_device_t *device,
             target_offset = 0x80800000;
             break;
         default:
-            fprintf( stderr, "Dump not currenlty supported for this memory.\n" );
+            fprintf( stderr, "Dump not currently supported for this memory.\n" );
             goto error;
     }
 
@@ -435,7 +435,7 @@ static int32_t execute_flash( dfu_device_t *device,
         // check that there isn't anything overlapping the bootloader
         for( i = args->bootloader_bottom; i <= args->bootloader_top; i++) {
             if( bout.data[i] <= UINT8_MAX ) {
-                if( true == args->suppressbootloader ) {
+                if( true == args->suppressBootloader ) {
                     //If we're ignoring the bootloader, don't write to it
                     bout.data[i] = UINT16_MAX;
                 } else {
@@ -476,7 +476,7 @@ static int32_t execute_flash( dfu_device_t *device,
                     " Use dump-user to obtain valid configuration words.\n");
             retval = ARGUMENT_ERROR;
             goto error;
-            // TODO : implement so this error only appers when data overlaps the
+            // TODO : implement so this error only appears when data overlaps the
             // bootloader configuration words.  This would require reading the user
             // page to add that data to the buffer, and also should include
             // checking the bootloader version to make sure the right number of
@@ -765,7 +765,7 @@ static int32_t execute_dump( dfu_device_t *device,
             target_offset = 0x80800000;
             break;
         default:
-            fprintf( stderr, "Dump not currenlty supported for this memory.\n" );
+            fprintf( stderr, "Dump not currently supported for this memory.\n" );
             retval = ARGUMENT_ERROR;
             goto error;
     }
@@ -805,7 +805,7 @@ static int32_t execute_dump( dfu_device_t *device,
             if( buin.data[i] != 0xFF ) break;
             if( i / buin.info.page_size >
                     buin.info.data_start / buin.info.page_size ) {
-                // i has just jumpped to a different page than buin.data_start
+                // i has just jumped to a different page than buin.data_start
                 buin.info.data_start = i;
             }
         }

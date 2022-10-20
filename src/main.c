@@ -39,7 +39,7 @@
 
 int debug;
 #ifdef HAVE_LIBUSB_1_0
-libusb_context *usbcontext;
+libusb_context *usbContext;
 #endif
 
 int main( int argc, char **argv )
@@ -68,7 +68,7 @@ int main( int argc, char **argv )
     }
 
 #ifdef HAVE_LIBUSB_1_0
-    if (libusb_init(&usbcontext)) {
+    if (libusb_init(&usbContext)) {
         fprintf( stderr, "%s: can't init libusb.\n", progname );
         return DEVICE_ACCESS_ERROR;
     }
@@ -79,9 +79,9 @@ int main( int argc, char **argv )
     if( debug >= 200 ) {
 #ifdef HAVE_LIBUSB_1_0
     #if LIBUSB_API_VERSION >= 0x01000106
-        libusb_set_option(usbcontext, LIBUSB_OPTION_LOG_LEVEL, debug);
+        libusb_set_option(usbContext, LIBUSB_OPTION_LOG_LEVEL, debug);
     #else
-        libusb_set_debug(usbcontext, debug );
+        libusb_set_debug(usbContext, debug );
     #endif
 #else
         usb_set_debug( debug );
@@ -141,7 +141,7 @@ error:
     }
 
 #ifdef HAVE_LIBUSB_1_0
-    libusb_exit(usbcontext);
+    libusb_exit(usbContext);
 #endif
 
     return retval;

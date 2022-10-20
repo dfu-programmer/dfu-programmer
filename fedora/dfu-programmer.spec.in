@@ -90,7 +90,7 @@ Atmel chips with USB support.
 - Applied a number of bug fixes
 - Fixed AVR device support
 * Wed Dec 10 2008 Weston Schmidt <weston_schmidt at alumni.purdue.edu> - 0.5.1-1
-- add new flag to surpress bootloader memory checking
+- add new flag to suppress bootloader memory checking
 * Wed Dec 03 2008 Weston Schmidt <weston_schmidt at alumni.purdue.edu> - 0.5.0-1
 - update the description
 - fix the broken hal rules

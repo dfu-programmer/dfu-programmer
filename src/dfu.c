@@ -36,6 +36,8 @@
 #include "util.h"
 #include "dfu-bool.h"
 
+// cSpell:words DNBUSY
+
 /* DFU commands */
 #define DFU_DETACH      0
 #define DFU_DNLOAD      1
@@ -91,7 +93,7 @@ static int32_t dfu_find_interface( const struct usb_device *device,
 static int32_t dfu_make_idle( dfu_device_t *device, const dfu_bool initial_abort );
 /*  Gets the device into the dfuIDLE state if possible.
  *
- *  device    - the dfu device to commmunicate with
+ *  device    - the dfu device to communicate with
  *
  *  returns 0 on success, 1 if device was reset, error otherwise
  */
@@ -109,7 +111,7 @@ static int32_t dfu_transfer_in( dfu_device_t *device,
                                 const size_t length );
 
 static void dfu_msg_response_output( const char *function, const int32_t result );
-/*  Used to output the response from our USB request in a human reable
+/*  Used to output the response from our USB request in a human readable
  *  form.
  *
  *  function - the calling function to output on behalf of
@@ -117,9 +119,9 @@ static void dfu_msg_response_output( const char *function, const int32_t result 
  */
 
 // ________  F U N C T I O N S  _______________________________
-void dfu_set_transaction_num( uint16_t newnum ) {
-    TRACE( "%s( %u )\n", __FUNCTION__, newnum );
-    transaction = newnum;
+void dfu_set_transaction_num( uint16_t newNum ) {
+    TRACE( "%s( %u )\n", __FUNCTION__, newNum );
+    transaction = newNum;
     DEBUG("wValue set to %d\n", transaction);
 }
 
@@ -321,8 +323,8 @@ struct libusb_device *dfu_device_init( const uint32_t vendor,
                                        const dfu_bool initial_abort,
                                        const dfu_bool honor_interfaceclass ) {
     libusb_device **list;
-    size_t i,devicecount;
-    extern libusb_context *usbcontext;
+    size_t i,deviceCount;
+    extern libusb_context *usbContext;
     int32_t retries = 4;
 
     TRACE( "%s( %u, %u, %p, %s, %s )\n", __FUNCTION__, vendor, product,
@@ -332,9 +334,9 @@ struct libusb_device *dfu_device_init( const uint32_t vendor,
     DEBUG( "%s(%08x, %08x)\n",__FUNCTION__, vendor, product );
 
 retry:
-    devicecount = libusb_get_device_list( usbcontext, &list );
+    deviceCount = libusb_get_device_list( usbContext, &list );
 
-    for( i = 0; i < devicecount; i++ ) {
+    for( i = 0; i < deviceCount; i++ ) {
         libusb_device *device = list[i];
         struct libusb_device_descriptor descriptor;
 
@@ -602,7 +604,7 @@ static int32_t dfu_find_interface( struct libusb_device *device,
             DEBUG( "can't get_config_descriptor: %d\n", c );
             return -1;
         }
-        DEBUG( "config %d: maxpower=%d*2 mA\n", c, config->MaxPower );
+        DEBUG( "config %d: MaxPower=%d*2 mA\n", c, config->MaxPower );
 
         /* Loop through all of the interfaces */
         for( i = 0; i < config->bNumInterfaces; i++ ) {

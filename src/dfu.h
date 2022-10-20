@@ -83,7 +83,7 @@ typedef struct {
     uint8_t iString;
 } dfu_status_t;
 
-void dfu_set_transaction_num( uint16_t newnum );
+void dfu_set_transaction_num( uint16_t newNum );
 /* set / reset the wValue parameter to a given value. this number is
  * significant for stm32 device commands (see dfu-device.h)
  */
@@ -96,7 +96,7 @@ uint16_t dfu_get_transaction_num( void );
 int32_t dfu_detach( dfu_device_t *device, const int32_t timeout );
 /*  DFU_DETACH Request (DFU Spec 1.0, Section 5.1)
  *
- *  device    - the dfu device to commmunicate with
+ *  device    - the dfu device to communicate with
  *  timeout   - the timeout in ms the USB device should wait for a pending
  *              USB reset before giving up and terminating the operation
  *
@@ -106,7 +106,7 @@ int32_t dfu_detach( dfu_device_t *device, const int32_t timeout );
 int32_t dfu_download( dfu_device_t *device, const size_t length, uint8_t* data );
 /*  DFU_DNLOAD Request (DFU Spec 1.0, Section 6.1.1)
  *
- *  device    - the dfu device to commmunicate with
+ *  device    - the dfu device to communicate with
  *  length    - the total number of bytes to transfer to the USB
  *              device - must be less than wTransferSize
  *  data      - the data to transfer
@@ -117,7 +117,7 @@ int32_t dfu_download( dfu_device_t *device, const size_t length, uint8_t* data )
 int32_t dfu_upload( dfu_device_t *device, const size_t length, uint8_t* data );
 /*  DFU_UPLOAD Request (DFU Spec 1.0, Section 6.2)
  *
- *  device    - the dfu device to commmunicate with
+ *  device    - the dfu device to communicate with
  *  length    - the maximum number of bytes to receive from the USB
  *              device - must be less than wTransferSize
  *  data      - the buffer to put the received data in
@@ -128,7 +128,7 @@ int32_t dfu_upload( dfu_device_t *device, const size_t length, uint8_t* data );
 int32_t dfu_get_status( dfu_device_t *device, dfu_status_t *status );
 /*  DFU_GETSTATUS Request (DFU Spec 1.0, Section 6.1.2)
  *
- *  device    - the dfu device to commmunicate with
+ *  device    - the dfu device to communicate with
  *  status    - the data structure to be populated with the results
  *
  *  return the 0 if successful or < 0 on an error
@@ -137,7 +137,7 @@ int32_t dfu_get_status( dfu_device_t *device, dfu_status_t *status );
 int32_t dfu_clear_status( dfu_device_t *device );
 /*  DFU_CLRSTATUS Request (DFU Spec 1.0, Section 6.1.3)
  *
- *  device    - the dfu device to commmunicate with
+ *  device    - the dfu device to communicate with
  *
  *  return 0 or < 0 on an error
  */
@@ -145,7 +145,7 @@ int32_t dfu_clear_status( dfu_device_t *device );
 int32_t dfu_get_state( dfu_device_t *device );
 /*  DFU_GETSTATE Request (DFU Spec 1.0, Section 6.1.5)
  *
- *  device    - the dfu device to commmunicate with
+ *  device    - the dfu device to communicate with
  *
  *  returns the state or < 0 on error
  */
@@ -153,7 +153,7 @@ int32_t dfu_get_state( dfu_device_t *device );
 int32_t dfu_abort( dfu_device_t *device );
 /*  DFU_ABORT Request (DFU Spec 1.0, Section 6.1.4)
  *
- *  device    - the dfu device to commmunicate with
+ *  device    - the dfu device to communicate with
  *
  *  returns 0 or < 0 on an error
  */
@@ -176,7 +176,7 @@ struct usb_device
  *
  *  vendor  - the vender number of the device to look for
  *  product - the product number of the device to look for
- *  [out] device - the dfu device to commmunicate with
+ *  [out] device - the dfu device to communicate with
  *
  *  return a pointer to the usb_device if found, or NULL otherwise
  */

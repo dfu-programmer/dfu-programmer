@@ -425,7 +425,7 @@ static int32_t assign_target( struct programmer_arguments *args,
               /* The target name includes USB bus and address info.
                * This is used to differentiate between multiple dfu
                * devices with the same vendor/chip ID numbers. By
-               * specifying the bus and address, mltiple units can
+               * specifying the bus and address, multiple units can
                * be programmed at one time.
                */
               int bus = 0;
@@ -506,6 +506,7 @@ static int32_t assign_target( struct programmer_arguments *args,
                              DEVICE_TYPE_STRING_MAX_LENGTH );
                     break;
                 default :
+                // cSpell:words UNKNO
                     strncpy( args->device_type_string, "UNKNO",
                              DEVICE_TYPE_STRING_MAX_LENGTH );
                     break;
@@ -546,7 +547,7 @@ static int32_t assign_global_options( struct programmer_arguments *args,
     for( i = 0; i < argc; i++ ) {
         if( 0 == strcmp("--suppress-bootloader-mem", argv[i]) ) {
             *argv[i] = '\0';
-            args->suppressbootloader = 1;
+            args->suppressBootloader = 1;
             break;
         }
     }
@@ -1027,7 +1028,7 @@ int32_t parse_arguments( struct programmer_arguments *args,
     args->target  = tar_none;
     args->command = com_none;
     args->quiet   = 0;
-    args->suppressbootloader = 0;
+    args->suppressBootloader = 0;
 
     /* Special case - check for the help commands which do not require a device type */
     if( argc == 2 ) {
@@ -1124,7 +1125,7 @@ int32_t parse_arguments( struct programmer_arguments *args,
 // provided, this should be implemented.. in fact, given that most of this
 // program is written to use a single command by it self, this probably should
 // be separated out as a new command.  The caveat is if data is written to '\0'
-// in the hex file, serialize will do nothing bc can't unwrite w/o erase
+// in the hex file, serialize will do nothing bc can't un-write w/o erase
             fprintf( stderr, "flash filename is missing\n" );
             status = -8;
             goto done;

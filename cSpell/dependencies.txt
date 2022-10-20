@@ -1,0 +1,57 @@
+# Words from dependencies
+
+# libusb
+libusb
+interfaceClass
+altSetting
+
+# Atmel
+atmel
+atmega
+atxmega
+eeprom
+bootsz
+xmega
+
+# Linux commands
+lsusb
+automake
+aclocal
+
+pkgConfig
+
+udev
+
+ihex
+
+msys
+noProfile
+noRC
+pipeFail
+cygwin
+pacman
+noConfirm
+pwsh
+
+tzip
+
+stdint
+fprintf
+malloc
+
+JTAG
+uucp
+
+mflags
+
+buildRoot
+
+defattr
+binDir
+manDir
+
+fixint
+
+rpms
+
+zadig

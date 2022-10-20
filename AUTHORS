@@ -83,7 +83,7 @@ Contributors:
     - David Nelson
         - support for at32uc3a4256s
         - support for using a specific usb bus/address
-        - support for device serialisation
+        - support for device serialization
         - correction to --quiet output
     - Olivier Pisano
         - support for atxmega16c4

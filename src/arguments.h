@@ -178,7 +178,7 @@ struct programmer_arguments {
     /* command-specific state */
     enum commands_enum command;
     char quiet;
-    char suppressbootloader;
+    char suppressBootloader;
 
     union {
         struct com_configure_struct {
