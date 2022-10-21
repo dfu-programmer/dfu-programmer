@@ -218,6 +218,8 @@ struct programmer_arguments {
                                      is on last one or two words in the user
                                      page depending on the version of the
                                      bootloader - force overwrite required */
+            dfu_bool validate_first; /* Do a validate before flashing */
+            dfu_bool ignore_outside; /* Ignore validate errors outside region */
             enum atmel_memory_unit_enum segment;
         } com_flash_data;
 

@@ -44,7 +44,8 @@ static int security_bit_state;
 static int32_t execute_validate( dfu_device_t *device,
                                  intel_buffer_out_t *bout,
                                  uint8_t mem_segment,
-                                 dfu_bool quiet );
+                                 dfu_bool quiet,
+                                 dfu_bool ignore_outside);
 /* provide an out buffer to validate and whether this is from
  * flash or eeprom data sections, also wether you want it quiet
  */
@@ -161,7 +162,8 @@ static int32_t serialize_memory_image( intel_buffer_out_t *bout,
 static int32_t execute_validate( dfu_device_t *device,
                                  intel_buffer_out_t *bout,
                                  uint8_t mem_segment,
-                                 const dfu_bool quiet ) {
+                                 const dfu_bool quiet,
+                                 const dfu_bool ignore_outside) {
     int32_t retval = UNSPECIFIED_ERROR;
     int32_t result;             // result of fcn calls
     intel_buffer_in_t buin;     // buffer in for storing read mem
@@ -191,7 +193,11 @@ static int32_t execute_validate( dfu_device_t *device,
         if( result < 0 ) {
             retval = VALIDATION_ERROR_IN_REGION;
         } else {
-            retval = VALIDATION_ERROR_OUTSIDE_REGION;
+            if (ignore_outside) {
+                retval = SUCCESS;
+            } else {
+                retval = VALIDATION_ERROR_OUTSIDE_REGION;
+            }
         }
         goto error;
     }
@@ -496,6 +502,15 @@ static int32_t execute_flash( dfu_device_t *device,
         }
     }
 
+    // ------------------ INITIAL VALIDATE (if required) -------------------
+    if ( 1 == args->com_flash_data.validate_first ) {
+        if( 0 == ( retval = execute_validate(device, &bout, mem_type, args->quiet,
+                                             args->com_flash_data.ignore_outside)) ) {
+            goto success;
+        }
+        // Else, continue to flash
+    }
+
     // ------------------ WRITE PROGRAM DATA -------------------------------
     if( mem_type == mem_user ) {
         result = atmel_user( device, &bout );
@@ -518,7 +533,8 @@ static int32_t execute_flash( dfu_device_t *device,
 
     // ------------------  VALIDATE PROGRAM ------------------------------
     if( 0 == args->com_flash_data.suppress_validation ) {
-        if( 0 != ( retval = execute_validate(device, &bout, mem_type, args->quiet)) ) {
+        if( 0 != ( retval = execute_validate(device, &bout, mem_type, args->quiet,
+                                             args->com_flash_data.ignore_outside)) ) {
             fprintf( stderr, "Memory did not validate. Did you erase?\n" );
             goto error;
         } else if ( 0 == args->quiet ) {
@@ -528,7 +544,7 @@ static int32_t execute_flash( dfu_device_t *device,
         print_flash_usage( &bout.info );
     }
 
-
+success:
     retval = SUCCESS;
 
 error:
