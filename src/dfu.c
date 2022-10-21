@@ -341,7 +341,7 @@ retry:
         if( (vendor  == descriptor.idVendor) &&
             (product == descriptor.idProduct) &&
             ((bus_number == 0)
-             || ((libusb_get_bus_number(device)+1 == bus_number) &&
+             || ((libusb_get_bus_number(device) == bus_number) &&
                  (libusb_get_device_address(device) == device_address))) )
         {
             int32_t tmp;
