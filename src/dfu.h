@@ -21,9 +21,6 @@
 #ifndef __DFU_H__
 #define __DFU_H__
 
-#if HAVE_CONFIG_H
-# include <config.h>
-#endif
 #include <libusb-1.0/libusb.h>
 #include <stdint.h>
 #include <stddef.h>

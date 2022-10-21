@@ -18,9 +18,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
-#if HAVE_CONFIG_H
-# include <config.h>
-#endif
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdint.h>
@@ -28,6 +25,7 @@
 #include <stddef.h>
 #include <libusb-1.0/libusb.h>
 #include <errno.h>
+
 #include "dfu.h"
 #include "util.h"
 #include "dfu-bool.h"
