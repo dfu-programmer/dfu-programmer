@@ -96,27 +96,9 @@ Note that C:\dir is accessed in MinGW using the path /c/dir
   [ If the source was checked-out from GitHub, run the following command ]
   $ ./bootstrap.sh
 
-  libusb0
-  -------
-
-  The Windows build uses the libusb-win32 library, which is a
-  port of libusb 0.1. For convenience these files are included
-  with this distribution, located in the windows sub-directory.
-  You need to copy these files to your MinGW install directory
-  if they are not already there:
-
-    windows/usb.h -> {path-to-mingw}/include/usb.h
-    windows/libusb.a -> {path-to-mingw}/lib/libusb.a
-
-  $ ./configure --disable-libusb_1_0
-
-  libusb1
-  -------
-
-  The Windows build also supports libusb-1.0. If you install with
-  the pacman package `mingw-w64-i686-libusb` or `mingw-w64-x86_64-libusb`,
-  for the 32-bit or 64-bit builds respectively, include and lib files
-  will be installed in the correct locations.
+  The Windows build requirements can be installed with one of:
+  $ pacman -S mingw-w64-i686-libusb   # 32-bit
+  $ pacman -S mingw-w64-x86_64-libusb # 64-bit
 
   $ ./configure
 
@@ -134,23 +116,13 @@ Windows Driver Files
   Atmel FLIP
   ----------
 
-  Atmel's FLIP programmer also uses libusb-win32, so we use the same
-  library here and take advantage of Atmel's official certified driver
-  set. The windows driver files can be downloaded as a separate zip file
-  dfu-prog-usb-x.x.x.zip
+  Atmel's FLIP programmer include an official certified driver set.
 
   Zadig
   -----
 
-  Zadig is another popular tool for managing the current USB driver for
-  devices on your system. It can be used to install the libusb-win32 driver
-  or other popular drivers, including the official WinUSB driver. The
-  libusb-win32 driver has the broadest compatibility with builds of 
-  dfu-programmer, but that is not relevant on libusb1 builds of dfu-programmer.
-
-  | Zadig Driver | libusb0 x86 | libusb1 x86 | libusb1 x64 |
-  | ------------ | ----------- | ----------- | ----------- |
-  | WinUSB       | "no device" | Works       | Works       |
-  | libusb-win32 | Works       | Works       | Works       |
-  | libusbK      | "no device" | Works       | Works       |
-  | CDC          | "no device" | "no device" | "no device" |
+  Zadig is another popular tool for managing the current USB driver for devices on your system.
+  dfu-programmer works with any of the following drivers:
+  - WinUSB
+  - libusbK
+  - libusb-win32

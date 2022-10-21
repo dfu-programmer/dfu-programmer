@@ -2,7 +2,7 @@
 	"configurations": [
 		{
 			"name": "gcc",
-			"defines": ["__VSCODE__", "HAVE_CONFIG_H", "HAVE_LIBUSB_1_0"],
+			"defines": ["__VSCODE__", "HAVE_CONFIG_H"],
 			"includePath": ["src"],
 			"compilerPath": "C:/msys64/mingw64/bin/gcc.exe"
 		}

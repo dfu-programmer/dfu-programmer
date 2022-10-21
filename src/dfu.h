@@ -24,11 +24,7 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#ifdef HAVE_LIBUSB_1_0
 #include <libusb-1.0/libusb.h>
-#else
-#include <usb.h>
-#endif
 #include <stdint.h>
 #include <stddef.h>
 
@@ -159,11 +155,7 @@ int32_t dfu_abort( dfu_device_t *device );
  */
 
 
-#ifdef HAVE_LIBUSB_1_0
 struct libusb_device
-#else
-struct usb_device
-#endif
                      *dfu_device_init( const uint32_t vendor,
                                        const uint32_t product,
                                        const uint32_t bus,
