@@ -295,7 +295,74 @@ jobs:
             dfu-programmer-win64-libusb1-${{ steps.version.outputs.version }}.zip
             dfu-programmer-win64-libusb1-${{ steps.version.outputs.version }}.7z
 
-  Linux:
+  Linux-libusb0:
+    name: Linux x64 with libusb0
+    runs-on: ubuntu-latest
+
+    steps:
+      - run: sudo apt-get install -y libusb-dev
+
+      - uses: actions/checkout@v3
+
+      - name: bootstrap
+        run: ./bootstrap.sh
+
+      - name: Override Version
+        if: "!startsWith(github.ref, 'refs/tags/v')"
+        id: override
+        run: echo ::set-output 'name=override::PACKAGE_STRING="dfu-programmer ${{ github.ref_name }} ${{ github.sha }}"'
+
+      - name: configure
+        run: ./configure --disable-dependency-tracking ${{ steps.override.outputs.override }}
+
+      - name: make
+        run: make -j4
+
+      - name: Test
+        run: src/dfu-programmer --help
+
+      - name: Upload Binary as Build Artifact
+        uses: actions/upload-artifact@v3.1.0
+        with:
+          name: Linux x64 - libusb0 - dfu-programmer binary
+          path: src/dfu-programmer
+
+      - name: make dist
+        run: make -j4 dist
+
+      - name: Get version and Changes
+        if: startsWith(github.ref, 'refs/tags/v')
+        id: version
+        run: |
+          echo ::set-output name=version::${GITHUB_REF#refs/tags/v}
+
+          echo "## Changes" > CHANGES
+          echo "" >> CHANGES
+          sed -ne '2,/^== Release/p' NEWS | head -n -2 >> CHANGES
+
+      - name: Upload Tarball as Build Artifact
+        uses: actions/upload-artifact@v3.1.0
+        with:
+          name: Linux x64 - libusb1 - dfu-programmer dist
+          path: "*.tar.gz"
+
+      - name: Make release archives of binaries
+        if: startsWith(github.ref, 'refs/tags/v')
+        working-directory: src
+        run: |
+          7z a -tzip ../dfu-programmer-linux-libusb0-${{ steps.version.outputs.version }}.zip dfu-programmer
+          7z a -t7z  ../dfu-programmer-linux-libusb0-${{ steps.version.outputs.version }}.7z  dfu-programmer
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          fail_on_unmatched_files: true
+          files: |
+            dfu-programmer-linux-libusb0-${{ steps.version.outputs.version }}.zip
+            dfu-programmer-linux-libusb0-${{ steps.version.outputs.version }}.7z
+
+  Linux-libusb1:
     name: Linux x64 with libusb1
     runs-on: ubuntu-latest
 
@@ -350,8 +417,8 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         working-directory: src
         run: |
-          7z a -tzip ../dfu-programmer-linux-${{ steps.version.outputs.version }}.zip dfu-programmer
-          7z a -t7z  ../dfu-programmer-linux-${{ steps.version.outputs.version }}.7z  dfu-programmer
+          7z a -tzip ../dfu-programmer-linux-libusb1-${{ steps.version.outputs.version }}.zip dfu-programmer
+          7z a -t7z  ../dfu-programmer-linux-libusb1-${{ steps.version.outputs.version }}.7z  dfu-programmer
 
       - name: Release
         uses: softprops/action-gh-release@v1
@@ -361,8 +428,8 @@ jobs:
           fail_on_unmatched_files: true
           files: |
             dfu-programmer-*.tar.gz
-            dfu-programmer-linux-${{ steps.version.outputs.version }}.zip
-            dfu-programmer-linux-${{ steps.version.outputs.version }}.7z
+            dfu-programmer-linux-libusb1-${{ steps.version.outputs.version }}.zip
+            dfu-programmer-linux-libusb1-${{ steps.version.outputs.version }}.7z
 
   macOS:
     name: macOS x64 with libusb1
