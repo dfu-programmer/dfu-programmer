@@ -300,7 +300,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - run: sudo apt-get install -y libusb-dev
+      - run: sudo apt-get install -y libusb-1.0-0-dev
 
       - uses: actions/checkout@v3
 
