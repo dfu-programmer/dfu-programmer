@@ -96,3 +96,6 @@ Contributors:
     - Cameron Tacklind
         - GitHub Actions Configuration
         - Build libusb1 versions for Windows
+    - Nicolas Brûlez (@N-Bz)
+        - '--validate-first' and '--ignore-outside' options
+        - Disabled progress bar when not using a tty

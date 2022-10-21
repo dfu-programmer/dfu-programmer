@@ -1,3 +1,7 @@
+== Release 0.9.0 [2022-10-21]
+ * Add '--validate-first' and '--ignore-outside' options to the flash command
+ * Disabled progress bar when not using a tty
+
 == Release 0.8.1 [2022-10-13]
  * Fix bug preventing specifying a device with libusb0
  * Fix bug in order device id was printed with libusb0
