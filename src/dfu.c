@@ -26,11 +26,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stddef.h>
-#ifdef HAVE_LIBUSB_1_0
 #include <libusb-1.0/libusb.h>
-#else
-#include <usb.h>
-#endif
 #include <errno.h>
 #include "dfu.h"
 #include "util.h"
@@ -73,14 +69,9 @@
 static uint16_t transaction = 0;
 
 // ________  P R O T O T Y P E S  _______________________________
-#ifdef HAVE_LIBUSB_1_0
 static int32_t dfu_find_interface( struct libusb_device *device,
                                    const dfu_bool honor_interfaceclass,
                                    const uint8_t bNumConfigurations);
-#else
-static int32_t dfu_find_interface( const struct usb_device *device,
-                                   const dfu_bool honor_interfaceclass );
-#endif
 /*  Used to find the dfu interface for a device if there is one.
  *
  *  device - the device to search
@@ -314,7 +305,6 @@ int32_t dfu_abort( dfu_device_t *device ) {
     return result;
 }
 
-#ifdef HAVE_LIBUSB_1_0
 struct libusb_device *dfu_device_init( const uint32_t vendor,
                                        const uint32_t product,
                                        const uint32_t bus_number,
@@ -351,7 +341,7 @@ retry:
         if( (vendor  == descriptor.idVendor) &&
             (product == descriptor.idProduct) &&
             ((bus_number == 0)
-             || ((libusb_get_bus_number(device)+1 == bus_number) &&
+             || ((libusb_get_bus_number(device) == bus_number) &&
                  (libusb_get_device_address(device) == device_address))) )
         {
             int32_t tmp;
@@ -407,88 +397,6 @@ retry:
 
     return NULL;
 }
-#else
-struct usb_device *dfu_device_init( const uint32_t vendor,
-                                    const uint32_t product,
-                                    const uint32_t bus_number,
-                                    const uint32_t device_address,
-                                    dfu_device_t *dfu_device,
-                                    const dfu_bool initial_abort,
-                                    const dfu_bool honor_interfaceclass ) {
-    struct usb_bus *usb_bus;
-    struct usb_device *device;
-    int32_t retries = 4;
-
-    TRACE( "%s( %u, %u, %p, %s, %s )\n", __FUNCTION__, vendor, product,
-           dfu_device, ((true == initial_abort) ? "true" : "false"),
-           ((true == honor_interfaceclass) ? "true" : "false") );
-
-retry:
-    if( 0 < retries ) {
-        usb_find_busses();
-        usb_find_devices();
-
-        /* Walk the tree and find our device. */
-        for( usb_bus = usb_get_busses(); NULL != usb_bus; usb_bus = usb_bus->next ) {
-            for( device = usb_bus->devices; NULL != device; device = device->next) {
-                if(    (vendor  == device->descriptor.idVendor)
-                    && (product == device->descriptor.idProduct)
-                    && ((bus_number == 0)
-                        || (device->devnum == device_address
-                            && (usb_bus->location >> 24)+1 == bus_number)))
-                {
-                    int32_t tmp;
-                    DEBUG( "found device at USB:%d,%d\n", (usb_bus->location >> 24), device->devnum );
-                    /* We found a device that looks like it matches...
-                     * let's try to find the DFU interface, open the device
-                     * and claim it. */
-                    tmp = dfu_find_interface( device, honor_interfaceclass );
-                    if( 0 <= tmp ) {
-                        /* The interface is valid. */
-                        dfu_device->interface = tmp;
-                        dfu_device->handle = usb_open( device );
-                        if( NULL != dfu_device->handle ) {
-                            if( 0 == usb_set_configuration(dfu_device->handle, 1) ) {
-                                if( 0 == usb_claim_interface(dfu_device->handle, dfu_device->interface) ) {
-                                    switch( dfu_make_idle(dfu_device, initial_abort) )
-                                    {
-                                        case 0:
-                                            return device;
-                                        case 1:
-                                            retries--;
-                                            goto retry;
-                                    }
-
-                                    DEBUG( "Failed to put the device in dfuIDLE mode.\n" );
-                                    usb_release_interface( dfu_device->handle, dfu_device->interface );
-                                    usb_close( dfu_device->handle );
-                                    retries = 4;
-                                } else {
-                                    DEBUG( "Failed to claim the DFU interface.\n" );
-                                    usb_close( dfu_device->handle );
-                                }
-                            } else {
-                                DEBUG( "Failed to set configuration.\n");
-
-                                usb_close( dfu_device->handle );
-                            }
-                        } else {
-                            DEBUG( "Failed to open device.\n" );
-                        }
-                    } else {
-                        DEBUG( "Failed to find the DFU interface.\n" );
-                    }
-                }
-            }
-        }
-    }
-
-    dfu_device->handle = NULL;
-    dfu_device->interface = 0;
-
-    return NULL;
-}
-#endif
 
 char* dfu_state_to_string( const int32_t state ) {
     char *message = "unknown state";
@@ -588,7 +496,6 @@ char* dfu_status_to_string( const int32_t status ) {
     return message;
 }
 
-#ifdef HAVE_LIBUSB_1_0
 static int32_t dfu_find_interface( struct libusb_device *device,
                                    const dfu_bool honor_interfaceclass,
                                    const uint8_t bNumConfigurations) {
@@ -644,41 +551,7 @@ static int32_t dfu_find_interface( struct libusb_device *device,
 
     return -1;
 }
-#else
-static int32_t dfu_find_interface( const struct usb_device *device,
-                                   const dfu_bool honor_interfaceclass ) {
-    int32_t c, i;
-    struct usb_config_descriptor *config;
-    struct usb_interface_descriptor *interface;
 
-    /* Loop through all of the configurations */
-    for( c = 0; c < device->descriptor.bNumConfigurations; c++ ) {
-        config = &(device->config[c]);
-
-        /* Loop through all of the interfaces */
-        for( i = 0; i < config->interface->num_altsetting; i++) {
-            interface = &(config->interface->altsetting[i]);
-
-            if( true == honor_interfaceclass ) {
-                /* Check if the interface is a DFU interface */
-                if(    (USB_CLASS_APP_SPECIFIC == interface->bInterfaceClass)
-                    && (DFU_SUBCLASS == interface->bInterfaceSubClass) )
-                {
-                    DEBUG( "Found DFU Inteface: %d\n", interface->bInterfaceNumber );
-                    return interface->bInterfaceNumber;
-                }
-            } else {
-                /* If there is a bug in the DFU firmware, return the first
-                 * found interface. */
-                DEBUG( "Found DFU Inteface: %d\n", interface->bInterfaceNumber );
-                return interface->bInterfaceNumber;
-            }
-        }
-    }
-
-    return -1;
-}
-#endif
 
 static int32_t dfu_make_idle( dfu_device_t *device,
                               const dfu_bool initial_abort ) {
@@ -727,11 +600,7 @@ static int32_t dfu_make_idle( dfu_device_t *device,
             case STATE_APP_DETACH:
             case STATE_DFU_MANIFEST_WAIT_RESET:
                 DEBUG( "Resetting the device\n" );
-#ifdef HAVE_LIBUSB_1_0
                 libusb_reset_device( device->handle );
-#else
-                usb_reset( device->handle );
-#endif
                 return 1;
         }
 
@@ -747,7 +616,6 @@ static int32_t dfu_transfer_out( dfu_device_t *device,
                                  const int32_t value,
                                  uint8_t* data,
                                  const size_t length ) {
-#ifdef HAVE_LIBUSB_1_0
     return libusb_control_transfer( device->handle,
                 /* bmRequestType */ LIBUSB_ENDPOINT_OUT | LIBUSB_REQUEST_TYPE_CLASS | LIBUSB_RECIPIENT_INTERFACE,
                 /* bRequest      */ request,
@@ -756,16 +624,6 @@ static int32_t dfu_transfer_out( dfu_device_t *device,
                 /* Data          */ data,
                 /* wLength       */ length,
                                     DFU_TIMEOUT );
-#else
-    return usb_control_msg( device->handle,
-                /* bmRequestType */ USB_ENDPOINT_OUT | USB_TYPE_CLASS | USB_RECIP_INTERFACE,
-                /* bRequest      */ request,
-                /* wValue        */ value,
-                /* wIndex        */ device->interface,
-                /* Data          */ (char*) data,
-                /* wLength       */ length,
-                                    DFU_TIMEOUT );
-#endif
 }
 
 static int32_t dfu_transfer_in( dfu_device_t *device,
@@ -773,7 +631,6 @@ static int32_t dfu_transfer_in( dfu_device_t *device,
                                 const int32_t value,
                                 uint8_t* data,
                                 const size_t length ) {
-#ifdef HAVE_LIBUSB_1_0
     return libusb_control_transfer( device->handle,
                 /* bmRequestType */ LIBUSB_ENDPOINT_IN | LIBUSB_REQUEST_TYPE_CLASS | LIBUSB_RECIPIENT_INTERFACE,
                 /* bRequest      */ request,
@@ -782,16 +639,6 @@ static int32_t dfu_transfer_in( dfu_device_t *device,
                 /* Data          */ data,
                 /* wLength       */ length,
                                     DFU_TIMEOUT );
-#else
-    return usb_control_msg( device->handle,
-                /* bmRequestType */ USB_ENDPOINT_IN | USB_TYPE_CLASS | USB_RECIP_INTERFACE,
-                /* bRequest      */ request,
-                /* wValue        */ value,
-                /* wIndex        */ device->interface,
-                /* Data          */ (char*) data,
-                /* wLength       */ length,
-                                    DFU_TIMEOUT );
-#endif
 }
 
 static void dfu_msg_response_output( const char *function,
@@ -802,7 +649,6 @@ static void dfu_msg_response_output( const char *function,
         msg = "No error.";
     } else {
         switch( result ) {
-#ifdef HAVE_LIBUSB_1_0
             case LIBUSB_ERROR_IO :
                 msg = "LIBUSB_ERROR_IO: Input/output error.";
                 break;
@@ -842,51 +688,7 @@ static void dfu_msg_response_output( const char *function,
             case LIBUSB_ERROR_OTHER :
                 msg = "LIBUSB_ERROR_OTHER: Other error.";
                 break;
-#else   /* HAVE_LIBUSB_1_0 */
-            case -ENOENT:
-                msg = "-ENOENT: URB was canceled by unlink_urb";
-                break;
-#ifdef EINPROGRESS
-            case -EINPROGRESS:
-                msg = "-EINPROGRESS: URB still pending, no results yet "
-                      "(actually no error until now)";
-                break;
-#endif
-#ifdef EPROTO
-            case -EPROTO:
-                msg = "-EPROTO: a) Bitstuff error or b) Unknown USB error";
-                break;
-#endif
-            case -EILSEQ:
-                msg = "-EILSEQ: CRC mismatch";
-                break;
-            case -EPIPE:
-                msg = "-EPIPE: a) Babble detect or b) Endpoint stalled";
-                break;
-#ifdef ETIMEDOUT
-            case -ETIMEDOUT:
-                msg = "-ETIMEDOUT: Transfer timed out, NAK";
-                break;
-#endif
-            case -ENODEV:
-                msg = "-ENODEV: Device was removed";
-                break;
-            case -EIO:
-                msg = "-EIO: USB I/O error";
-                break;
-#ifdef EREMOTEIO
-            case -EREMOTEIO:
-                msg = "-EREMOTEIO: Short packet detected";
-                break;
-#endif
-            case -EXDEV:
-                msg = "-EXDEV: ISO transfer only partially completed look at "
-                      "individual frame status for details";
-                break;
-            case -EINVAL:
-                msg = "-EINVAL: ISO madness, if this happens: Log off and go home";
-                break;
-#endif  /* HAVE_LIBUSB_1_0 */
+
             default:
                 msg = "Unknown error";
                 break;

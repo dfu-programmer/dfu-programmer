@@ -13,55 +13,6 @@ AM_MAINTAINER_MODE
 # Checks for programs.
 AC_PROG_CC
 
-# Checks for libusb - from sane-backends configuration
-
-dnl Enable libusb-1.0, if available
-disable_libusb_1_0=no
-AC_ARG_ENABLE(libusb_1_0,
-    AS_HELP_STRING([--disable-libusb_1_0],[disable libusb-1.0 support even if available]),
-    [ if test "x$enableval" = "xno"; then disable_libusb_1_0=yes; fi ], [])
-
-dnl If libusb-1.0 is enabled and available, prefer that to the old libusb
-have_libusb_1_0=no
-if test "$disable_libusb_1_0" = "no"; then
-  ifdef([PKG_CHECK_MODULES],
-        [PKG_CHECK_MODULES(LIBUSB_1_0, [ libusb-1.0 >= 1.0.0 ], have_libusb_1_0=yes, have_libusb_1_0=no)],
-        [have_libusb_1_0=yes
-  LIBUSB_1_0_LIBS=-lusb-1.0])
-  if test "$have_libusb_1_0" = "yes"; then
-    AS_ECHO("using libusb_1.0");
-    LIBS="$LIBS $LIBUSB_1_0_LIBS"
-    HAVE_USB=yes
-  fi
-fi
-
-AS_IF([test "$have_libusb_1_0" = "no"],
-[
-  dnl Fallback to the old libusb
-  dnl libusb >= 0.1.8 is required, as we need usb_interrupt_read()
-  AS_ECHO("using libusb");
-  AC_CHECK_HEADER(usb.h,
-                  AC_CHECK_LIB(usb, usb_interrupt_read,
-                               [LIBS="$LIBS -lusb"
-                                HAVE_USB=yes]))
-])
-
-dnl The following logic is useful for distributions.  If they force
-dnl USB support with --enable-libusb=yes then configure will fail
-dnl when its detected that it can not be supported.  Default is
-dnl "auto" which means only enable if libraries are found and do
-dnl not error out.
-if test "$HAVE_USB" = "no"; then
-  AC_MSG_ERROR([USB support requested but required libraries not found.])
-fi
-if test "$HAVE_USB" = "yes"; then
-  if test "$have_libusb_1_0" = "yes"; then
-    AC_DEFINE(HAVE_LIBUSB_1_0, 1, [Define to 1 if you have libusb-1.0.])
-  else
-    AC_DEFINE(HAVE_LIBUSB, 1, [Define to 1 if you have libusb.])
-  fi
-fi
-
 # Checks for header files.
 AC_CHECK_HEADERS([stddef.h stdint.h])
 
@@ -73,6 +24,9 @@ AC_TYPE_SIZE_T
 AC_FUNC_MALLOC
 AC_FUNC_MEMCMP
 #AC_CHECK_FUNC([memset], :, [AC_CHECK_LIB([libc], [libc])])
+
+# Checks for libusb.
+AC_SEARCH_LIBS(libusb_init, usb-1.0,, [AC_MSG_ERROR([libusb 1.0 not found])])
 
 AC_CONFIG_FILES(fedora/dfu-programmer.spec Makefile docs/Makefile src/Makefile)
 AC_OUTPUT

@@ -159,7 +159,7 @@ struct programmer_arguments {
     enum targets_enum target;
     uint16_t vendor_id;
     uint16_t chip_id;
-    uint16_t bus_id;            /* if non-zero, use bus_id-1 and device_address */
+    uint16_t bus_id;            /* if non-zero, use bus_id and device_address */
     uint16_t device_address;    /* to identify the specific target device.    */
     atmel_device_class_t device_type;
     char device_type_string[DEVICE_TYPE_STRING_MAX_LENGTH];
