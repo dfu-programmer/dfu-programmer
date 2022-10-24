@@ -7,6 +7,7 @@ bash-completion: dfu_programmer
 .PHONY: bash-completion
 all: bash-completion
 
-EXTRA_DIST = bootstrap.sh dfu_completion \
-             fedora/10-dfu-programmer.fdi \
-             fedora/dfu-programmer.spec
+EXTRA_DIST = bootstrap.sh
+EXTRA_DIST += dfu_completion
+EXTRA_DIST += fedora/10-dfu-programmer.fdi fedora/dfu-programmer.spec
+
