@@ -115,7 +115,7 @@ static int32_t __atmel_blank_page_check( dfu_device_t *device,
 static int32_t __atmel_read_block( dfu_device_t *device,
                                    intel_buffer_in_t *buin,
                                    const dfu_bool eeprom );
-/* assumes block does not cross 64 b page boundaries and ideally alligs
+/* assumes block does not cross 64 b page boundaries and ideally aligns
  * with flash pages. appropriate memory type and 64kb page has already
  * been selected, max transfer size is not violated it updates the buffer
  * data between data_start and data_end
