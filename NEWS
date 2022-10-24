@@ -1,3 +1,6 @@
+== Release 1.0.0 [2022-10-22]
+ * Remove libusb0 support
+
 == Release 0.9.0 [2022-10-21]
  * Add `--validate-first` and `--ignore-outside` options to the flash command
  * Disabled progress bar when not using a tty
