@@ -8,7 +8,7 @@ They are kind enough to provide generally correct specifications this implementa
 
 The project website is http://dfu-programmer.github.io and you can use that to check for updates.
 
-All official builds and releases are on GitHub.
+All official [builds](https://github.com/dfu-programmer/dfu-programmer/actions) and [releases](https://github.com/dfu-programmer/dfu-programmer/releases) are on [GitHub](https://github.com/dfu-programmer/dfu-programmer).
 
 [![Build dfu-programmer](https://github.com/dfu-programmer/dfu-programmer/actions/workflows/build.yml/badge.svg)](https://github.com/dfu-programmer/dfu-programmer/actions/workflows/build.yml)
 
