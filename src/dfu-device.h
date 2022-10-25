@@ -72,7 +72,7 @@ NOTES
       be called
     > after a command is sent using DFU_DNLOAD, DFU_GETSTATUS must be called
       to trigger command execution. a second DFU_GETSTATUS is required to
-      check for success (except when writing to the option bytes beacuse device
+      check for success (except when writing to the option bytes because device
       resets immediately after write)
 
 READ COMMAND        DFU_UPLOAD with wValue > 1
@@ -81,7 +81,7 @@ READ COMMAND        DFU_UPLOAD with wValue > 1
       be the option byte block size
     > the address to read data from is computed using wBlockNumber (wValue)
       and the address pointer using the formula:
-        addresss = ((wBlockNum - 2) x wTransferSize) + Address_Pointer
+        address = ((wBlockNum - 2) x wTransferSize) + Address_Pointer
         where: wTransferSize is the length of the requested data buffer
     > the address should be previously specified using SET ADDRESS POINTER
       otherwise the start of internal flash is assumed (0x0800000)
@@ -147,7 +147,7 @@ READ_MEMORY - [ 0x03, 0x00, start_MSB, start_LSB, end_MSB, end_LSB ]
 BLANK_CHECK - [ 0x03, 0x01, start_MSB, start_LSB, end_MSB, end_LSB ]
     > send the command
     > request status: 0 OK, 5 not blank, 8 bad address, 3 memory locked
-    > on errCHECK_ERASED (5) send DFU_UPLOAD to get first non-blank adddress
+    > on errCHECK_ERASED (5) send DFU_UPLOAD to get first non-blank address
     > on errWRITE (3), errADDRESS (8) and other error DFU_CLRSTATUS
 
 CHIP_ERASE - [ 0x04, 0x00, 0xFF ]
@@ -157,7 +157,7 @@ CHIP_ERASE - [ 0x04, 0x00, 0xFF ]
     > on errWRITE (3) and any other error DFU_CLRSTATUS
 
 START_APP - [ 0x04, 0x03, 0x00/0x01 ]
-    > send command: 0x00 for start by resest, 0x01 for rjmp
+    > send command: 0x00 for start by reset, 0x01 for rjmp
      for start by jmp GRP_AVR devices also provide [ MSB, LSB ] of jump address
     > for start by reset device code must disable the watchdog timer
     > no DFU_GETSTATUS
@@ -172,7 +172,7 @@ SELECT_64KB_PAGE - [ 0x06, 0x03, 0x01, PP_MSB, PP_LSB ]
 // ---- G R O U P   A V R 3 2 -----------------------------------
 SELECT_MEMORY_UNIT - [ 0x06, 0x03, 0x00, unit_num ]
     > send command
-    > unit_numm [ flash, eeprom, security, config, bootloader, signature, user,
+    > unit_num [ flash, eeprom, security, config, bootloader, signature, user,
                     int_ram, ext_mem_cs0 - ext_mem_cs7, ext_mem_df ]
         - XMEGA ONLY: eeprom (1) and all other sections above user (6)
     > optionally request status: 0 OK, 8 unsupported memory
@@ -227,7 +227,7 @@ Notes:
       make sure the reset pulse is correct (see doc4287)
     - alignment of program with page boundaries: In order to be in accordance
       with the Flash page size (128 bytes), X non-significant bytes are added
-      before the firt byte to program.  The X number is calculated to align the
+      before the first byte to program.  The X number is calculated to align the
       beginning of the firmware with the Flash page. X = start_address[32]. For
       example, if the start address is 00AFh (175d), X = 175 [32] = 15.
 

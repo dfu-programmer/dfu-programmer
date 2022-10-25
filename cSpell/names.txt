@@ -1,8 +1,10 @@
 # Names of people
 Arlt
 Bakker
+Bergmans
 Blad
 Brownell
+Brûlez
 Carlsson
 D'Epagnier
 Dmitry
@@ -21,6 +23,7 @@ Nedospasov
 Neels
 Reinhard
 Rottmann
+schmidtw
 softprops
 Steinhaus
 suisei

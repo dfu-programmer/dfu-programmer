@@ -34,4 +34,9 @@ devel
 destDir
 dataDir
 thirdParty
-
+buin
+extdf
+ucDFU
+unProtect
+rjmp
+rNum

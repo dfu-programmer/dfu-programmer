@@ -54,13 +54,13 @@
 //___ P R O T O T Y P E S   ( P R I V A T E ) ________________________________
 static inline int32_t stm32_get_status( dfu_device_t *device );
   /* run dfu_get_status to get the current status
-   * retrn  0 on status OK, -1 on status req fail, -2 on bad status
+   * return 0 on status OK, -1 on status req fail, -2 on bad status
    */
 
 static int32_t stm32_set_address_ptr( dfu_device_t *device, uint32_t address );
   /* @brief set the address pointer to a certain address
    * @param the address to set
-   * @retrn 0 on success, negative on failure
+   * @return 0 on success, negative on failure
    */
 
 static int32_t stm32_write_block( dfu_device_t *device,
@@ -69,7 +69,7 @@ static int32_t stm32_write_block( dfu_device_t *device,
   /* flash the contents of memory into a block of memory.  it is assumed that
    * the appropriate page has already been selected.  start and end are the
    * start and end addresses of the flash data.  returns 0 on success,
-   * positive dfu error code if one is obtained, or negative if communitcation
+   * positive dfu error code if one is obtained, or negative if communication
    * with device fails.
    */
 
@@ -96,7 +96,7 @@ static int32_t stm32_erase( dfu_device_t *device, uint8_t *command,
 extern int debug;       /* defined in main.c */
 
 /* FIXME : these should be read from usb device descriptor because they are
- * device specififc */
+ * device specific */
 static const uint32_t stm32_sector_addresses[] = {
   0x08000000,   /* sector  0,  16 kb */
   0x08004000,   /* sector  1,  16 kb */
@@ -302,7 +302,7 @@ static int32_t stm32_erase( dfu_device_t *device, uint8_t *command,
 
 //___ F U N C T I O N S ______________________________________________________
 int32_t stm32_erase_flash( dfu_device_t *device, dfu_bool quiet ) {
-  TRACE( "%s( %p, %s )\n", __FUNCTION__, device, quiet ? "ture" : "false" );
+  TRACE( "%s( %p, %s )\n", __FUNCTION__, device, quiet ? "true" : "false" );
   uint8_t command[] = { ERASE_CMD };
   uint8_t length = 1;
 
@@ -317,7 +317,7 @@ int32_t stm32_erase_flash( dfu_device_t *device, dfu_bool quiet ) {
 int32_t stm32_page_erase( dfu_device_t *device, uint32_t address,
                            dfu_bool quiet ) {
   TRACE( "%s( %p, 0x%X, %s )\n", __FUNCTION__, device, address,
-      quiet ? "ture" : "false" );
+      quiet ? "true" : "false" );
   uint8_t length = 5;
 
   uint8_t command[5] = {
@@ -618,7 +618,7 @@ int32_t stm32_write_flash( dfu_device_t *device, intel_buffer_out_t *bout,
       goto finally;
     }
 
-    // incrment bout->info.block_start to the next valid address
+    // increment bout->info.block_start to the next valid address
     for( bout->info.block_start = bout->info.block_end + 1;
          bout->info.block_start <= bout->info.data_end;
          bout->info.block_start++ ) {
@@ -737,7 +737,7 @@ int32_t stm32_get_configuration( dfu_device_t *device ) {
 }
 
 int32_t stm32_read_unprotect( dfu_device_t *device, dfu_bool quiet ) {
-  TRACE( "%s( %p, %s )\n", __FUNCTION__, device, quiet ? "ture" : "false" );
+  TRACE( "%s( %p, %s )\n", __FUNCTION__, device, quiet ? "true" : "false" );
   uint8_t command[] = { READ_UNPROTECT };
   uint8_t length = 1;
 
@@ -749,4 +749,5 @@ int32_t stm32_read_unprotect( dfu_device_t *device, dfu_bool quiet ) {
   return stm32_erase( device, command, length, quiet );
 }
 
+// cSpell:ignore shiftwidth
 // vim: shiftwidth=2

@@ -64,7 +64,7 @@ int32_t intel_hex_to_buffer( char *filename, intel_buffer_out_t *bout,
  *
  *  \param filename the name of the intel hex file to process
  *  \param target_offset is the flash memory address location of buffer[0]
- *  \param quiet tells fcn to suppress termninal messages
+ *  \param quiet tells fcn to suppress terminal messages
  *  \param bout buffer_out structure containing pointer to memory data for the
  *          program and for the user page.  Each is an array of int16_t's where
  *          the values 0-255 are valid memory values, and anything else

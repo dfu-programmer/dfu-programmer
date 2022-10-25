@@ -86,7 +86,7 @@ static int32_t __atmel_flash_block( dfu_device_t *device,
 /* flash the contents of memory into a block of memory.  it is assumed that the
  * appropriate page has already been selected.  start and end are the start and
  * end addresses of the flash data.  returns 0 on success, positive dfu error
- * code if one is obtained, or negative if communitcation with device fails.
+ * code if one is obtained, or negative if communication with device fails.
  */
 
 static int32_t atmel_select_memory_unit( dfu_device_t *device,
@@ -1112,7 +1112,7 @@ int32_t atmel_getsecure( dfu_device_t *device ) {
 
     dfu_clear_status( device );
 
-    // TODO : Probably should use selelect_memory_unit command here
+    // TODO : Probably should use select_memory_unit command here
     /* Select SECURITY page */
     uint8_t command[4] = { 0x06, 0x03, 0x00, 0x02 };
     result = dfu_download(device, 4, command);
@@ -1294,7 +1294,7 @@ int32_t atmel_flash( dfu_device_t *device,
             goto finally;
         }
 
-        // incrment bout->info.block_start to the next valid address
+        // increment bout->info.block_start to the next valid address
         for(bout->info.block_start = bout->info.block_end + 1;
                 bout->info.block_start <= bout->info.data_end;
                 bout->info.block_start++) {

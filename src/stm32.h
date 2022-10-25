@@ -91,19 +91,19 @@ int32_t stm32_write_flash( dfu_device_t *device, intel_buffer_out_t *bout,
 int32_t stm32_get_commands( dfu_device_t *device );
   /* @brief get the commands list, should be length 4
    * @param device pointer
-   * @retrn 0 on success
+   * @return 0 on success
    */
 
 int32_t stm32_get_configuration( dfu_device_t *device );
   /* @brief get the configuration structure
    * @param device pointer
-   * @retrn 0 on success, negative for error
+   * @return 0 on success, negative for error
    */
 
 int32_t stm32_read_unprotect( dfu_device_t *device, dfu_bool quiet );
   /* @brief unprotect the device (triggers a mass erase)
    * @param device pointer
-   * @retrn 0 on success
+   * @return 0 on success
    */
 
 
@@ -134,4 +134,5 @@ void stm32_print_device_info( FILE *stream, stm32_device_info_t *info );
 
 #endif  /* __STM32_H__ */
 
+// cSpell:ignore shiftwidth
 // vim: shiftwidth=2

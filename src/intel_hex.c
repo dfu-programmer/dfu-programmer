@@ -68,7 +68,7 @@ static int intel_validate_checksum( struct intel_record *record );
  */
 
 static int32_t ihex_make_line( struct intel_record *record, char *str );
-/* provide record typea list of values, they are converted into a line and put at str
+/* provide record type a list of values, they are converted into a line and put at str
  * values are 2 address bytes, the record type and any values. A checksum
  * is added to the end and the line length is prepended.
  */
@@ -181,6 +181,7 @@ static int intel_read_data( FILE *fp, struct intel_record *record ) {
     int data;
     int checksum;
 
+    // cSpell:ignore bbaaaarr
     /* read in the ':bbaaaarr'
      *   bb - byte count
      * aaaa - the address in memory
@@ -240,6 +241,7 @@ int32_t intel_process_data( intel_buffer_out_t *bout, char value,
      * the first line with an invalid address.
      */
     uint32_t raddress;   // relative address = address - target offset
+    // cSpell:ignore raddress
 
     // The Atmel flash page starts at address 0x8000 0000, we need to ignore
     //             stm32 flash page starts at 0x0800 0000
@@ -643,8 +645,8 @@ int32_t intel_validate_buffer( intel_buffer_in_t *buin,
             // Memory should be blank here
             if( 0xff != buin->data[i] ) {
                 if ( !invalid_data_region ) {
-                    DEBUG( "Outside program region: byte 0x%X epected 0xFF.\n", i);
-                    DEBUG( "but read 0x%02X.  supressing additional warnings.\n",
+                    DEBUG( "Outside program region: byte 0x%X expected 0xFF.\n", i);
+                    DEBUG( "but read 0x%02X.  suppressing additional warnings.\n",
                             buin->data[i] );
                 }
                 invalid_outside_data_region++;
