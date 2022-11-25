@@ -22,8 +22,8 @@
 #include <string.h>
 #include <stddef.h>
 #include <errno.h>
+#include <stdbool.h>
 
-#include "dfu-bool.h"
 #include "dfu-device.h"
 #include "config.h"
 #include "arguments.h"
@@ -86,7 +86,7 @@ static inline void print_progress( intel_buffer_info_t *info,
    */
 
 static int32_t stm32_erase( dfu_device_t *device, uint8_t *command,
-                            uint8_t command_length, dfu_bool quiet );
+                            uint8_t command_length, bool quiet );
   /* erase, erase page, and read unprotect all share this functionality
    * although with different commands
    */
@@ -272,7 +272,7 @@ static inline void print_progress( intel_buffer_info_t *info,
 }
 
 static int32_t stm32_erase( dfu_device_t *device, uint8_t *command,
-                            uint8_t command_length, dfu_bool quiet ) {
+                            uint8_t command_length, bool quiet ) {
   int32_t status;
   dfu_set_transaction_num( 0 );     /* set wValue to zero */
   if( command_length != dfu_download(device, command_length, command) ) {
@@ -301,7 +301,7 @@ static int32_t stm32_erase( dfu_device_t *device, uint8_t *command,
 }
 
 //___ F U N C T I O N S ______________________________________________________
-int32_t stm32_erase_flash( dfu_device_t *device, dfu_bool quiet ) {
+int32_t stm32_erase_flash( dfu_device_t *device, bool quiet ) {
   TRACE( "%s( %p, %s )\n", __FUNCTION__, device, quiet ? "true" : "false" );
   uint8_t command[] = { ERASE_CMD };
   uint8_t length = 1;
@@ -315,7 +315,7 @@ int32_t stm32_erase_flash( dfu_device_t *device, dfu_bool quiet ) {
 }
 
 int32_t stm32_page_erase( dfu_device_t *device, uint32_t address,
-                           dfu_bool quiet ) {
+                           bool quiet ) {
   TRACE( "%s( %p, 0x%X, %s )\n", __FUNCTION__, device, address,
       quiet ? "true" : "false" );
   uint8_t length = 5;
@@ -331,7 +331,7 @@ int32_t stm32_page_erase( dfu_device_t *device, uint32_t address,
   return stm32_erase( device, command, length, quiet );
 }
 
-int32_t stm32_start_app( dfu_device_t *device, dfu_bool quiet ) {
+int32_t stm32_start_app( dfu_device_t *device, bool quiet ) {
   TRACE( "%s( %p )\n", __FUNCTION__, device );
   int32_t status;
 
@@ -365,7 +365,7 @@ int32_t stm32_start_app( dfu_device_t *device, dfu_bool quiet ) {
 }
 
 int32_t stm32_read_flash( dfu_device_t *device, intel_buffer_in_t *buin,
-    const uint8_t mem_segment, const dfu_bool quiet ) {
+    const uint8_t mem_segment, const bool quiet ) {
   TRACE( "%s( %p, %p, %u, %s )\n", __FUNCTION__, device, buin,
       mem_segment, ((true == quiet) ? "true" : "false"));
 
@@ -475,7 +475,7 @@ finally:
 }
 
 int32_t stm32_write_flash( dfu_device_t *device, intel_buffer_out_t *bout,
-    const dfu_bool eeprom, const dfu_bool force, const dfu_bool quiet ) {
+    const bool eeprom, const bool force, const bool quiet ) {
   TRACE( "%s( %p, %p, %s, %s )\n", __FUNCTION__, device, bout,
           ((true == eeprom) ? "true" : "false"),
           ((true == quiet) ? "true" : "false") );
@@ -736,7 +736,7 @@ int32_t stm32_get_configuration( dfu_device_t *device ) {
   return SUCCESS;
 }
 
-int32_t stm32_read_unprotect( dfu_device_t *device, dfu_bool quiet ) {
+int32_t stm32_read_unprotect( dfu_device_t *device, bool quiet ) {
   TRACE( "%s( %p, %s )\n", __FUNCTION__, device, quiet ? "true" : "false" );
   uint8_t command[] = { READ_UNPROTECT };
   uint8_t length = 1;

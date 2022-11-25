@@ -24,8 +24,8 @@
 #include <libusb-1.0/libusb.h>
 #include <stdint.h>
 #include <stddef.h>
+#include <stdbool.h>
 
-#include "dfu-bool.h"
 #include "dfu-device.h"
 
 /* DFU states */
@@ -158,8 +158,8 @@ struct libusb_device
                                        const uint32_t bus,
                                        const uint32_t dev_addr,
                                        dfu_device_t *device,
-                                       const dfu_bool initial_abort,
-                                       const dfu_bool honor_interfaceclass );
+                                       const bool initial_abort,
+                                       const bool honor_interfaceclass );
 /*  dfu_device_init is designed to find one of the usb devices which match
  *  the vendor and product parameters passed in.
  *

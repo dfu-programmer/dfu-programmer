@@ -21,7 +21,8 @@
 #ifndef __ARGUMENTS_H__
 #define __ARGUMENTS_H__
 
-#include "dfu-bool.h"
+#include <stdbool.h>
+
 #include "dfu-device.h"
 #include "atmel.h"
 
@@ -170,8 +171,8 @@ struct programmer_arguments {
     uint32_t bootloader_top;            /* top of the bootloader region    */
     uint32_t bootloader_bottom;         /* bottom of the bootloader region */
     size_t flash_page_size;             /* size of a page in bytes         */
-    dfu_bool initial_abort;
-    dfu_bool honor_interfaceclass;
+    bool initial_abort;
+    bool honor_interfaceclass;
     size_t eeprom_memory_size;
     size_t eeprom_page_size;
 
@@ -193,18 +194,18 @@ struct programmer_arguments {
         } com_setfuse_data;
 
         struct com_read_struct {
-            dfu_bool bin;
-            dfu_bool force;             /* do not remove blank pages */
+            bool bin;
+            bool force;             /* do not remove blank pages */
             enum atmel_memory_unit_enum segment;
         } com_read_data;
 
         struct com_erase_struct {
-            dfu_bool force;
+            bool force;
             int32_t suppress_validation;
         } com_erase_data;
 
         struct com_launch_struct {
-            dfu_bool noreset;
+            bool noreset;
         } com_launch_config;
 
         struct com_flash_struct {
@@ -214,19 +215,19 @@ struct programmer_arguments {
             int16_t *serial_data; /* serial number or other device specific bytes */
             size_t serial_offset; /* where the serial_data should be written */
             size_t serial_length; /* how many bytes to write */
-            dfu_bool force;       /* bootloader configuration for UC3 devices
+            bool force;       /* bootloader configuration for UC3 devices
                                      is on last one or two words in the user
                                      page depending on the version of the
                                      bootloader - force overwrite required */
-            dfu_bool validate_first; /* Do a validate before flashing */
-            dfu_bool ignore_outside; /* Ignore validate errors outside region */
+            bool validate_first; /* Do a validate before flashing */
+            bool ignore_outside; /* Ignore validate errors outside region */
             enum atmel_memory_unit_enum segment;
         } com_flash_data;
 
         struct com_convert_struct {
             size_t bin_offset;          // where the bin data starts
             char original_first_char;
-            dfu_bool force;             /* do not remove blank pages */
+            bool force;             /* do not remove blank pages */
             char *file;                 // for bin2hex / hex2bin conversions
             enum atmel_memory_unit_enum segment;    // to auto-select offset
         } com_convert_data;

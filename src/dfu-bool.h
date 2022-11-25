@@ -4,6 +4,6 @@
 typedef enum {
     false = 0,
     true  = 1
-} dfu_bool;
+} bool;
 
 #endif

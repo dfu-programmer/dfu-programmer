@@ -25,10 +25,10 @@
 #include <stddef.h>
 #include <libusb-1.0/libusb.h>
 #include <errno.h>
+#include <stdbool.h>
 
 #include "dfu.h"
 #include "util.h"
-#include "dfu-bool.h"
 
 // cSpell:words DNBUSY
 
@@ -68,7 +68,7 @@ static uint16_t transaction = 0;
 
 // ________  P R O T O T Y P E S  _______________________________
 static int32_t dfu_find_interface( struct libusb_device *device,
-                                   const dfu_bool honor_interfaceclass,
+                                   const bool honor_interfaceclass,
                                    const uint8_t bNumConfigurations);
 /*  Used to find the dfu interface for a device if there is one.
  *
@@ -79,7 +79,7 @@ static int32_t dfu_find_interface( struct libusb_device *device,
  *  returns the interface number if found, < 0 otherwise
  */
 
-static int32_t dfu_make_idle( dfu_device_t *device, const dfu_bool initial_abort );
+static int32_t dfu_make_idle( dfu_device_t *device, const bool initial_abort );
 /*  Gets the device into the dfuIDLE state if possible.
  *
  *  device    - the dfu device to communicate with
@@ -308,8 +308,8 @@ struct libusb_device *dfu_device_init( const uint32_t vendor,
                                        const uint32_t bus_number,
                                        const uint32_t device_address,
                                        dfu_device_t *dfu_device,
-                                       const dfu_bool initial_abort,
-                                       const dfu_bool honor_interfaceclass ) {
+                                       const bool initial_abort,
+                                       const bool honor_interfaceclass ) {
     libusb_device **list;
     size_t i,deviceCount;
     extern libusb_context *usbContext;
@@ -495,7 +495,7 @@ char* dfu_status_to_string( const int32_t status ) {
 }
 
 static int32_t dfu_find_interface( struct libusb_device *device,
-                                   const dfu_bool honor_interfaceclass,
+                                   const bool honor_interfaceclass,
                                    const uint8_t bNumConfigurations) {
     int32_t c,i,s;
 
@@ -552,7 +552,7 @@ static int32_t dfu_find_interface( struct libusb_device *device,
 
 
 static int32_t dfu_make_idle( dfu_device_t *device,
-                              const dfu_bool initial_abort ) {
+                              const bool initial_abort ) {
     dfu_status_t status;
     int32_t retries = 4;
 

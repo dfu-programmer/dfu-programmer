@@ -22,8 +22,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
-#include "dfu-bool.h"
 #include "config.h"
 #include "commands.h"
 #include "arguments.h"
@@ -44,8 +44,8 @@ static int security_bit_state;
 static int32_t execute_validate( dfu_device_t *device,
                                  intel_buffer_out_t *bout,
                                  uint8_t mem_segment,
-                                 dfu_bool quiet,
-                                 dfu_bool ignore_outside);
+                                 bool quiet,
+                                 bool ignore_outside);
 /* provide an out buffer to validate and whether this is from
  * flash or eeprom data sections, also wether you want it quiet
  */
@@ -162,8 +162,8 @@ static int32_t serialize_memory_image( intel_buffer_out_t *bout,
 static int32_t execute_validate( dfu_device_t *device,
                                  intel_buffer_out_t *bout,
                                  uint8_t mem_segment,
-                                 const dfu_bool quiet,
-                                 const dfu_bool ignore_outside) {
+                                 const bool quiet,
+                                 const bool ignore_outside) {
     int32_t retval = UNSPECIFIED_ERROR;
     int32_t result;             // result of fcn calls
     intel_buffer_in_t buin;     // buffer in for storing read mem

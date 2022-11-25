@@ -26,8 +26,8 @@
 #include <errno.h>
 #include <time.h>
 #include <unistd.h>
+#include <stdbool.h>
 
-#include "dfu-bool.h"
 #include "dfu-device.h"
 #include "config.h"
 #include "arguments.h"
@@ -82,7 +82,7 @@ static int32_t atmel_read_command( dfu_device_t *device,
 
 static int32_t __atmel_flash_block( dfu_device_t *device,
                                     intel_buffer_out_t *bout,
-                                    const dfu_bool eeprom );
+                                    const bool eeprom );
 /* flash the contents of memory into a block of memory.  it is assumed that the
  * appropriate page has already been selected.  start and end are the start and
  * end addresses of the flash data.  returns 0 on success, positive dfu error
@@ -114,7 +114,7 @@ static int32_t __atmel_blank_page_check( dfu_device_t *device,
 
 static int32_t __atmel_read_block( dfu_device_t *device,
                                    intel_buffer_in_t *buin,
-                                   const dfu_bool eeprom );
+                                   const bool eeprom );
 /* assumes block does not cross 64 b page boundaries and ideally aligns
  * with flash pages. appropriate memory type and 64kb page has already
  * been selected, max transfer size is not violated it updates the buffer
@@ -320,7 +320,7 @@ int32_t atmel_read_config( dfu_device_t *device,
 
 int32_t atmel_erase_flash( dfu_device_t *device,
                            const uint8_t mode,
-                           dfu_bool quiet ) {
+                           bool quiet ) {
     uint8_t command[3] = { 0x04, 0x00, 0x00 };
     dfu_status_t status;
     int32_t retries;
@@ -573,7 +573,7 @@ int32_t atmel_set_config( dfu_device_t *device,
 
 static int32_t __atmel_read_block( dfu_device_t *device,
                                    intel_buffer_in_t *buin,
-                                   const dfu_bool eeprom ) {
+                                   const bool eeprom ) {
     uint8_t command[6] = { 0x03, 0x00, 0x00, 0x00, 0x00, 0x00 };
     int32_t result;
 
@@ -630,7 +630,7 @@ static int32_t __atmel_read_block( dfu_device_t *device,
 int32_t atmel_read_flash( dfu_device_t *device,
                           intel_buffer_in_t *buin,
                           const uint8_t mem_segment,
-                          const dfu_bool quiet ) {
+                          const bool quiet ) {
     uint8_t mem_page = 0;           // tracks the current memory page
     uint32_t progress = 0;          // used to indicate progress
     int32_t result = 0;
@@ -809,7 +809,7 @@ static int32_t __atmel_blank_page_check( dfu_device_t *device,
 int32_t atmel_blank_check( dfu_device_t *device,
                            const uint32_t start,
                            const uint32_t end,
-                           dfu_bool quiet ) {
+                           bool quiet ) {
     int32_t result;                     // blank_page_check_result
     uint32_t blank_upto = start;        // up to is not inclusive
     uint32_t check_until;               // end address of page check
@@ -1139,9 +1139,9 @@ int32_t atmel_getsecure( dfu_device_t *device ) {
 
 int32_t atmel_flash( dfu_device_t *device,
                      intel_buffer_out_t *bout,
-                     const dfu_bool eeprom,
-                     const dfu_bool force,
-                     const dfu_bool quiet ) {
+                     const bool eeprom,
+                     const bool force,
+                     const bool quiet ) {
     uint32_t i;
     uint32_t progress = 0;  // keep record of sent progress as bytes * 32
     uint8_t mem_page = 0;   // tracks the current memory page
@@ -1380,7 +1380,7 @@ static void atmel_flash_populate_footer( uint8_t *message, uint8_t *footer,
 static void atmel_flash_populate_header( uint8_t *header,
                                          const uint32_t start,
                                          const uint32_t end,
-                                         const dfu_bool eeprom ) {
+                                         const bool eeprom ) {
 
     TRACE( "%s( %p, 0x%X, 0x%X, %s )\n", __FUNCTION__, header, start,
            end, ((true == eeprom) ? "true" : "false") );
@@ -1406,7 +1406,7 @@ static void atmel_flash_populate_header( uint8_t *header,
 
 static int32_t __atmel_flash_block( dfu_device_t *device,
                                     intel_buffer_out_t *bout,
-                                    const dfu_bool eeprom ) {
+                                    const bool eeprom ) {
     // from doc7618, AT90 / ATmega app note protocol:
     const size_t length = bout->info.block_end - bout->info.block_start + 1;
     uint8_t message[ATMEL_MAX_FLASH_BUFFER_SIZE];

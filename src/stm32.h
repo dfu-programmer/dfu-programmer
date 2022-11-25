@@ -20,7 +20,8 @@
 
 #include <stdio.h>
 #include <stdint.h>
-#include "dfu-bool.h"
+#include <stdbool.h>
+
 #include "dfu-device.h"
 #include "intel_hex.h"
 
@@ -53,31 +54,31 @@ typedef enum {
 #define STM32_READ_PROT_ERROR   -10
 
 
-int32_t stm32_erase_flash( dfu_device_t *device, dfu_bool quiet );
+int32_t stm32_erase_flash( dfu_device_t *device, bool quiet );
   /*  mass erase flash
    *  device  - the usb_dev_handle to communicate with
    *  returns status DFU_STATUS_OK if ok, anything else on error
    */
 
 int32_t stm32_page_erase( dfu_device_t *device, uint32_t address,
-    dfu_bool quiet );
+    bool quiet );
   /* erase a page of memory (provide the page address) */
 
-int32_t stm32_start_app( dfu_device_t *device, dfu_bool quiet );
+int32_t stm32_start_app( dfu_device_t *device, bool quiet );
   /* Reset the registers to default reset values and start application
    */
 
 int32_t stm32_read_flash( dfu_device_t *device,
               intel_buffer_in_t *buin,
               uint8_t mem_segment,
-              const dfu_bool quiet);
+              const bool quiet);
   /* read the flash from buin->info.data_start to data_end and place
    * in buin.data. mem_segment is the segment of memory from the
    * stm32_memory_unit_enum.
    */
 
 int32_t stm32_write_flash( dfu_device_t *device, intel_buffer_out_t *bout,
-    const dfu_bool eeprom, const dfu_bool force, const dfu_bool hide_progress );
+    const bool eeprom, const bool force, const bool hide_progress );
   /* Flash data from the buffer to the main program memory on the device.
    * buffer contains the data to flash where buffer[0] is aligned with memory
    * address zero (which could be inside the bootloader and unavailable).
@@ -100,7 +101,7 @@ int32_t stm32_get_configuration( dfu_device_t *device );
    * @return 0 on success, negative for error
    */
 
-int32_t stm32_read_unprotect( dfu_device_t *device, dfu_bool quiet );
+int32_t stm32_read_unprotect( dfu_device_t *device, bool quiet );
   /* @brief unprotect the device (triggers a mass erase)
    * @param device pointer
    * @return 0 on success
@@ -121,7 +122,7 @@ int32_t stm32_set_config( dfu_device_t *device, const uint8_t property,
     const uint8_t value );
 
 int32_t stm32_blank_check( dfu_device_t *device, const uint32_t start,
-    const uint32_t end, dfu_bool quiet );
+    const uint32_t end, bool quiet );
 
 int32_t stm32_secure( dfu_device_t *device );
 

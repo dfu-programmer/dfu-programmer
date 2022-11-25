@@ -271,7 +271,7 @@ int32_t intel_process_data( intel_buffer_out_t *bout, char value,
 }
 
 int32_t intel_hex_to_buffer( char *filename, intel_buffer_out_t *bout,
-                             uint32_t target_offset, dfu_bool quiet ) {
+                             uint32_t target_offset, bool quiet ) {
     FILE *fp = NULL;
     struct intel_record record;
     // unsigned int count, type, checksum, address; char data[256]
@@ -469,7 +469,7 @@ static int32_t ihex_make_record_04_offset( uint32_t offset, char *str ) {
 //}
 
 int32_t intel_hex_from_buffer( intel_buffer_in_t *buin,
-                               dfu_bool force_full, uint32_t target_offset ) {
+                               bool force_full, uint32_t target_offset ) {
     char line[80];
     uint32_t offset_address = 0;    // offset address written to a previous line
     uint32_t address = 0;   // relative offset from previously set addr
@@ -618,7 +618,7 @@ int32_t intel_init_buffer_in( intel_buffer_in_t *buin,
 
 int32_t intel_validate_buffer( intel_buffer_in_t *buin,
                                intel_buffer_out_t *bout,
-                               dfu_bool quiet) {
+                               bool quiet) {
     int32_t i;
     int32_t invalid_data_region = 0;
     int32_t invalid_outside_data_region = 0;
