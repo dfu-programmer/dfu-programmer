@@ -23,6 +23,8 @@ typedef struct {
     struct libusb_device_handle *handle;
     int32_t interface;
     atmel_device_class_t type;
+    int security_bit_state;
+    uint16_t transaction;
 } dfu_device_t;
 
 #endif /* __DFU_DEVICE_H__ */

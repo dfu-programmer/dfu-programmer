@@ -76,12 +76,12 @@ typedef struct {
     uint8_t iString;
 } dfu_status_t;
 
-void dfu_set_transaction_num( uint16_t newNum );
+void dfu_set_transaction_num( dfu_device_t *device, uint16_t newNum );
 /* set / reset the wValue parameter to a given value. this number is
  * significant for stm32 device commands (see dfu-device.h)
  */
 
-uint16_t dfu_get_transaction_num( void );
+uint16_t dfu_get_transaction_num( dfu_device_t *device );
 /* get the current transaction number (can be used to calculate address
  * offset for stm32 devices --- see dfu-device.h)
  */
