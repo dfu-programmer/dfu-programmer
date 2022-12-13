@@ -48,7 +48,7 @@ jobs:
       - name: Configure
         run: |
           export PATH=/usr/bin:/usr/local/bin:/mingw32/bin
-          ./configure CFLAGS="-O2" --disable-dependency-tracking ${{ steps.override.outputs.override }}
+          ./configure CFLAGS="-Werror -O2" --disable-dependency-tracking ${{ steps.override.outputs.override }}
 
       - name: Build
         run: |
@@ -136,7 +136,7 @@ jobs:
       - name: Configure
         run: |
           export PATH=/usr/bin:/usr/local/bin:/mingw64/bin
-          ./configure CFLAGS="-O2" --disable-dependency-tracking ${{ steps.override.outputs.override }}
+          ./configure CFLAGS="-Werror -O2" --disable-dependency-tracking ${{ steps.override.outputs.override }}
 
       - name: Build
         run: |
@@ -216,7 +216,7 @@ jobs:
         run: ./bootstrap.sh
 
       - name: configure
-        run: ./configure CFLAGS="-O2" --disable-dependency-tracking ${{ steps.override.outputs.override }}
+        run: ./configure CFLAGS="-Werror -O2" --disable-dependency-tracking ${{ steps.override.outputs.override }}
 
       - name: make
         run: make -j4
@@ -280,7 +280,7 @@ jobs:
         run: ./bootstrap.sh
 
       - name: configure
-        run: ./configure CFLAGS="-O2" --disable-dependency-tracking ${{ steps.override.outputs.override }}
+        run: ./configure CFLAGS="-Werror -O2" --disable-dependency-tracking ${{ steps.override.outputs.override }}
 
       - name: make
         run: make -j4
