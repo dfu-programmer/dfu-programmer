@@ -350,7 +350,7 @@ retry:
 
         tmp = dfu_find_interface( device, honor_interfaceclass, descriptor.bNumConfigurations );
 
-        if (tmp > 0) {
+        if (tmp < 0) {
             /* The interface is invalid. */
             DEBUG( "Failed to find interface [%d]...\n", tmp );
             continue;
