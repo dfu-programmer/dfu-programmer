@@ -352,7 +352,7 @@ retry:
 
         if (tmp < 0) {
             /* The interface is invalid. */
-            DEBUG( "Failed to find interface [%d]...\n", tmp );
+            DEBUG( "Failed to find interface.\n" );
             continue;
         }
 
