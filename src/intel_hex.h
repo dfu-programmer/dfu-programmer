@@ -22,7 +22,7 @@
 #define __INTEL_HEX_H__
 
 #include <stdint.h>
-#include "dfu-bool.h"
+#include <stdbool.h>
 
 typedef struct {
     size_t total_size;          // the total size of the buffer
@@ -58,7 +58,7 @@ int32_t intel_process_data( intel_buffer_out_t *bout,
 // processing any data and putting it into a buffer
 
 int32_t intel_hex_to_buffer( char *filename, intel_buffer_out_t *bout,
-        uint32_t target_offset, dfu_bool quiet );
+        uint32_t target_offset, bool quiet );
 /*  Used to read in a file in intel hex format and return a chunk of
  *  memory containing the memory image described in the file.
  *
@@ -87,7 +87,7 @@ int32_t intel_hex_to_buffer( char *filename, intel_buffer_out_t *bout,
  */
 
 int32_t intel_hex_from_buffer( intel_buffer_in_t *buin,
-        dfu_bool force_full, uint32_t target_offset );
+        bool force_full, uint32_t target_offset );
 /*  Used to convert a buffer to an intel hex formatted file.
  *  target offset is the address location of buffer 0
  *  force_full sets whether to keep writing entirely blank pages.
@@ -113,7 +113,7 @@ int32_t intel_init_buffer_in(intel_buffer_in_t *buin,
  */
 
 int32_t intel_validate_buffer(  intel_buffer_in_t *buin,
-                                intel_buffer_out_t *bout, dfu_bool quiet);
+                                intel_buffer_out_t *bout, bool quiet);
 /* compare the contents of buffer_in with buffer_out to check that a target
  * memory image matches with a memory read.
  * return 0 for full validation, positive number if data bytes outside region do

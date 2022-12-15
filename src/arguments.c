@@ -23,8 +23,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
-#include "dfu-bool.h"
 #include "dfu-device.h"
 #include "config.h"
 #include "arguments.h"
