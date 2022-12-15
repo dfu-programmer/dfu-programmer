@@ -333,60 +333,81 @@ retry:
              break;
         }
 
-        DEBUG( "%2d: 0x%04x, 0x%04x\n", (int) i,
-                descriptor.idVendor, descriptor.idProduct );
+        DEBUG( "%2d: 0x%04x, 0x%04x\n", (int) i, descriptor.idVendor, descriptor.idProduct );
 
-        if( (vendor  == descriptor.idVendor) &&
-            (product == descriptor.idProduct) &&
-            ((bus_number == 0)
-             || ((libusb_get_bus_number(device) == bus_number) &&
-                 (libusb_get_device_address(device) == device_address))) )
-        {
-            int32_t tmp;
-            DEBUG( "found device at USB:%d,%d\n", libusb_get_bus_number(device), libusb_get_device_address(device) );
-            /* We found a device that looks like it matches...
-             * let's try to find the DFU interface, open the device
-             * and claim it. */
-            tmp = dfu_find_interface( device, honor_interfaceclass,
-                                      descriptor.bNumConfigurations );
+        if( vendor  != descriptor.idVendor) continue;
+        if( product != descriptor.idProduct) continue;
 
-            if( 0 <= tmp ) {    /* The interface is valid. */
-                dfu_device->interface = tmp;
-
-                if( 0 == libusb_open(device, &dfu_device->handle) ) {
-                    DEBUG( "opened interface %d...\n", tmp );
-                    if( 0 == libusb_set_configuration(dfu_device->handle, 1) ) {
-                        DEBUG( "set configuration %d...\n", 1 );
-                        if( 0 == libusb_claim_interface(dfu_device->handle, dfu_device->interface) )
-                        {
-                            DEBUG( "claimed interface %d...\n", dfu_device->interface );
-
-                            switch( dfu_make_idle(dfu_device, initial_abort) )
-                            {
-                                case 0:
-                                    libusb_free_device_list( list, 1 );
-                                    return device;
-
-                                case 1:
-                                    retries--;
-                                    libusb_free_device_list( list, 1 );
-                                    goto retry;
-                            }
-
-                            DEBUG( "Failed to put the device in dfuIDLE mode.\n" );
-                            libusb_release_interface( dfu_device->handle, dfu_device->interface );
-                            retries = 4;
-                        } else {
-                            DEBUG( "Failed to claim the DFU interface.\n" );
-                        }
-                    } else {
-                        DEBUG( "Failed to set configuration.\n" );
-                    }
-
-                    libusb_close(dfu_device->handle);
-                }
-            }
+        if( bus_number != 0 ) {
+            if ( libusb_get_bus_number(device) != bus_number ) continue;
+            if ( libusb_get_device_address(device) != device_address ) continue;
         }
+        
+        int32_t tmp;
+        DEBUG( "found device at USB:%d,%d\n", libusb_get_bus_number(device), libusb_get_device_address(device) );
+        // We found a device that looks like it matches...
+        // Let's try to find the DFU interface, open the device and claim it.
+
+        tmp = dfu_find_interface( device, honor_interfaceclass, descriptor.bNumConfigurations );
+
+        if (tmp < 0) {
+            /* The interface is invalid. */
+            DEBUG( "Failed to find interface.\n" );
+            continue;
+        }
+
+        dfu_device->interface = tmp;
+
+        DEBUG( "opening interface %d...\n", tmp );
+
+        tmp = libusb_open( device, &dfu_device->handle );
+
+        DEBUG( "returned %d...\n", tmp );
+
+        if (tmp) {
+            DEBUG( "failed to open device\n" );
+            continue;
+        }
+
+        DEBUG( "opened interface %d...\n", tmp );
+
+        tmp = libusb_set_configuration( dfu_device->handle, 1 );
+
+        if (tmp) {
+            DEBUG( "Failed to set configuration.\n" );
+            goto done;
+        }
+
+        DEBUG( "set configuration %d...\n", 1 );
+
+        tmp = libusb_claim_interface( dfu_device->handle, dfu_device->interface );
+
+        if (tmp) {
+            DEBUG( "Failed to claim the DFU interface.\n" );
+            goto done;
+        }
+
+        DEBUG( "claimed interface %d...\n", dfu_device->interface );
+
+        tmp = dfu_make_idle( dfu_device, initial_abort );
+
+        if (tmp == 0 || tmp == 1) {
+            libusb_free_device_list( list, 1 );
+            if (!tmp) {
+                return device;
+            }
+            
+            retries--;
+            goto retry;
+        }
+
+        DEBUG( "Failed to put the device in dfuIDLE mode.\n" );
+        libusb_release_interface( dfu_device->handle, dfu_device->interface );
+        retries = 4;
+
+        done:
+        libusb_close( dfu_device->handle );
+        
     }
 
     libusb_free_device_list( list, 1 );
