@@ -93,7 +93,7 @@ static int32_t stm32_erase( dfu_device_t *device, uint8_t *command,
 
 
 //___ V A R I A B L E S ______________________________________________________
-extern int debug;       /* defined in main.c */
+extern int debug;       /* defined in libdfu.c */
 
 /* FIXME : these should be read from usb device descriptor because they are
  * device specific */

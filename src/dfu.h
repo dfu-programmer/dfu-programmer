@@ -159,7 +159,8 @@ struct libusb_device
                                        const uint32_t dev_addr,
                                        dfu_device_t *device,
                                        const bool initial_abort,
-                                       const bool honor_interfaceclass );
+                                       const bool honor_interfaceclass,
+                                       libusb_context *usb_context );
 /*  dfu_device_init is designed to find one of the usb devices which match
  *  the vendor and product parameters passed in.
  *

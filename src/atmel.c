@@ -69,7 +69,7 @@
 #define PROGRESS_END    "]  "
 #define PROGRESS_ERROR  " X  "
 
-extern int debug;       /* defined in main.c */
+extern int debug;       /* defined in libdfu.c */
 
 // ________  P R O T O T Y P E S  _______________________________
 static int32_t atmel_read_command( dfu_device_t *device,
