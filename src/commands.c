@@ -37,9 +37,6 @@
 #define DEBUG(...)  dfu_debug( __FILE__, __FUNCTION__, __LINE__, \
                                COMMAND_DEBUG_THRESHOLD, __VA_ARGS__ )
 
-
-static int security_bit_state;
-
 // ________  P R O T O T Y P E S  _______________________________
 static int32_t execute_validate( dfu_device_t *device,
                                  intel_buffer_out_t *bout,
@@ -54,19 +51,19 @@ static int32_t execute_validate( dfu_device_t *device,
 static void security_check( dfu_device_t *device ) {
     if( ADC_AVR32 == device->type ) {
         // Get security bit state for AVR32.
-        security_bit_state = atmel_getsecure( device );
-        DEBUG( "Security bit check returned %d.\n", security_bit_state );
+        device->security_bit_state = atmel_getsecure( device );
+        DEBUG( "Security bit check returned %d.\n", device->security_bit_state );
     } else {
         // Security bit not present or not testable.
-        security_bit_state = ATMEL_SECURE_OFF;
+        device->security_bit_state = ATMEL_SECURE_OFF;
     }
 }
 
-static void security_message( void ) {
-    if( security_bit_state > ATMEL_SECURE_OFF ) {
+static void security_message( dfu_device_t *device ) {
+    if( device->security_bit_state > ATMEL_SECURE_OFF ) {
         fprintf( stderr, "The security bit %s set.\n"
                          "Erase the device to clear temporarily.\n",
-                         (ATMEL_SECURE_ON == security_bit_state) ? "is" : "may be" );
+                         (ATMEL_SECURE_ON == device->security_bit_state) ? "is" : "may be" );
     }
 }
 
@@ -457,7 +454,7 @@ static int32_t execute_getfuse( dfu_device_t *device,
                args->device_type_string );
         fprintf( stderr, "Error reading %s config information.\n",
                          args->device_type_string );
-        security_message();
+        security_message( device );
         return status;
     }
 
@@ -530,7 +527,7 @@ static int32_t execute_get( dfu_device_t *device,
                args->device_type_string );
         fprintf( stderr, "Error reading %s config information.\n",
                          args->device_type_string );
-        security_message();
+        security_message( device );
         return status;
     }
 
@@ -678,7 +675,7 @@ static int32_t execute_dump( dfu_device_t *device,
 
     if( 0 != result ) {
         DEBUG("ERROR: could not read memory, err %d.\n", result);
-        security_message();
+        security_message( device );
         retval = FLASH_READ_ERROR;
         goto error;
     }
@@ -762,7 +759,7 @@ static int32_t execute_setfuse( dfu_device_t *device,
     if( 0 != atmel_set_fuse(device, name, value) ) {
         DEBUG( "Fuse set failed.\n" );
         fprintf( stderr, "Fuse set failed.\n" );
-        security_message();
+        security_message( device );
         return -1;
     }
 

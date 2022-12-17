@@ -64,8 +64,6 @@
 #define MSG_DEBUG(...)  dfu_debug( __FILE__, __FUNCTION__, __LINE__, \
                                DFU_MESSAGE_DEBUG_THRESHOLD, __VA_ARGS__ )
 
-static uint16_t transaction = 0;
-
 // ________  P R O T O T Y P E S  _______________________________
 static int32_t dfu_find_interface( struct libusb_device *device,
                                    const bool honor_interfaceclass,
@@ -108,15 +106,15 @@ static void dfu_msg_response_output( const char *function, const int32_t result 
  */
 
 // ________  F U N C T I O N S  _______________________________
-void dfu_set_transaction_num( uint16_t newNum ) {
+void dfu_set_transaction_num( dfu_device_t *device, uint16_t newNum ) {
     TRACE( "%s( %u )\n", __FUNCTION__, newNum );
-    transaction = newNum;
-    DEBUG("wValue set to %d\n", transaction);
+    device->transaction = newNum;
+    DEBUG("wValue set to %d\n", device->transaction);
 }
 
-uint16_t dfu_get_transaction_num( void ) {
+uint16_t dfu_get_transaction_num( dfu_device_t *device ) {
     TRACE( "%s( %u )\n", __FUNCTION__ );
-    return transaction;
+    return device->transaction;
 }
 
 int32_t dfu_detach( dfu_device_t *device, const int32_t timeout ) {
@@ -166,7 +164,7 @@ int32_t dfu_download( dfu_device_t *device,
         }
     }
 
-    result = dfu_transfer_out( device, DFU_DNLOAD, transaction++, data, length );
+    result = dfu_transfer_out( device, DFU_DNLOAD, device->transaction++, data, length );
 
     dfu_msg_response_output( __FUNCTION__, result );
 
@@ -189,7 +187,7 @@ int32_t dfu_upload( dfu_device_t *device, const size_t length, uint8_t* data ) {
         return -2;
     }
 
-    result = dfu_transfer_in( device, DFU_UPLOAD, transaction++, data, length );
+    result = dfu_transfer_in( device, DFU_UPLOAD, device->transaction++, data, length );
 
     dfu_msg_response_output( __FUNCTION__, result );
 

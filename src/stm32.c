@@ -154,7 +154,7 @@ static int32_t stm32_set_address_ptr( dfu_device_t *device, uint32_t address ) {
     return -1;
   }
 
-  dfu_set_transaction_num( 0 );     /* set wValue to zero */
+  dfu_set_transaction_num( device, 0 );     /* set wValue to zero */
   if( length != dfu_download(device, length, command) ) {
     DEBUG( "dfu_download failed\n" );
     return -2;
@@ -274,7 +274,7 @@ static inline void print_progress( intel_buffer_info_t *info,
 static int32_t stm32_erase( dfu_device_t *device, uint8_t *command,
                             uint8_t command_length, bool quiet ) {
   int32_t status;
-  dfu_set_transaction_num( 0 );     /* set wValue to zero */
+  dfu_set_transaction_num( device, 0 );     /* set wValue to zero */
   if( command_length != dfu_download(device, command_length, command) ) {
     if( !quiet ) fprintf( stderr, "ERROR\n" );
     DEBUG( "dfu_download failed\n" );
@@ -348,7 +348,7 @@ int32_t stm32_start_app( dfu_device_t *device, bool quiet ) {
   }
 
   if( !quiet ) fprintf( stderr, "Launching program...  \n" );
-  dfu_set_transaction_num( 0 );     /* set wValue to zero */
+  dfu_set_transaction_num( device, 0 );     /* set wValue to zero */
   if( 0 != dfu_download(device, 0, NULL) ) {
     if( !quiet ) fprintf( stderr, "ERROR\n" );
     DEBUG( "dfu_download failed\n" );
@@ -411,7 +411,7 @@ int32_t stm32_read_flash( dfu_device_t *device, intel_buffer_in_t *buin,
         retval = UNSPECIFIED_ERROR;
         goto finally;
       }
-      dfu_set_transaction_num( 2 ); /* sets block offset 0 */
+      dfu_set_transaction_num( device, 2 ); /* sets block offset 0 */
       reset_address_flag = 0;
     }
 
@@ -441,7 +441,7 @@ int32_t stm32_read_flash( dfu_device_t *device, intel_buffer_in_t *buin,
 
     buin->info.block_start = buin->info.block_end + 1;
     if( reset_address_flag == 0 && (buin->info.block_start !=
-        (STM32_MAX_TRANSFER_SIZE * (dfu_get_transaction_num() - 2))
+        (STM32_MAX_TRANSFER_SIZE * (dfu_get_transaction_num( device ) - 2))
         + address_offset) ) {
       DEBUG("block start & address mismatch, reset req\n");
       reset_address_flag = 1;
@@ -581,7 +581,7 @@ int32_t stm32_write_flash( dfu_device_t *device, intel_buffer_out_t *bout,
         retval = DEVICE_ACCESS_ERROR;
         goto finally;
       }
-      dfu_set_transaction_num( 2 ); /* sets block offset 0 */
+      dfu_set_transaction_num( device, 2 ); /* sets block offset 0 */
       reset_address_flag = 0;
     }
 
@@ -626,7 +626,7 @@ int32_t stm32_write_flash( dfu_device_t *device, intel_buffer_out_t *bout,
     } // bout->info.block_start is now on the first valid data for the next segment
 
     if( reset_address_flag == 0 && (bout->info.block_start !=
-        (STM32_MAX_TRANSFER_SIZE * (dfu_get_transaction_num() - 2))
+        (STM32_MAX_TRANSFER_SIZE * (dfu_get_transaction_num( device ) - 2))
         + address_offset) ) {
       DEBUG("block start does not match addr, reset req\n");
       reset_address_flag = 1;
@@ -674,7 +674,7 @@ int32_t stm32_get_commands( dfu_device_t *device ) {
     return UNSPECIFIED_ERROR;
   }
 
-  dfu_set_transaction_num( 0 );
+  dfu_set_transaction_num( device, 0 );
   result = dfu_upload( device, xfer_len, buffer );
   if( result < 0) {
     dfu_status_t status;
