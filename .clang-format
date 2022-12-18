@@ -1,0 +1,10 @@
+BasedOnStyle: GNU
+AllowShortBlocksOnASingleLine: true
+AllowShortLoopsOnASingleLine: true
+AllowShortCaseLabelsOnASingleLine: true
+AlwaysBreakTemplateDeclarations: Yes
+AllowShortIfStatementsOnASingleLine: true
+AlignConsecutiveMacros: true
+ColumnLimit: 120
+IndentWidth: 4
+BreakBeforeBraces: Attach
