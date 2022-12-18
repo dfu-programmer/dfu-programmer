@@ -26,6 +26,10 @@
 #include <stddef.h>
 #include <stdbool.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "dfu-device.h"
 
 /* DFU states */
@@ -159,7 +163,8 @@ struct libusb_device
                                        const uint32_t dev_addr,
                                        dfu_device_t *device,
                                        const bool initial_abort,
-                                       const bool honor_interfaceclass );
+                                       const bool honor_interfaceclass,
+                                       libusb_context *usb_context );
 /*  dfu_device_init is designed to find one of the usb devices which match
  *  the vendor and product parameters passed in.
  *
@@ -185,5 +190,9 @@ char* dfu_state_to_string( const int32_t state );
  *
  *  returns the state name or "unknown state"
  */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

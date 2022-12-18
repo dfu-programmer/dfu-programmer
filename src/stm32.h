@@ -22,6 +22,10 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "dfu-device.h"
 #include "intel_hex.h"
 
@@ -131,6 +135,10 @@ int32_t stm32_getsecure( dfu_device_t *device );
 int32_t stm32_user( dfu_device_t *device, intel_buffer_out_t *bout );
 
 void stm32_print_device_info( FILE *stream, stm32_device_info_t *info );
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif  /* __STM32_H__ */

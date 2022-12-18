@@ -307,10 +307,11 @@ struct libusb_device *dfu_device_init( const uint32_t vendor,
                                        const uint32_t device_address,
                                        dfu_device_t *dfu_device,
                                        const bool initial_abort,
-                                       const bool honor_interfaceclass ) {
+                                       const bool honor_interfaceclass,
+                                       libusb_context *usb_context
+                                        ) {
     libusb_device **list;
     size_t i,deviceCount;
-    extern libusb_context *usbContext;
     int32_t retries = 4;
 
     TRACE( "%s( %u, %u, %p, %s, %s )\n", __FUNCTION__, vendor, product,
@@ -320,7 +321,7 @@ struct libusb_device *dfu_device_init( const uint32_t vendor,
     DEBUG( "%s(%08x, %08x)\n",__FUNCTION__, vendor, product );
 
 retry:
-    deviceCount = libusb_get_device_list( usbContext, &list );
+    deviceCount = libusb_get_device_list( usb_context, &list );
 
     for( i = 0; i < deviceCount; i++ ) {
         libusb_device *device = list[i];

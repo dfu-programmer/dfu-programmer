@@ -4,6 +4,10 @@
 #include <stdint.h>
 #include <libusb-1.0/libusb.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Atmel device classes are now defined with one bit per class.
 // This simplifies checking in functions which handle more than one class.
 #define ADC_8051    (1<<0)
@@ -26,6 +30,10 @@ typedef struct {
     int security_bit_state;
     uint16_t transaction;
 } dfu_device_t;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __DFU_DEVICE_H__ */
 

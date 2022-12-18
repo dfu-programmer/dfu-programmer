@@ -25,6 +25,10 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "dfu-device.h"
 #include "intel_hex.h"
 
@@ -178,5 +182,9 @@ int32_t atmel_user( dfu_device_t *device,
  */
 
 void atmel_print_device_info( FILE *stream, atmel_device_info_t *info );
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

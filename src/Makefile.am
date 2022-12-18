@@ -1,6 +1,7 @@
 AM_CFLAGS = -Wall
 bin_PROGRAMS = dfu-programmer
 dfu_programmer_SOURCES = main.c
+dfu_programmer_SOURCES += libdfu.c
 dfu_programmer_SOURCES += arguments.c
 dfu_programmer_SOURCES += atmel.c
 dfu_programmer_SOURCES += commands.c
