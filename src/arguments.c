@@ -93,6 +93,7 @@ struct target_mapping_structure {
 
 /* ----- target specific structures ----------------------------------------- */
 static struct target_mapping_structure target_map[] = {
+    // clang-format off
     // START_TARGET_LIST_LINE .. used for autocompletion script
     // Name             ID (arguments.h)    DevType    PID     VID     MemSize  BootSz  BootLoc  FPage EPage  ESize
     { "at89c51snd1c",   tar_at89c51snd1c,   ADC_8051,  0x2FFF, 0x03eb, 0x10000, 0x1000, BL_TOP,    128,   0,      0 },
@@ -187,10 +188,12 @@ static struct target_mapping_structure target_map[] = {
     { "stm32f4_G",      tar_stm32f4_G,      DC_STM32,  0xdf11, 0x0483, 0x100000,0x0000, BL_EXTRA,  512,   0,      0 },
     { NULL }
     // END_TARGET_LIST_LINE .. used for autocompletion script
+    // clang-format on
 };
 
 /* ----- command specific structures ---------------------------------------- */
 static struct option_mapping_structure command_map[] = {
+    // clang-format off
     { "configure",    com_configure },
     { "read",         com_read      },
     { "dump",         com_dump      },
@@ -210,20 +213,24 @@ static struct option_mapping_structure command_map[] = {
     { "bin2hex",      com_bin2hex   },
     { "hex2bin",      com_hex2bin   },
     { NULL }
+    // clang-format on
 };
 
 /* ----- configure specific structures -------------------------------------- */
 static struct option_mapping_structure configure_map[] = {
+    // clang-format off
     { "BSB", conf_BSB },
     { "SBV", conf_SBV },
     { "SSB", conf_SSB },
     { "EB",  conf_EB  },
     { "HSB", conf_HSB },
     { NULL }
+    // clang-format on
 };
 
 /* ----- get specific structures -------------------------------------- */
 static struct option_mapping_structure get_map[] = {
+    // clang-format off
     { "bootloader-version", get_bootloader   },
     { "ID1",                get_ID1          },
     { "ID2",                get_ID2          },
@@ -237,10 +244,12 @@ static struct option_mapping_structure get_map[] = {
     { "product-revision",   get_product_rev  },
     { "HSB",                get_HSB          },
     { NULL }
+    // clang-format on
 };
 
 /* ----- getfuse specific structures ---------------------------------- */
 static struct option_mapping_structure getfuse_map[] = {
+    // clang-format off
     { "LOCK",           get_lock           },
     { "EPFL",           get_epfl           },
     { "BOOTPROT",       get_bootprot       },
@@ -251,10 +260,12 @@ static struct option_mapping_structure getfuse_map[] = {
     { "ISP_IO_COND_EN", get_isp_io_cond_en },
     { "ISP_FORCE",      get_isp_force      },
     { NULL }
+    // clang-format on
 };
 
 /* ----- setfuse specific structures ---------------------------------- */
 static struct option_mapping_structure setfuse_map[] = {
+    // clang-format off
     { "LOCK",           set_lock           },
     { "EPFL",           set_epfl           },
     { "BOOTPROT",       set_bootprot       },
@@ -265,6 +276,7 @@ static struct option_mapping_structure setfuse_map[] = {
     { "ISP_IO_COND_EN", set_isp_io_cond_en },
     { "ISP_FORCE",      set_isp_force      },
     { NULL }
+    // clang-format on
 };
 
 static void list_targets(int mode)
