@@ -22,9 +22,19 @@
 #define __COMMANDS_H__
 
 #include <stdint.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "arguments.h"
 #include "dfu-device.h"
 
 int32_t execute_command( dfu_device_t *device,
                          struct programmer_arguments *args );
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif

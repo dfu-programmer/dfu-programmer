@@ -23,6 +23,15 @@
 
 #include <stdarg.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void dfu_debug( const char *file, const char *function, const int line,
                 const int level, const char *format, ... );
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif

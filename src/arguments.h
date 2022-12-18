@@ -23,6 +23,10 @@
 
 #include <stdbool.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "dfu-device.h"
 #include "atmel.h"
 
@@ -245,4 +249,9 @@ struct programmer_arguments {
 int32_t parse_arguments( struct programmer_arguments *args,
                          const size_t argc,
                          char **argv );
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif

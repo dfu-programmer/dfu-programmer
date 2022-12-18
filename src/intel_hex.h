@@ -24,6 +24,10 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct {
     size_t total_size;          // the total size of the buffer
     size_t  page_size;          // the size of a flash page
@@ -126,5 +130,10 @@ int32_t intel_flash_prep_buffer( intel_buffer_out_t *bout );
  * the buffer pointer must align with the beginning of a flash page
  * return 0 on success, -1 if assigning data would extend flash above size
  */
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

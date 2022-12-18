@@ -26,6 +26,10 @@
 #include <stddef.h>
 #include <stdbool.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "dfu-device.h"
 
 /* DFU states */
@@ -186,5 +190,9 @@ char* dfu_state_to_string( const int32_t state );
  *
  *  returns the state name or "unknown state"
  */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
