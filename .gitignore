@@ -22,3 +22,5 @@ dfu_programmer
 m4/
 
 *~
+
+megalinter-reports/

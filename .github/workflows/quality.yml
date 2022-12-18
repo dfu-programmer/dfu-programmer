@@ -23,3 +23,23 @@ jobs:
         run: |
           git diff --exit-code
           git diff --cached --exit-code
+
+  lint:
+    name: Check code quality with clang-tidy
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Check code quality of all source files
+        run: clang-tidy src/*.h src/*.c -- -Isrc
+
+  megalinter:
+    name: Check code quality with MegaLinter
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: MegaLinter
+        uses: oxsecurity/megalinter@v6.15.0
