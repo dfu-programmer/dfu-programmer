@@ -18,22 +18,22 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
 
-#include "dfu-device.h"
-#include "config.h"
 #include "arguments.h"
+#include "config.h"
+#include "dfu-device.h"
 #include "util.h"
 
 // Modes used to display the list of targets.
-#define LIST_STD        0
-#define LIST_TEX        1
-#define LIST_HTML       2
+#define LIST_STD  0
+#define LIST_TEX  1
+#define LIST_HTML 2
 
 /* Bootloader location options
    For AVR32 the bootloader is at the bottom of memory space and is included
@@ -47,16 +47,16 @@
    it is not obvious how the addressing would work and none of the Atmel
    chips do this at present.
 */
-#define BL_BASE         0   /* Bootloader at bottom */
-#define BL_TOP          1   /* Bootloader at top, space included in total memory */
-#define BL_EXTRA        2   /* Bootloader at top in separate memory area */
-#define BL_SPECIFIC     3   /* Any value greater than this is a specific start address */
+#define BL_BASE     0 /* Bootloader at bottom */
+#define BL_TOP      1 /* Bootloader at top, space included in total memory */
+#define BL_EXTRA    2 /* Bootloader at top in separate memory area */
+#define BL_SPECIFIC 3 /* Any value greater than this is a specific start address */
 
-extern int debug;       /* defined in main.c */
+extern int debug; /* defined in main.c */
 
 #define ARGUMENTS_DEBUG_THRESHOLD 100
 
-#define DEBUG(...)  dfu_debug( __FILE__, __FUNCTION__, __LINE__, ARGUMENTS_DEBUG_THRESHOLD, __VA_ARGS__ )
+#define DEBUG(...) dfu_debug (__FILE__, __FUNCTION__, __LINE__, ARGUMENTS_DEBUG_THRESHOLD, __VA_ARGS__)
 
 struct option_mapping_structure {
     const char *name;
@@ -279,8 +279,8 @@ static struct option_mapping_structure setfuse_map[] = {
     // clang-format on
 };
 
-static void list_targets(int mode)
-{
+static void
+list_targets (int mode) {
     struct target_mapping_structure *map = NULL;
     int col = 0;
     int group_count = 0;
@@ -289,133 +289,116 @@ static void list_targets(int mode)
 
     map = target_map;
 
-    while( 0 != *((int32_t *) map) ) {
-        if( device_type != map->device_type ) {
+    while (0 != *((int32_t *)map)) {
+        if (device_type != map->device_type) {
             device_type = map->device_type;
-            switch( device_type ) {
-            case ADC_8051:  dev_type_name = "8051";  break;
-            case ADC_AVR:   dev_type_name = "AVR";   break;
+            switch (device_type) {
+            case ADC_8051: dev_type_name = "8051"; break;
+            case ADC_AVR: dev_type_name = "AVR"; break;
             case ADC_AVR32: dev_type_name = "AVR32"; break;
             case ADC_XMEGA: dev_type_name = "XMEGA"; break;
-            case DC_STM32:  dev_type_name = "STM32F4"; break;
-            default:        dev_type_name = NULL;    break;
+            case DC_STM32: dev_type_name = "STM32F4"; break;
+            default: dev_type_name = NULL; break;
             }
-            if( dev_type_name != NULL ) {
-                if( LIST_TEX == mode ) {
-                    if( map != target_map )
-                        fprintf( stdout, "\n" );
-                    fprintf( stdout, ".IP \"%s based controllers:\"\n", dev_type_name );
-                } else if( LIST_HTML == mode ) {
-                    if( map != target_map )
-                        fprintf( stdout, "\n</p>\n" );
-                    fprintf( stdout, "<h3>%s based controllers:</h3>\n<p>\n", dev_type_name );
+            if (dev_type_name != NULL) {
+                if (LIST_TEX == mode) {
+                    if (map != target_map) fprintf (stdout, "\n");
+                    fprintf (stdout, ".IP \"%s based controllers:\"\n", dev_type_name);
+                } else if (LIST_HTML == mode) {
+                    if (map != target_map) fprintf (stdout, "\n</p>\n");
+                    fprintf (stdout, "<h3>%s based controllers:</h3>\n<p>\n", dev_type_name);
                 } else {
-                    if( 0 != col )
-                        fprintf( stdout, "\n" );
-                    fprintf( stdout, "%s based controllers:\n", dev_type_name );
+                    if (0 != col) fprintf (stdout, "\n");
+                    fprintf (stdout, "%s based controllers:\n", dev_type_name);
                 }
                 group_count = 0;
                 col = 0;
             }
         }
-        if( LIST_STD == mode ) {
-            if( 0 == col ) {
-                fprintf( stdout, " " );
-            }
-            fprintf( stdout, "   %-16s", map->name );
-            if( 4 == ++col ) {
-                fprintf( stdout, "\n" );
+        if (LIST_STD == mode) {
+            if (0 == col) { fprintf (stdout, " "); }
+            fprintf (stdout, "   %-16s", map->name);
+            if (4 == ++col) {
+                fprintf (stdout, "\n");
                 col = 0;
             }
         } else {
-            if( 0 == col ) {
-                if( 0 != group_count )
-                    fprintf( stdout, ",\n" );
+            if (0 == col) {
+                if (0 != group_count) fprintf (stdout, ",\n");
             } else {
-                fprintf( stdout, ", " );
+                fprintf (stdout, ", ");
             }
-            fprintf( stdout, "%s", map->name );
-            if( 4 == ++col ) {
-                col = 0;
-            }
+            fprintf (stdout, "%s", map->name);
+            if (4 == ++col) { col = 0; }
         }
         map++;
         group_count++;
     }
-    if( 0 != col )
-        fprintf( stdout, "\n" );
-    if( LIST_HTML == mode )
-        fprintf( stdout, "</p>\n" );
+    if (0 != col) fprintf (stdout, "\n");
+    if (LIST_HTML == mode) fprintf (stdout, "</p>\n");
 }
 
-static void basic_help()
-{
-    fprintf( stderr, PACKAGE_STRING "\n");
-    fprintf( stderr, PACKAGE_URL "\n" );
-    fprintf( stderr, "Type 'dfu-programmer --help'    for a list of commands\n" );
-    fprintf( stderr, "     'dfu-programmer --targets' to list supported target devices\n" );
+static void
+basic_help () {
+    fprintf (stderr, PACKAGE_STRING "\n");
+    fprintf (stderr, PACKAGE_URL "\n");
+    fprintf (stderr, "Type 'dfu-programmer --help'    for a list of commands\n");
+    fprintf (stderr, "     'dfu-programmer --targets' to list supported target devices\n");
 }
 
-static void usage()
-{
-    fprintf( stderr, PACKAGE_STRING "\n");
-    fprintf( stderr, PACKAGE_URL "\n" );
-    fprintf( stderr, "Usage: dfu-programmer target[:usb-bus,usb-addr] command [options] "
-                     "[global-options] [file|data]\n\n" );
-    fprintf( stderr, "global-options:\n"
+static void
+usage () {
+    fprintf (stderr, PACKAGE_STRING "\n");
+    fprintf (stderr, PACKAGE_URL "\n");
+    fprintf (stderr, "Usage: dfu-programmer target[:usb-bus,usb-addr] command [options] "
+                     "[global-options] [file|data]\n\n");
+    fprintf (stderr, "global-options:\n"
                      "        --quiet\n"
                      "        --debug level    (level is an integer specifying level of detail)\n"
                      "        Global options can be used with any command and must come\n"
-                     "        after the command and before any file or data value\n" );
-    fprintf( stderr, "\n" );
-    fprintf( stderr, "command summary:\n" );
-    fprintf( stderr, "        launch       [--no-reset]\n" );
-    fprintf( stderr, "        read         [--force] [--bin] [(flash)|--user|--eeprom]\n" );
-    fprintf( stderr, "        erase        [--force] [--suppress-validation]\n" );
-    fprintf( stderr, "        flash        [--force] [(flash)|--user|--eeprom]\n"
+                     "        after the command and before any file or data value\n");
+    fprintf (stderr, "\n");
+    fprintf (stderr, "command summary:\n");
+    fprintf (stderr, "        launch       [--no-reset]\n");
+    fprintf (stderr, "        read         [--force] [--bin] [(flash)|--user|--eeprom]\n");
+    fprintf (stderr, "        erase        [--force] [--suppress-validation]\n");
+    fprintf (stderr, "        flash        [--force] [(flash)|--user|--eeprom]\n"
                      "                     [--suppress-validation]\n"
                      "                     [--suppress-bootloader-mem]\n"
                      "                     [--validate-first]\n"
                      "                     [--ignore-outside]\n"
-                     "                     [--serial=hexdigits:offset] {file|STDIN}\n" );
-    fprintf( stderr, "        setsecure\n" );
-    fprintf( stderr, "        configure {BSB|SBV|SSB|EB|HSB}"
-                     " [--suppress-validation] data\n" );
-    fprintf( stderr, "        get     {bootloader-version|ID1|ID2|BSB|SBV|SSB|EB|\n"
+                     "                     [--serial=hexdigits:offset] {file|STDIN}\n");
+    fprintf (stderr, "        setsecure\n");
+    fprintf (stderr, "        configure {BSB|SBV|SSB|EB|HSB}"
+                     " [--suppress-validation] data\n");
+    fprintf (stderr, "        get     {bootloader-version|ID1|ID2|BSB|SBV|SSB|EB|\n"
                      "                 manufacturer|family|product-name|\n"
-                     "                 product-revision|HSB}\n" );
-    fprintf( stderr, "        getfuse {LOCK|EPFL|BOOTPROT|BODLEVEL|BODHYST|\n"
+                     "                 product-revision|HSB}\n");
+    fprintf (stderr, "        getfuse {LOCK|EPFL|BOOTPROT|BODLEVEL|BODHYST|\n"
                      "                 BODEN|ISP_BOD_EN|ISP_IO_COND_EN|\n"
-                     "                 ISP_FORCE}\n" );
-    fprintf( stderr, "        setfuse {LOCK|EPFL|BOOTPROT|BODLEVEL|BODHYST|\n"
+                     "                 ISP_FORCE}\n");
+    fprintf (stderr, "        setfuse {LOCK|EPFL|BOOTPROT|BODLEVEL|BODHYST|\n"
                      "                 BODEN|ISP_BOD_EN|ISP_IO_COND_EN|\n"
-                     "                 ISP_FORCE} data\n" );
-    fprintf( stderr, "\n" );
-    fprintf( stderr, "additional details:\n" );
-    fprintf( stderr,
-" launch: Launch from the bootloader into the main program using a watchdog\n"
-"         reset.  To jump directly into the main program use --no-reset.\n");
-    fprintf( stderr,
-"   read: Read the program memory in flash and output non-blank pages in ihex\n"
-"         format.  Use --force to output the entire memory and --bin for binary\n"
-"         output.  User page and eeprom are selected using --user and --eeprom\n");
-    fprintf( stderr,
-"  erase: Erase memory contents if the chip is not blank or always with --force\n");
-    fprintf( stderr,
-"  flash: Flash a program onto device flash memory.  EEPROM and user page are\n"
-"         selected using --eeprom|--user flags. Use --force to ignore warning\n"
-"         when data exists in target memory region.  Bootloader configuration\n"
-"         uses last 4 to 8 bytes of user page, --force always required here.\n");
-    fprintf( stderr, "Note: version 0.6.1 commands still supported.\n");
+                     "                 ISP_FORCE} data\n");
+    fprintf (stderr, "\n");
+    fprintf (stderr, "additional details:\n");
+    fprintf (stderr, " launch: Launch from the bootloader into the main program using a watchdog\n"
+                     "         reset.  To jump directly into the main program use --no-reset.\n");
+    fprintf (stderr, "   read: Read the program memory in flash and output non-blank pages in ihex\n"
+                     "         format.  Use --force to output the entire memory and --bin for binary\n"
+                     "         output.  User page and eeprom are selected using --user and --eeprom\n");
+    fprintf (stderr, "  erase: Erase memory contents if the chip is not blank or always with --force\n");
+    fprintf (stderr, "  flash: Flash a program onto device flash memory.  EEPROM and user page are\n"
+                     "         selected using --eeprom|--user flags. Use --force to ignore warning\n"
+                     "         when data exists in target memory region.  Bootloader configuration\n"
+                     "         uses last 4 to 8 bytes of user page, --force always required here.\n");
+    fprintf (stderr, "Note: version 0.6.1 commands still supported.\n");
 }
 
-
-static int32_t assign_option( int32_t *arg,
-                              char *value,
-                              struct option_mapping_structure *map )
-{
-    while( 0 != *((int32_t *) map) ) {
-        if( 0 == strcasecmp(value, map->name) ) {
+static int32_t
+assign_option (int32_t *arg, char *value, struct option_mapping_structure *map) {
+    while (0 != *((int32_t *)map)) {
+        if (0 == strcasecmp (value, map->name)) {
             *arg = map->value;
             return 0;
         }
@@ -426,41 +409,36 @@ static int32_t assign_option( int32_t *arg,
     return -1;
 }
 
-static int32_t assign_target( struct programmer_arguments *args,
-                              char *value,
-                              struct target_mapping_structure *map )
-{
-    while( 0 != *((int32_t *) map) ) {
-        size_t name_len = strlen(map->name);
-        if( 0 == strncasecmp(value, map->name, name_len)
-            && (value[name_len] == '\0'
-                || value[name_len] == ':')) {
-            args->target  = map->value;
+static int32_t
+assign_target (struct programmer_arguments *args, char *value, struct target_mapping_structure *map) {
+    while (0 != *((int32_t *)map)) {
+        size_t name_len = strlen (map->name);
+        if (0 == strncasecmp (value, map->name, name_len) && (value[name_len] == '\0' || value[name_len] == ':')) {
+            args->target = map->value;
             args->chip_id = map->chip_id;
             args->vendor_id = map->vendor_id;
             args->bus_id = 0;
             args->device_address = 0;
             if (value[name_len] == ':') {
-              /* The target name includes USB bus and address info.
-               * This is used to differentiate between multiple dfu
-               * devices with the same vendor/chip ID numbers. By
-               * specifying the bus and address, multiple units can
-               * be programmed at one time.
-               */
-              int bus = 0;
-              int address = 0;
-              if( 2 != sscanf(&value[name_len+1], "%i,%i", &bus, &address) )
-                return -1;
-              if (bus <= 0) return -1;
-              if (address < 0) return -1;
-              args->bus_id = bus;
-              args->device_address = address;
+                /* The target name includes USB bus and address info.
+                 * This is used to differentiate between multiple dfu
+                 * devices with the same vendor/chip ID numbers. By
+                 * specifying the bus and address, multiple units can
+                 * be programmed at one time.
+                 */
+                int bus = 0;
+                int address = 0;
+                if (2 != sscanf (&value[name_len + 1], "%i,%i", &bus, &address)) return -1;
+                if (bus <= 0) return -1;
+                if (address < 0) return -1;
+                args->bus_id = bus;
+                args->device_address = address;
             }
             args->device_type = map->device_type;
             args->eeprom_memory_size = map->eeprom_memory_size;
             args->flash_page_size = map->flash_page_size;
             args->eeprom_page_size = map->eeprom_page_size;
-            if ( map->bootloader_location > BL_SPECIFIC ) {
+            if (map->bootloader_location > BL_SPECIFIC) {
                 /* Bootloader space at a specific location, but does not
                    lie immediately above the application flash area.
                 */
@@ -470,7 +448,7 @@ static int32_t assign_target( struct programmer_arguments *args,
                 args->bootloader_top = map->bootloader_location + map->bootloader_size - 1;
                 args->memory_address_bottom = args->flash_address_bottom;
                 args->memory_address_top = args->bootloader_top;
-            } else if( BL_BASE == map->bootloader_location ) {
+            } else if (BL_BASE == map->bootloader_location) {
                 /* Bootloader space is at bottom of memory and is
                    included within stated memory space. */
                 args->bootloader_bottom = 0;
@@ -481,7 +459,7 @@ static int32_t assign_target( struct programmer_arguments *args,
                 args->memory_address_top = args->flash_address_top;
             } else {
                 /* Bootloader space is at top of memory above application area. */
-                if( BL_EXTRA == map->bootloader_location ) {
+                if (BL_EXTRA == map->bootloader_location) {
                     /* Bootloader space is additional to stated memory space. */
                     args->bootloader_bottom = map->memory_size;
                 } else {
@@ -495,40 +473,32 @@ static int32_t assign_target( struct programmer_arguments *args,
                 args->memory_address_top = args->bootloader_top;
             }
 
-            switch( args->device_type ) {
-                case ADC_8051:
-                    strncpy( args->device_type_string, "8051",
-                             DEVICE_TYPE_STRING_MAX_LENGTH );
-                    args->initial_abort = false;
-                    //args->honor_interfaceclass = true;
-                    break;
-                case ADC_AVR:
-                    strncpy( args->device_type_string, "AVR",
-                             DEVICE_TYPE_STRING_MAX_LENGTH );
-                    args->initial_abort = true;
-                    //args->honor_interfaceclass = false;
-                    break;
-                case ADC_AVR32:
-                    strncpy( args->device_type_string, "AVR32",
-                             DEVICE_TYPE_STRING_MAX_LENGTH );
-                    args->initial_abort = false;
-                    //args->honor_interfaceclass = true;
-                    break;
-                case ADC_XMEGA:
-                    strncpy( args->device_type_string, "XMEGA",
-                             DEVICE_TYPE_STRING_MAX_LENGTH );
-                    args->initial_abort = true;
-                    //args->honor_interfaceclass = false;
-                    break;
-                case DC_STM32:
-                    strncpy( args->device_type_string, "STM32",
-                             DEVICE_TYPE_STRING_MAX_LENGTH );
-                    break;
-                default :
+            switch (args->device_type) {
+            case ADC_8051:
+                strncpy (args->device_type_string, "8051", DEVICE_TYPE_STRING_MAX_LENGTH);
+                args->initial_abort = false;
+                // args->honor_interfaceclass = true;
+                break;
+            case ADC_AVR:
+                strncpy (args->device_type_string, "AVR", DEVICE_TYPE_STRING_MAX_LENGTH);
+                args->initial_abort = true;
+                // args->honor_interfaceclass = false;
+                break;
+            case ADC_AVR32:
+                strncpy (args->device_type_string, "AVR32", DEVICE_TYPE_STRING_MAX_LENGTH);
+                args->initial_abort = false;
+                // args->honor_interfaceclass = true;
+                break;
+            case ADC_XMEGA:
+                strncpy (args->device_type_string, "XMEGA", DEVICE_TYPE_STRING_MAX_LENGTH);
+                args->initial_abort = true;
+                // args->honor_interfaceclass = false;
+                break;
+            case DC_STM32: strncpy (args->device_type_string, "STM32", DEVICE_TYPE_STRING_MAX_LENGTH); break;
+            default:
                 // cSpell:words UNKNO
-                    strncpy( args->device_type_string, "UNKNO",
-                             DEVICE_TYPE_STRING_MAX_LENGTH );
-                    break;
+                strncpy (args->device_type_string, "UNKNO", DEVICE_TYPE_STRING_MAX_LENGTH);
+                break;
             }
             /* There have been several reports on the mailing list of dfu-programmer
                reporting "No device present" when there clearly is. It seems Atmel's
@@ -547,15 +517,13 @@ static int32_t assign_target( struct programmer_arguments *args,
     return -1;
 }
 
-static int32_t assign_global_options( struct programmer_arguments *args,
-                                      const size_t argc,
-                                      char **argv )
-{
+static int32_t
+assign_global_options (struct programmer_arguments *args, const size_t argc, char **argv) {
     size_t i = 0;
 
     /* Find '--quiet' if it is here */
-    for( i = 0; i < argc; i++ ) {
-        if( 0 == strcmp("--quiet", argv[i]) ) {
+    for (i = 0; i < argc; i++) {
+        if (0 == strcmp ("--quiet", argv[i])) {
             *argv[i] = '\0';
             args->quiet = 1;
             break;
@@ -563,8 +531,8 @@ static int32_t assign_global_options( struct programmer_arguments *args,
     }
 
     /* Find '--suppress-bootloader-mem' if it is here */
-    for( i = 0; i < argc; i++ ) {
-        if( 0 == strcmp("--suppress-bootloader-mem", argv[i]) ) {
+    for (i = 0; i < argc; i++) {
+        if (0 == strcmp ("--suppress-bootloader-mem", argv[i])) {
             *argv[i] = '\0';
             args->suppressBootloader = 1;
             break;
@@ -573,25 +541,19 @@ static int32_t assign_global_options( struct programmer_arguments *args,
 
     /* Find '--suppress-validation' if it is here - even though it is not
      * used by all this is easier. */
-    for( i = 0; i < argc; i++ ) {
-        if( 0 == strcmp("--suppress-validation", argv[i]) ) {
+    for (i = 0; i < argc; i++) {
+        if (0 == strcmp ("--suppress-validation", argv[i])) {
             *argv[i] = '\0';
 
-            switch( args->command ) {
-                case com_configure:
-                    args->com_configure_data.suppress_validation = 1;
-                    break;
-                case com_erase:
-                    args->com_erase_data.suppress_validation = 1;
-                    break;
-                case com_flash:
-                case com_eflash:
-                case com_user:
-                    args->com_flash_data.suppress_validation = 1;
-                    break;
-                default:
-                    /* not supported. */
-                    return -1;
+            switch (args->command) {
+            case com_configure: args->com_configure_data.suppress_validation = 1; break;
+            case com_erase: args->com_erase_data.suppress_validation = 1; break;
+            case com_flash:
+            case com_eflash:
+            case com_user: args->com_flash_data.suppress_validation = 1; break;
+            default:
+                /* not supported. */
+                return -1;
             }
             break;
         }
@@ -599,19 +561,17 @@ static int32_t assign_global_options( struct programmer_arguments *args,
 
     /* Find '--validate-first' if it is here - even though it is not
      * used by all this is easier. */
-    for( i = 0; i < argc; i++ ) {
-        if( 0 == strcmp("--validate-first", argv[i]) ) {
+    for (i = 0; i < argc; i++) {
+        if (0 == strcmp ("--validate-first", argv[i])) {
             *argv[i] = '\0';
 
-            switch( args->command ) {
-                case com_flash:
-                case com_eflash:
-                case com_user:
-                    args->com_flash_data.validate_first = 1;
-                    break;
-                default:
-                    /* not supported. */
-                    return -1;
+            switch (args->command) {
+            case com_flash:
+            case com_eflash:
+            case com_user: args->com_flash_data.validate_first = 1; break;
+            default:
+                /* not supported. */
+                return -1;
             }
             break;
         }
@@ -619,87 +579,71 @@ static int32_t assign_global_options( struct programmer_arguments *args,
 
     /* Find '--ignore-outside' if it is here - even though it is not
      * used by all this is easier. */
-    for( i = 0; i < argc; i++ ) {
-        if( 0 == strcmp("--ignore-outside", argv[i]) ) {
+    for (i = 0; i < argc; i++) {
+        if (0 == strcmp ("--ignore-outside", argv[i])) {
             *argv[i] = '\0';
 
-            switch( args->command ) {
-                case com_flash:
-                case com_eflash:
-                case com_user:
-                    args->com_flash_data.ignore_outside = 1;
-                    break;
-                default:
-                    /* not supported. */
-                    return -1;
+            switch (args->command) {
+            case com_flash:
+            case com_eflash:
+            case com_user: args->com_flash_data.ignore_outside = 1; break;
+            default:
+                /* not supported. */
+                return -1;
             }
             break;
         }
     }
 
     /* Find '--bin' for read binary */
-    for( i = 0; i < argc; i++ ) {
-        if( 0 == strcmp("--bin", argv[i]) ) {
+    for (i = 0; i < argc; i++) {
+        if (0 == strcmp ("--bin", argv[i])) {
             *argv[i] = '\0';
 
-            switch( args->command ) {
-                case com_read:
-                case com_dump:
-                case com_edump:
-                case com_udump:
-                    args->com_read_data.bin = 1;
-                    break;
-                default:
-                    /* not supported. */
-                    return -1;
+            switch (args->command) {
+            case com_read:
+            case com_dump:
+            case com_edump:
+            case com_udump: args->com_read_data.bin = 1; break;
+            default:
+                /* not supported. */
+                return -1;
             }
             break;
         }
     }
 
     /* Find '--user' for the user page segment */
-    for( i = 0; i < argc; i++ ) {
-        if( 0 == strcmp("--user", argv[i]) ) {
+    for (i = 0; i < argc; i++) {
+        if (0 == strcmp ("--user", argv[i])) {
             *argv[i] = '\0';
-            switch( args->command ) {
-                case com_read:
-                case com_udump:
-                    args->com_read_data.segment = mem_user;
-                    break;
-                case com_flash:
-                case com_user:
-                    args->com_flash_data.segment = mem_user;
-                    break;
-                case com_bin2hex:
-                    args->com_convert_data.segment = mem_user;
-                    break;
-                default:
-                    /* not supported. */
-                    return -1;
+            switch (args->command) {
+            case com_read:
+            case com_udump: args->com_read_data.segment = mem_user; break;
+            case com_flash:
+            case com_user: args->com_flash_data.segment = mem_user; break;
+            case com_bin2hex: args->com_convert_data.segment = mem_user; break;
+            default:
+                /* not supported. */
+                return -1;
             }
             break;
         }
     }
 
     /* Find '--eeprom' for the eeprom page segment */
-    for( i = 0; i < argc; i++ ) {
-        if( 0 == strcmp("--eeprom", argv[i]) ) {
+    for (i = 0; i < argc; i++) {
+        if (0 == strcmp ("--eeprom", argv[i])) {
             *argv[i] = '\0';
-            switch( args->command ) {
-                case com_read:
-                case com_udump:
-                    args->com_read_data.segment = mem_eeprom;
-                    break;
-                case com_flash:
-                case com_user:
-                    args->com_flash_data.segment = mem_eeprom;
-                    break;
-                case com_bin2hex:
-                    args->com_convert_data.segment = mem_eeprom;
-                    break;
-                default:
-                    /* not supported. */
-                    return -1;
+            switch (args->command) {
+            case com_read:
+            case com_udump: args->com_read_data.segment = mem_eeprom; break;
+            case com_flash:
+            case com_user: args->com_flash_data.segment = mem_eeprom; break;
+            case com_bin2hex: args->com_convert_data.segment = mem_eeprom; break;
+            default:
+                /* not supported. */
+                return -1;
             }
             break;
         }
@@ -707,24 +651,18 @@ static int32_t assign_global_options( struct programmer_arguments *args,
 
     /* Find '--force' if it is here - even though it is not
      * used by all this is easier. */
-    for( i = 0; i < argc; i++ ) {
-        if( 0 == strcmp("--force", argv[i]) ) {
+    for (i = 0; i < argc; i++) {
+        if (0 == strcmp ("--force", argv[i])) {
             *argv[i] = '\0';
-            switch( args->command ) {
-                case com_flash :
-                case com_eflash :
-                case com_user :
-                    args->com_flash_data.force = true;
-                    break;
-                case com_read :
-                    args->com_read_data.force = true;
-                    break;
-                case com_erase :
-                    args->com_erase_data.force = true;
-                    break;
-                default:
-                    // not supported
-                    return -1;
+            switch (args->command) {
+            case com_flash:
+            case com_eflash:
+            case com_user: args->com_flash_data.force = true; break;
+            case com_read: args->com_read_data.force = true; break;
+            case com_erase: args->com_erase_data.force = true; break;
+            default:
+                // not supported
+                return -1;
             }
             break;
         }
@@ -732,11 +670,11 @@ static int32_t assign_global_options( struct programmer_arguments *args,
 
     /* Find '--no-reset' if it is here - even though it is not
      * used by all this is easier. */
-    for( i = 0; i < argc; i++ ) {
-        if( 0 == strcmp("--no-reset", argv[i]) ) {
+    for (i = 0; i < argc; i++) {
+        if (0 == strcmp ("--no-reset", argv[i])) {
             *argv[i] = '\0';
 
-            if ( args->command == com_launch ) {
+            if (args->command == com_launch) {
                 args->com_launch_config.noreset = true;
             } else {
                 // not supported
@@ -747,20 +685,17 @@ static int32_t assign_global_options( struct programmer_arguments *args,
     }
 
     /* Find '--debug' if it is here */
-    for( i = 0; i < argc; i++ ) {
-        if( 0 == strncmp("--debug", argv[i], 7) ) {
+    for (i = 0; i < argc; i++) {
+        if (0 == strncmp ("--debug", argv[i], 7)) {
 
-            if( 0 == strncmp("--debug=", argv[i], 8) ) {
-                if( 1 != sscanf(argv[i], "--debug=%i", &debug) )
-                    return -2;
+            if (0 == strncmp ("--debug=", argv[i], 8)) {
+                if (1 != sscanf (argv[i], "--debug=%i", &debug)) return -2;
             } else {
-                if( (i+1) >= argc )
-                    return -3;
+                if ((i + 1) >= argc) return -3;
 
-                if( 1 != sscanf(argv[i+1], "%i", &debug) )
-                    return -4;
+                if (1 != sscanf (argv[i + 1], "%i", &debug)) return -4;
 
-                *argv[i+1] = '\0';
+                *argv[i + 1] = '\0';
             }
             *argv[i] = '\0';
             break;
@@ -768,67 +703,65 @@ static int32_t assign_global_options( struct programmer_arguments *args,
     }
 
     /* Find '--serial=<hexdigit+>:<offset>' */
-    for( i = 0; i < argc; i++ ) {
-        if( 0 == strncmp("--serial=", argv[i], 9) ) {
+    for (i = 0; i < argc; i++) {
+        if (0 == strncmp ("--serial=", argv[i], 9)) {
             *argv[i] = '\0';
 
-            switch( args->command ) {
-                case com_flash:
-                case com_eflash:
-                case com_user: {
-                    char *hexdigits = &argv[i][9];
-                    char *offset_start = hexdigits;
-                    size_t num_digits = 0;
-                    int16_t *serial_data = NULL;
-                    long serial_offset = 0;
-                    size_t j = 0;
-                    char buffer[3] = {0,0,0};
-                    while (*offset_start != ':') {
-                        char c = *offset_start;
-                        if ('\0' == c) {
-                            return -1;
-                        } else if (('0' <= c && c <= '9')
-                            || ('a' <= c && c <= 'f')
-                            || ('A' <= c && c <= 'F')) {
-                            ++offset_start;
-                        } else {
-                          fprintf(stderr, "other character: '%c'\n", *offset_start);
-                            return -1;
-                        }
-                    }
-                    num_digits = offset_start - hexdigits;
-                    if (num_digits & 1) {
-                        fprintf(stderr,"There must be an even number of hexdigits in the serial data\n");
+            switch (args->command) {
+            case com_flash:
+            case com_eflash:
+            case com_user: {
+                char *hexdigits = &argv[i][9];
+                char *offset_start = hexdigits;
+                size_t num_digits = 0;
+                int16_t *serial_data = NULL;
+                long serial_offset = 0;
+                size_t j = 0;
+                char buffer[3] = { 0, 0, 0 };
+                while (*offset_start != ':') {
+                    char c = *offset_start;
+                    if ('\0' == c) {
+                        return -1;
+                    } else if (('0' <= c && c <= '9') || ('a' <= c && c <= 'f') || ('A' <= c && c <= 'F')) {
+                        ++offset_start;
+                    } else {
+                        fprintf (stderr, "other character: '%c'\n", *offset_start);
                         return -1;
                     }
-                    *offset_start++ = '\0';
-                    if( 1 != sscanf(offset_start, "%ld", &serial_offset) ) {
-                      fprintf(stderr, "sscanf failed\n");
-                      return -1;
-                    }
-                    serial_data = (int16_t *) malloc( (num_digits/2) * sizeof(int16_t) );
-                    for (j=0; j < num_digits; j+=2) {
-                      int data;
-                      buffer[0] = hexdigits[j];
-                      buffer[1] = hexdigits[j+1];
-                      buffer[2] = 0;
-                      if( 1 != sscanf(buffer, "%02x", &data) ) {
-                        fprintf(stderr, "sscanf failed with buffer: %s\n", buffer);
-                        return -1;
-                      }
-                      serial_data[j/2] = (int16_t)data;
-                    }
-                    args->com_flash_data.serial_data = serial_data;
-                    args->com_flash_data.serial_offset = serial_offset;
-                    args->com_flash_data.serial_length = num_digits/2;
-                    break;
                 }
-                default:
-                    /* not supported. */
-                  fprintf(stderr,"command did not match: %d    flash: %d\n", args->command, com_flash);
+                num_digits = offset_start - hexdigits;
+                if (num_digits & 1) {
+                    fprintf (stderr, "There must be an even number of hexdigits in the serial data\n");
                     return -1;
+                }
+                *offset_start++ = '\0';
+                if (1 != sscanf (offset_start, "%ld", &serial_offset)) {
+                    fprintf (stderr, "sscanf failed\n");
+                    return -1;
+                }
+                serial_data = (int16_t *)malloc ((num_digits / 2) * sizeof (int16_t));
+                for (j = 0; j < num_digits; j += 2) {
+                    int data;
+                    buffer[0] = hexdigits[j];
+                    buffer[1] = hexdigits[j + 1];
+                    buffer[2] = 0;
+                    if (1 != sscanf (buffer, "%02x", &data)) {
+                        fprintf (stderr, "sscanf failed with buffer: %s\n", buffer);
+                        return -1;
+                    }
+                    serial_data[j / 2] = (int16_t)data;
+                }
+                args->com_flash_data.serial_data = serial_data;
+                args->com_flash_data.serial_offset = serial_offset;
+                args->com_flash_data.serial_length = num_digits / 2;
+                break;
             }
-            fprintf(stderr, "Success getting serial number\n");
+            default:
+                /* not supported. */
+                fprintf (stderr, "command did not match: %d    flash: %d\n", args->command, com_flash);
+                return -1;
+            }
+            fprintf (stderr, "Success getting serial number\n");
             break;
         }
     }
@@ -836,27 +769,19 @@ static int32_t assign_global_options( struct programmer_arguments *args,
     return 0;
 }
 
-static int32_t assign_com_setfuse_option( struct programmer_arguments *args,
-                                            const int32_t parameter,
-                                            char *value )
-{
+static int32_t
+assign_com_setfuse_option (struct programmer_arguments *args, const int32_t parameter, char *value) {
     /* name & value */
-    if( 0 == parameter ) {
+    if (0 == parameter) {
         /* name */
-        if( 0 != assign_option((int32_t *) &(args->com_setfuse_data.name),
-                               value, setfuse_map) )
-        {
-            return -1;
-        }
+        if (0 != assign_option ((int32_t *)&(args->com_setfuse_data.name), value, setfuse_map)) { return -1; }
     } else {
         int32_t temp = 0;
         /* value */
-        if( 1 != sscanf(value, "%i", &(temp)) )
-            return -2;
+        if (1 != sscanf (value, "%i", &(temp))) return -2;
 
         /* ensure the range is greater than 0 */
-        if( temp < 0 )
-            return -3;
+        if (temp < 0) return -3;
 
         args->com_setfuse_data.value = temp;
     }
@@ -864,27 +789,19 @@ static int32_t assign_com_setfuse_option( struct programmer_arguments *args,
     return 0;
 }
 
-static int32_t assign_com_configure_option( struct programmer_arguments *args,
-                                            const int32_t parameter,
-                                            char *value )
-{
+static int32_t
+assign_com_configure_option (struct programmer_arguments *args, const int32_t parameter, char *value) {
     /* name & value */
-    if( 0 == parameter ) {
+    if (0 == parameter) {
         /* name */
-        if( 0 != assign_option((int32_t *) &(args->com_configure_data.name),
-                               value, configure_map) )
-        {
-            return -1;
-        }
+        if (0 != assign_option ((int32_t *)&(args->com_configure_data.name), value, configure_map)) { return -1; }
     } else {
         int32_t temp = 0;
         /* value */
-        if( 1 != sscanf(value, "%i", &(temp)) )
-            return -2;
+        if (1 != sscanf (value, "%i", &(temp))) return -2;
 
         /* ensure the range is greater than 0 */
-        if( temp < 0 )
-            return -3;
+        if (temp < 0) return -3;
 
         args->com_configure_data.value = temp;
     }
@@ -892,10 +809,8 @@ static int32_t assign_com_configure_option( struct programmer_arguments *args,
     return 0;
 }
 
-static int32_t assign_com_flash_option( struct programmer_arguments *args,
-                                        const int32_t parameter,
-                                        char *value )
-{
+static int32_t
+assign_com_flash_option (struct programmer_arguments *args, const int32_t parameter, char *value) {
     /* file */
     args->com_flash_data.original_first_char = *value;
     args->com_flash_data.file = value;
@@ -903,10 +818,8 @@ static int32_t assign_com_flash_option( struct programmer_arguments *args,
     return 0;
 }
 
-static int32_t assign_com_convert_option( struct programmer_arguments *args,
-                                          const int32_t parameter,
-                                          char *value )
-{
+static int32_t
+assign_com_convert_option (struct programmer_arguments *args, const int32_t parameter, char *value) {
     /* file */
     args->com_convert_data.original_first_char = *value;
     args->com_convert_data.file = value;
@@ -914,348 +827,304 @@ static int32_t assign_com_convert_option( struct programmer_arguments *args,
     return 0;
 }
 
-
-static int32_t assign_com_getfuse_option( struct programmer_arguments *args,
-                                      const int32_t parameter,
-                                      char *value )
-{
+static int32_t
+assign_com_getfuse_option (struct programmer_arguments *args, const int32_t parameter, char *value) {
     /* name */
-    if( 0 != assign_option((int32_t *) &(args->com_getfuse_data.name),
-                           value, getfuse_map) )
-    {
-        return -1;
-    }
+    if (0 != assign_option ((int32_t *)&(args->com_getfuse_data.name), value, getfuse_map)) { return -1; }
 
     return 0;
 }
 
-static int32_t assign_com_get_option( struct programmer_arguments *args,
-                                      const int32_t parameter,
-                                      char *value )
-{
+static int32_t
+assign_com_get_option (struct programmer_arguments *args, const int32_t parameter, char *value) {
     /* name */
-    if( 0 != assign_option((int32_t *) &(args->com_get_data.name),
-                           value, get_map) )
-    {
-        return -1;
-    }
+    if (0 != assign_option ((int32_t *)&(args->com_get_data.name), value, get_map)) { return -1; }
 
     return 0;
 }
 
-static int32_t assign_command_options( struct programmer_arguments *args,
-                                       const size_t argc,
-                                       char **argv )
-{
+static int32_t
+assign_command_options (struct programmer_arguments *args, const size_t argc, char **argv) {
     size_t i = 0;
     int32_t param = 0;
     int32_t required_params = 0;
 
     /* Deal with all remaining command-specific arguments. */
-    for( i = 0; i < argc; i++ ) {
-        if( '\0' == *argv[i] )
-            continue;
+    for (i = 0; i < argc; i++) {
+        if ('\0' == *argv[i]) continue;
 
-        switch( args->command ) {
-            case com_configure:
-                required_params = 2;
-                if( 0 != assign_com_configure_option(args, param, argv[i]) )
-                    return -1;
-                break;
+        switch (args->command) {
+        case com_configure:
+            required_params = 2;
+            if (0 != assign_com_configure_option (args, param, argv[i])) return -1;
+            break;
 
-            case com_setfuse:
-                required_params = 2;
-                if( 0 != assign_com_setfuse_option(args, param, argv[i]) )
-                    return -1;
-                break;
+        case com_setfuse:
+            required_params = 2;
+            if (0 != assign_com_setfuse_option (args, param, argv[i])) return -1;
+            break;
 
-            case com_flash:
-            case com_eflash:
-            case com_user:
-                required_params = 1;
-                if( 0 != assign_com_flash_option(args, param, argv[i]) )
-                    return -3;
-                break;
+        case com_flash:
+        case com_eflash:
+        case com_user:
+            required_params = 1;
+            if (0 != assign_com_flash_option (args, param, argv[i])) return -3;
+            break;
 
-            case com_bin2hex:
-            case com_hex2bin:
-                required_params = 1;
-                if( 0 != assign_com_convert_option(args, param, argv[i]) )
-                    return -3;
-                break;
+        case com_bin2hex:
+        case com_hex2bin:
+            required_params = 1;
+            if (0 != assign_com_convert_option (args, param, argv[i])) return -3;
+            break;
 
-            case com_getfuse:
-                required_params = 1;
-                if( 0 != assign_com_getfuse_option(args, param, argv[i]) )
-                    return -4;
-                break;
+        case com_getfuse:
+            required_params = 1;
+            if (0 != assign_com_getfuse_option (args, param, argv[i])) return -4;
+            break;
 
-            case com_get:
-                required_params = 1;
-                if( 0 != assign_com_get_option(args, param, argv[i]) )
-                    return -4;
-                break;
+        case com_get:
+            required_params = 1;
+            if (0 != assign_com_get_option (args, param, argv[i])) return -4;
+            break;
 
-            default:
-                return -5;
+        default: return -5;
         }
 
         *argv[i] = '\0';
         param++;
     }
 
-    if( required_params != param )
-        return -6;
+    if (required_params != param) return -6;
 
     return 0;
 }
 
-static void print_args( struct programmer_arguments *args )
-{
+static void
+print_args (struct programmer_arguments *args) {
     const char *command = "(unknown)";
     const char *target = "(unknown)";
     size_t i;
 
-    for( i = 0; i < sizeof(target_map) / sizeof(target_map[0]); i++ ) {
-        if( args->target == target_map[i].value ) {
+    for (i = 0; i < sizeof (target_map) / sizeof (target_map[0]); i++) {
+        if (args->target == target_map[i].value) {
             target = target_map[i].name;
             break;
         }
     }
 
-    for( i = 0; i < sizeof(command_map) / sizeof(command_map[0]); i++ ) {
-        if( args->command == command_map[i].value ) {
+    for (i = 0; i < sizeof (command_map) / sizeof (command_map[0]); i++) {
+        if (args->command == command_map[i].value) {
             command = command_map[i].name;
             break;
         }
     }
 
-    fprintf( stderr, "     target: %s\n", target );
-    fprintf( stderr, "    chip_id: 0x%04x\n", args->chip_id );
-    fprintf( stderr, "  vendor_id: 0x%04x\n", args->vendor_id );
-    fprintf( stderr, "    command: %s\n", command );
-    fprintf( stderr, "      quiet: %s\n", (0 == args->quiet) ? "false" : "true" );
-    fprintf( stderr, "      debug: %d\n", debug );
-    fprintf( stderr, "device_type: %s\n", args->device_type_string );
-    fprintf( stderr, "------ command specific below ------\n" );
+    fprintf (stderr, "     target: %s\n", target);
+    fprintf (stderr, "    chip_id: 0x%04x\n", args->chip_id);
+    fprintf (stderr, "  vendor_id: 0x%04x\n", args->vendor_id);
+    fprintf (stderr, "    command: %s\n", command);
+    fprintf (stderr, "      quiet: %s\n", (0 == args->quiet) ? "false" : "true");
+    fprintf (stderr, "      debug: %d\n", debug);
+    fprintf (stderr, "device_type: %s\n", args->device_type_string);
+    fprintf (stderr, "------ command specific below ------\n");
 
-    switch( args->command ) {
-        case com_configure:
-            fprintf( stderr, "       name: %d\n", args->com_configure_data.name );
-            fprintf( stderr, "   validate: %s\n",
-                     (args->com_configure_data.suppress_validation) ?
-                        "false" : "true" );
-            fprintf( stderr, "      value: %d\n", args->com_configure_data.value );
-            break;
-        case com_erase:
-            fprintf( stderr, "   validate: %s\n",
-                     (args->com_erase_data.suppress_validation) ?
-                        "false" : "true" );
-            break;
-        case com_flash:
-        case com_eflash:
-        case com_user:
-            fprintf( stderr, "   validate: %s\n",
-                     (args->com_flash_data.suppress_validation) ?
-                        "false" : "true" );
-            fprintf( stderr, "   hex file: %s\n", args->com_flash_data.file );
-            break;
-        case com_get:
-            fprintf( stderr, "       name: %d\n", args->com_get_data.name );
-            break;
-        case com_launch:
-            fprintf( stderr, "   no-reset: %d\n", args->com_launch_config.noreset );
-            break;
-        default:
-            break;
+    switch (args->command) {
+    case com_configure:
+        fprintf (stderr, "       name: %d\n", args->com_configure_data.name);
+        fprintf (stderr, "   validate: %s\n", (args->com_configure_data.suppress_validation) ? "false" : "true");
+        fprintf (stderr, "      value: %d\n", args->com_configure_data.value);
+        break;
+    case com_erase:
+        fprintf (stderr, "   validate: %s\n", (args->com_erase_data.suppress_validation) ? "false" : "true");
+        break;
+    case com_flash:
+    case com_eflash:
+    case com_user:
+        fprintf (stderr, "   validate: %s\n", (args->com_flash_data.suppress_validation) ? "false" : "true");
+        fprintf (stderr, "   hex file: %s\n", args->com_flash_data.file);
+        break;
+    case com_get: fprintf (stderr, "       name: %d\n", args->com_get_data.name); break;
+    case com_launch: fprintf (stderr, "   no-reset: %d\n", args->com_launch_config.noreset); break;
+    default: break;
     }
-    fprintf( stderr, "\n" );
-    fflush( stdout );
+    fprintf (stderr, "\n");
+    fflush (stdout);
 }
 
-static int32_t execute_hex2bin( struct programmer_arguments *args ) {
-    int32_t  retval = -1;
-    uint32_t  i;
+static int32_t
+execute_hex2bin (struct programmer_arguments *args) {
+    int32_t retval = -1;
+    uint32_t i;
     intel_buffer_out_t bout;
-    size_t   memory_size;
-    size_t   page_size;
+    size_t memory_size;
+    size_t page_size;
     uint32_t target_offset = 0;
 
     memory_size = args->memory_address_top + 1;
     page_size = args->flash_page_size;
 
     // ----------------- CONVERT HEX FILE TO BINARY -------------------------
-    if( 0 != intel_init_buffer_out(&bout, memory_size, page_size) ) {
-        DEBUG("ERROR initializing a buffer.\n");
+    if (0 != intel_init_buffer_out (&bout, memory_size, page_size)) {
+        DEBUG ("ERROR initializing a buffer.\n");
         goto error;
     }
 
-    if( 0!= intel_hex_to_buffer( args->com_convert_data.file, &bout,
-                target_offset, args->quiet ) ) {
-        DEBUG( "Something went wrong with creating the memory image.\n" );
+    if (0 != intel_hex_to_buffer (args->com_convert_data.file, &bout, target_offset, args->quiet)) {
+        DEBUG ("Something went wrong with creating the memory image.\n");
         goto error;
     }
 
-    if( !args->quiet )
-        fprintf( stderr, "Dumping 0x%X bytes from address offset 0x%X.\n",
-                bout.info.data_end + 1, target_offset );
-    for( i = 0; i <= bout.info.data_end; i++ ) {
-        fprintf( stdout, "%c", bout.data[i] <= 0xFF ? bout.data[i] & 0xFF : 0xFF);
+    if (!args->quiet)
+        fprintf (stderr, "Dumping 0x%X bytes from address offset 0x%X.\n", bout.info.data_end + 1, target_offset);
+    for (i = 0; i <= bout.info.data_end; i++) {
+        fprintf (stdout, "%c", bout.data[i] <= 0xFF ? bout.data[i] & 0xFF : 0xFF);
     }
 
-    fflush( stdout );
+    fflush (stdout);
 
     retval = 0;
 
 error:
-    if( NULL != bout.data ) {
-        free( bout.data );
+    if (NULL != bout.data) {
+        free (bout.data);
         bout.data = NULL;
     }
 
     return retval;
 }
 
-static int32_t execute_bin2hex( struct programmer_arguments *args ) {
-    int32_t retval = -1;        // return value for this fcn
-    intel_buffer_in_t buin;     // buffer in for storing read mem
+static int32_t
+execute_bin2hex (struct programmer_arguments *args) {
+    int32_t retval = -1;    // return value for this fcn
+    intel_buffer_in_t buin; // buffer in for storing read mem
     enum atmel_memory_unit_enum mem_segment = args->com_convert_data.segment;
     size_t mem_size = 0;
     size_t page_size = 0;
     uint32_t target_offset = 0; // address offset on the target device
-        // NOTE: target_offset may not be set appropriately for device
-        // classes other than ADC_AVR32
+                                // NOTE: target_offset may not be set appropriately for device
+                                // classes other than ADC_AVR32
     FILE *fp = NULL;
     char *filename = args->com_convert_data.file;
 
-    if( ADC_AVR32 == args->device_type ) {
-        target_offset = 0x80000000;
+    if (ADC_AVR32 == args->device_type) { target_offset = 0x80000000; }
+
+    switch (mem_segment) {
+    case mem_flash:
+        mem_size = args->memory_address_top + 1;
+        page_size = args->flash_page_size;
+        break;
+    case mem_eeprom:
+        mem_size = args->eeprom_memory_size;
+        page_size = args->eeprom_page_size;
+        break;
+    case mem_user:
+        mem_size = args->flash_page_size;
+        page_size = args->flash_page_size;
+        target_offset = 0x80800000;
+        break;
+    default: fprintf (stderr, "Dump not currently supported for this memory.\n"); goto error;
     }
 
-    switch( mem_segment ) {
-        case mem_flash:
-            mem_size = args->memory_address_top + 1;
-            page_size = args->flash_page_size;
-            break;
-        case mem_eeprom:
-            mem_size = args->eeprom_memory_size;
-            page_size = args->eeprom_page_size;
-            break;
-        case mem_user:
-            mem_size = args->flash_page_size;
-            page_size = args->flash_page_size;
-            target_offset = 0x80800000;
-            break;
-        default:
-            fprintf( stderr, "Dump not currently supported for this memory.\n" );
-            goto error;
-    }
-
-    if( 0 != intel_init_buffer_in(&buin, mem_size, page_size) ) {
-        DEBUG("ERROR initializing a buffer.\n");
+    if (0 != intel_init_buffer_in (&buin, mem_size, page_size)) {
+        DEBUG ("ERROR initializing a buffer.\n");
         goto error;
     }
 
-    if( mem_segment == mem_flash ) {
+    if (mem_segment == mem_flash) {
         buin.info.data_start = args->flash_address_bottom;
         buin.info.data_end = args->flash_address_top;
     }
 
-    if( NULL == filename ) {
-        if( !args->quiet ) fprintf( stderr, "Invalid filename.\n" );
+    if (NULL == filename) {
+        if (!args->quiet) fprintf (stderr, "Invalid filename.\n");
         retval = -2;
         goto error;
     }
 
-    if( 0 == strcmp("STDIN", filename) ) {
+    if (0 == strcmp ("STDIN", filename)) {
         fp = stdin;
     } else {
-        fp = fopen( filename, "r" );
-        if( NULL == fp ) {
-            if( !args->quiet ) fprintf( stderr, "Error opening %s\n", filename );
+        fp = fopen (filename, "r");
+        if (NULL == fp) {
+            if (!args->quiet) fprintf (stderr, "Error opening %s\n", filename);
             retval = -3;
             goto error;
         }
     }
 
-    buin.info.data_end = fread(buin.data, 1, buin.info.total_size, fp);
-    if( buin.info.data_end == 0 ) {
-        if( !args->quiet ) fprintf( stderr, "ERROR: no bytes read\n" );
+    buin.info.data_end = fread (buin.data, 1, buin.info.total_size, fp);
+    if (buin.info.data_end == 0) {
+        if (!args->quiet) fprintf (stderr, "ERROR: no bytes read\n");
         retval = -4;
         goto error;
     }
 
-    if( !args->quiet )
-        fprintf( stderr, "Read 0x%X bytes, making hex with address offset 0x%X.\n",
-                buin.info.data_end + 1, target_offset );
+    if (!args->quiet)
+        fprintf (stderr, "Read 0x%X bytes, making hex with address offset 0x%X.\n", buin.info.data_end + 1,
+                 target_offset);
 
-    retval = intel_hex_from_buffer( &buin, args->com_convert_data.force, target_offset );
+    retval = intel_hex_from_buffer (&buin, args->com_convert_data.force, target_offset);
 
 error:
-    if( NULL != buin.data ) {
-        free( buin.data );
+    if (NULL != buin.data) {
+        free (buin.data);
         buin.data = NULL;
     }
 
     return retval;
 }
 
-
-int32_t parse_arguments( struct programmer_arguments *args,
-                         const size_t argc,
-                         char **argv )
-{
+int32_t
+parse_arguments (struct programmer_arguments *args, const size_t argc, char **argv) {
     int32_t i;
     int32_t status = 0;
 
-    if( NULL == args )
-        return -1;
+    if (NULL == args) return -1;
 
     /* initialize the argument block to empty, known values */
-    args->target  = tar_none;
+    args->target = tar_none;
     args->command = com_none;
-    args->quiet   = 0;
+    args->quiet = 0;
     args->suppressBootloader = 0;
 
     /* Special case - check for the help commands which do not require a device type */
-    if( argc == 2 ) {
-        if( 0 == strcasecmp(argv[1], "--version") ) {
-            fprintf( stderr, PACKAGE_STRING "\n");
+    if (argc == 2) {
+        if (0 == strcasecmp (argv[1], "--version")) {
+            fprintf (stderr, PACKAGE_STRING "\n");
             return 1;
         }
-        if( 0 == strcasecmp(argv[1], "--targets") ) {
-            list_targets( LIST_STD );
+        if (0 == strcasecmp (argv[1], "--targets")) {
+            list_targets (LIST_STD);
             return 1;
         }
-        if( 0 == strcasecmp(argv[1], "--targets-tex") ) {
-            list_targets( LIST_TEX );
+        if (0 == strcasecmp (argv[1], "--targets-tex")) {
+            list_targets (LIST_TEX);
             return 1;
         }
-        if( 0 == strcasecmp(argv[1], "--targets-html") ) {
-            list_targets( LIST_HTML );
+        if (0 == strcasecmp (argv[1], "--targets-html")) {
+            list_targets (LIST_HTML);
             return 1;
         }
-        if( 0 == strcasecmp(argv[1], "--help") ||
-                0 == strcasecmp(argv[1], "-h") ||
-                0 == strcasecmp(argv[1], "--h") ) {
-            usage();
+        if (0 == strcasecmp (argv[1], "--help") || 0 == strcasecmp (argv[1], "-h")
+            || 0 == strcasecmp (argv[1], "--h")) {
+            usage ();
             return 1;
         }
     }
 
     /* Make sure there are the minimum arguments */
-    if( argc < 3 ) {
-        basic_help();
+    if (argc < 3) {
+        basic_help ();
         return -1;
     }
 
-    if( 0 != assign_target(args, argv[1], target_map) ) {
-        fprintf( stderr, "Unsupported target '%s'.\n", argv[1]);
+    if (0 != assign_target (args, argv[1], target_map)) {
+        fprintf (stderr, "Unsupported target '%s'.\n", argv[1]);
         status = -3;
         goto done;
     }
 
-    if( 0 != assign_option((int32_t *) &(args->command), argv[2], command_map) ) {
+    if (0 != assign_option ((int32_t *)&(args->command), argv[2], command_map)) {
         status = -4;
         goto done;
     }
@@ -1266,84 +1135,76 @@ int32_t parse_arguments( struct programmer_arguments *args,
     *argv[2] = '\0';
 
     /* assign command specific default values */
-    switch( args->command ) {
-        case com_flash :
-            args->com_flash_data.force = 0;
-            args->com_flash_data.segment = mem_flash;
-            break;
-        case com_launch :
-            args->com_launch_config.noreset = 0;
-            break;
-        case com_dump :
-            args->com_read_data.segment = mem_flash;
-            args->com_flash_data.force = 0;
-            break;
-        case com_bin2hex :
-            args->com_convert_data.segment = mem_flash;
-            break;
-        default :
-            break;
+    switch (args->command) {
+    case com_flash:
+        args->com_flash_data.force = 0;
+        args->com_flash_data.segment = mem_flash;
+        break;
+    case com_launch: args->com_launch_config.noreset = 0; break;
+    case com_dump:
+        args->com_read_data.segment = mem_flash;
+        args->com_flash_data.force = 0;
+        break;
+    case com_bin2hex: args->com_convert_data.segment = mem_flash; break;
+    default: break;
     }
 
-    if( 0 != assign_global_options(args, argc, argv) ) {
+    if (0 != assign_global_options (args, argc, argv)) {
         status = -5;
         goto done;
     }
 
-    if( 0 != assign_command_options(args, argc, argv) ) {
+    if (0 != assign_command_options (args, argc, argv)) {
         status = -6;
         goto done;
     }
 
     /* Make sure there weren't any *extra* options. */
-    for( i = 0; i < argc; i++ ) {
-        if( '\0' != *argv[i] ) {
-            fprintf( stderr, "unrecognized parameter\n" );
+    for (i = 0; i < argc; i++) {
+        if ('\0' != *argv[i]) {
+            fprintf (stderr, "unrecognized parameter\n");
             status = -7;
             goto done;
         }
     }
 
     /* if this is a flash command, restore the filename */
-    if( (com_flash == args->command) || (com_eflash == args->command)
-            || (com_user == args->command) ) {
-        if( 0 == args->com_flash_data.file ) {
-// TODO : it should be ok to not have a filename if --serial=hexdigits:offset is
-// provided, this should be implemented.. in fact, given that most of this
-// program is written to use a single command by it self, this probably should
-// be separated out as a new command.  The caveat is if data is written to '\0'
-// in the hex file, serialize will do nothing bc can't un-write w/o erase
-            fprintf( stderr, "flash filename is missing\n" );
+    if ((com_flash == args->command) || (com_eflash == args->command) || (com_user == args->command)) {
+        if (0 == args->com_flash_data.file) {
+            // TODO : it should be ok to not have a filename if --serial=hexdigits:offset is
+            // provided, this should be implemented.. in fact, given that most of this
+            // program is written to use a single command by it self, this probably should
+            // be separated out as a new command.  The caveat is if data is written to '\0'
+            // in the hex file, serialize will do nothing bc can't un-write w/o erase
+            fprintf (stderr, "flash filename is missing\n");
             status = -8;
             goto done;
         }
         args->com_flash_data.file[0] = args->com_flash_data.original_first_char;
     }
 
-    if( (com_bin2hex == args->command) || (com_hex2bin == args->command) ) {
-        if( 0 == args->com_convert_data.file ) {
-            fprintf( stderr, "conversion filename is missing\n" );
+    if ((com_bin2hex == args->command) || (com_hex2bin == args->command)) {
+        if (0 == args->com_convert_data.file) {
+            fprintf (stderr, "conversion filename is missing\n");
             status = -8;
             goto done;
         }
         args->com_convert_data.file[0] = args->com_convert_data.original_first_char;
 
-        if ( com_bin2hex == args->command ) {
-            return execute_bin2hex( args );
+        if (com_bin2hex == args->command) {
+            return execute_bin2hex (args);
         } else {
-            return execute_hex2bin( args );
+            return execute_hex2bin (args);
         }
     }
 
 done:
-    if( 1 < debug ) {
-        print_args( args );
-    }
+    if (1 < debug) { print_args (args); }
 
-    if(-3 == status ) {
-        list_targets( LIST_STD );
-    } else if( 0 != status ) {
-        usage();
+    if (-3 == status) {
+        list_targets (LIST_STD);
+    } else if (0 != status) {
+        usage ();
     }
 
     return status;

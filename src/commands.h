@@ -21,10 +21,9 @@
 #ifndef __COMMANDS_H__
 #define __COMMANDS_H__
 
-#include <stdint.h>
 #include "arguments.h"
 #include "dfu-device.h"
+#include <stdint.h>
 
-int32_t execute_command( dfu_device_t *device,
-                         struct programmer_arguments *args );
+int32_t execute_command (dfu_device_t *device, struct programmer_arguments *args);
 #endif

@@ -23,6 +23,5 @@
 
 #include <stdarg.h>
 
-void dfu_debug( const char *file, const char *function, const int line,
-                const int level, const char *format, ... );
+void dfu_debug (const char *file, const char *function, const int line, const int level, const char *format, ...);
 #endif
