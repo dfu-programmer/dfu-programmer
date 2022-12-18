@@ -30,8 +30,7 @@ extern "C" {
 #include "arguments.h"
 #include "dfu-device.h"
 
-int32_t execute_command( dfu_device_t *device,
-                         struct programmer_arguments *args );
+int32_t execute_command (dfu_device_t *device, struct programmer_arguments *args);
 
 #ifdef __cplusplus
 }

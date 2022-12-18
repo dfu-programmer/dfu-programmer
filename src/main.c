@@ -18,18 +18,18 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
-#include <string.h>
 #include "libdfu.h"
+#include <string.h>
 
-int main( int argc, char **argv )
-{
+int
+main (int argc, char **argv) {
     int status;
     struct programmer_arguments args;
 
-    memset( &args, 0, sizeof(args) );
+    memset (&args, 0, sizeof (args));
 
-    status = parse_arguments(&args, argc, argv);
-    if( status < 0 ) {
+    status = parse_arguments (&args, argc, argv);
+    if (status < 0) {
         /* Exit with an error. */
         return ARGUMENT_ERROR;
     } else if (status > 0) {
@@ -37,5 +37,5 @@ int main( int argc, char **argv )
         return SUCCESS;
     }
 
-    return dfu_programmer(&args);
+    return dfu_programmer (&args);
 }

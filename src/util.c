@@ -23,17 +23,16 @@
 
 #include "util.h"
 
-extern int debug;       /* defined in libdfu.c */
+extern int debug; /* defined in libdfu.c */
 
-void dfu_debug( const char *file, const char *function, const int line,
-                const int level, const char *format, ... )
-{
-    if( level < debug ) {
+void
+dfu_debug (const char *file, const char *function, const int line, const int level, const char *format, ...) {
+    if (level < debug) {
         va_list va_arg;
 
-        va_start( va_arg, format );
-        fprintf( stderr, "%s:%d: ", file, line );
-        vfprintf( stderr, format, va_arg );
-        va_end( va_arg );
+        va_start (va_arg, format);
+        fprintf (stderr, "%s:%d: ", file, line);
+        vfprintf (stderr, format, va_arg);
+        va_end (va_arg);
     }
 }

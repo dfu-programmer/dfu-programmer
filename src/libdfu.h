@@ -6,7 +6,7 @@ extern "C" {
 
 #include "arguments.h"
 
-int dfu_programmer(struct programmer_arguments * args);
+int dfu_programmer (struct programmer_arguments *args);
 
 #ifdef __cplusplus
 }
