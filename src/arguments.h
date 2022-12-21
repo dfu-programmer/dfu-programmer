@@ -31,16 +31,6 @@ extern "C" {
 #include "dfu-device.h"
 
 #define DEVICE_TYPE_STRING_MAX_LENGTH 6
-/*
- *  atmel_programmer target command
- *
- *  configure {BSB|SBV|SSB|EB|HSB} [--suppress-validation, --quiet, --debug level] value
- *  dump [--quiet, --debug level]
- *  erase [--suppress-validation, --quiet, --debug level]
- *  flash [--suppress-validation, --quiet, --debug level] file
- *  get {bootloader-version|ID1|ID2|BSB|SBV|SSB|EB|manufacturer|family|product-name|product-revision|HSB} [--quiet,
- * --debug level] launch [--no-reset]
- */
 
 enum return_codes_enum {
     SUCCESS = 0,
