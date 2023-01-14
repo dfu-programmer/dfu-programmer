@@ -1,0 +1,24 @@
+name: Test dfu-programmer with coverage reporting
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  avr:
+    # concurrency:
+    #   group: ${{ github.workflow }}
+    #   cancel-in-progress: true
+    name: Test with AVR Test HAT on a Raspberry Pi
+    runs-on:
+      - self-hosted
+      - avr-test-hat
+      - linux
+    steps:
+      - uses: actions/checkout@v2
+      - run: ./bootstrap.sh
+      - run: ./configure CFLAGS="-Werror -Oo --coverage" --disable-dependency-tracking
+      - run: make -j4
+      - run: npm install
+      - run: npm test
+      - run: cpp-coveralls
