@@ -2,7 +2,21 @@ import { open, readFile, writeFile, unlink } from "fs/promises";
 import { join } from "path";
 import { tmpdir } from "os";
 
-export async function getLock(): Promise<() => Promise<void>> {
+/**
+ * A function that will unlock the lock.
+ * @returns A Promise that resolves when the lock is released.
+ */
+export type Unlock = () => Promise<void>;
+
+/**
+ * Get a lock to prevent multiple tests from running at the same time.
+ * Will wait for any existing locks to be released.
+ *
+ * Will also remove any stale locks.
+ *
+ * @returns A Promise that resolves, when the lock is acquired, to a function that will unlock the lock.
+ */
+export async function getLock(): Promise<Unlock> {
   const lockFile = join(tmpdir(), "dfu-programmer-test.lock");
 
   async function cleanup() {
