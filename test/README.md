@@ -36,4 +36,39 @@ Available environment variables:
  - `$TARGET` - The correct "target" argument that dfu-programmer should use for the attached device.
  - `$AVRDUDE` - A path to avrdude to needed flags. Just add "-U flash:r:-:h" to read the flash memory as hex bytes
 
+## Setup Script for new Pi
 
+```bash
+:|sudo apt update
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+:|sudo apt install -y git automake build-essential libusb-1.0-0-dev python3-pip nodejs
+sudo pip install cpp-coveralls
+
+sudo useradd -mN -g users -G plugdev,gpio action
+sudo -iu action
+
+mkdir -p ~/runner
+curl -sL https://github.com/actions/runner/releases/download/v2.300.2/actions-runner-linux-arm64-2.300.2.tar.gz | tar xz -C ~/runner
+cd ~/runner
+./config.sh --url https://github.com/dfu-programmer/dfu-programmer --token <token> # Get token from GitHub Action Self-Hosted Runner page
+exit
+
+cat << EOF | sudo tee /etc/systemd/system/actions-runner.service > /dev/null
+[Unit]
+Description=GitHub Actions Runner
+After=network.target
+
+[Service]
+Type=simple
+User=action
+WorkingDirectory=/home/action/runner
+ExecStart=/home/action/runner/run.sh
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+sudo systemctl daemon-reload
+sudo systemctl enable --now actions-runner
+```
