@@ -83,8 +83,7 @@ All but "USB Serial (CDC)" will work with dfu-programmer.
 
 ## Testing & Coverage
 
-Since most testing depends on hardware, we've set up a simple device with a webhook that will automatically run tests with coverage reports and upload them to [Coveralls](https://coveralls.io/github/dfu-programmer/dfu-programmer).
-The setup scripts are not <!-- yet? --> published.
+Since most testing depends on hardware, we've set up a custom GitHub Action Runner on a dedicated Raspberry Pi.
 Read more about the tests [here](test/README.md).
 
 ## Currently Supported Chips
