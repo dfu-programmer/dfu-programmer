@@ -70,3 +70,16 @@ type Result = {
   child: ChildProcess;
 };
 ```
+
+## TODO
+
+Add utilities for:
+
+ - [ ] Simple Reset of device when desired
+ - [ ] Running AVRDUDE
+   - [ ] Reading flash with AVRDUDE to verify bytes written by dfu-programmer
+   - [ ] Writing flash with AVRDUDE and verifying bytes written with dfu-programmer
+   - [ ] Re-flashing bootloader
+ - [ ] `.hex` files
+   - [ ] Comparing with mask
+   - [ ] Generating files for testing
