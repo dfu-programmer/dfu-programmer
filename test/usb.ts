@@ -18,9 +18,7 @@ describe("Basic Communication with Hardware", () => {
     if (code === 3) return;
 
     expect(code).toBe(0);
-
-    // TODO: Verify that the device is in DFU mode
     expect(stdout).toBe("");
-    expect(stderr).toMatch(/^dfu-programmer/g);
+    expect(stderr).toBe("");
   });
 });
