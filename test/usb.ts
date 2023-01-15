@@ -13,10 +13,6 @@ describe("Basic Communication with Hardware", () => {
     const code = await res.exitCode;
     const { stdout, stderr } = res;
 
-    // The expected error code when no device is connected.
-    // TODO: not return?
-    if (code === 3) return;
-
     expect(code).toBe(0);
     expect(stdout).toBe("");
     expect(stderr).toBe("");
@@ -26,10 +22,6 @@ describe("Basic Communication with Hardware", () => {
     const res = runDfuTargeted(["launch"]);
     const code = await res.exitCode;
     const { stdout, stderr } = res;
-
-    // The expected error code when no device is connected.
-    // TODO: not return?
-    if (code === 3) return;
 
     expect(code).toBe(0);
     expect(stdout).toBe("");
