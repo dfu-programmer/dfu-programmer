@@ -6,7 +6,7 @@ name: Build dfu-programmer
 
 on:
   push:
-  pull_request:
+  # pull_request:
 
 jobs:
   Windows-x86:
