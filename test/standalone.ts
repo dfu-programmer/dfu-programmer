@@ -30,7 +30,7 @@ describe("standalone", () => {
     expect(stderr).toMatch(/^dfu-programmer/g);
 
     // Contains the usage
-    expect(stderr).toMatch(/^Usage: dfu-programmer target[:usb-bus,usb-addr] command [options] [global-options] [file|data]/m);
+    expect(stderr).toMatch(/^Usage: dfu-programmer target\[:usb-bus,usb-addr\] command \[options\] \[global-options\] \[file\|data\]/m);
 
     // Contains the global options
     expect(stderr).toMatch(/^global-options:/m);
