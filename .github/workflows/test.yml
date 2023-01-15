@@ -21,4 +21,4 @@ jobs:
       - run: make -j4
       - run: npm install
       - run: npm test
-      - run: cpp-coveralls
+      - run: coveralls
