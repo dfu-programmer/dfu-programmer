@@ -74,4 +74,7 @@ WantedBy=multi-user.target
 EOF
 sudo systemctl daemon-reload
 sudo systemctl enable --now actions-runner
+
+# Enable read-only filesystem with overlay using `raspi-config`
+sudo raspi-config
 ```
