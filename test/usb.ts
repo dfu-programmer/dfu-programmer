@@ -8,6 +8,20 @@ import { runDfuTargeted } from "./util/dfu";
  */
 
 describe("Basic Communication with Hardware", () => {
+  test("Command: reset", async () => {
+    const res = runDfuTargeted(["reset"]);
+    const code = await res.exitCode;
+    const { stdout, stderr } = res;
+
+    // The expected error code when no device is connected.
+    // TODO: not return?
+    if (code === 3) return;
+
+    expect(code).toBe(0);
+    expect(stdout).toBe("");
+    expect(stderr).toBe("");
+  });
+
   test("Command: launch", async () => {
     const res = runDfuTargeted(["launch"]);
     const code = await res.exitCode;
