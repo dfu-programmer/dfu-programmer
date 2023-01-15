@@ -34,7 +34,7 @@ Available environment variables:
 
  - `$DFU` - The path to the recently built `dfu-programmer` executable.
  - `$TARGET` - The correct "target" argument that dfu-programmer should use for the attached device.
- - `$AVRDUDE` - A path to avrdude to needed flags. Just add "-U flash:r:-:h" to read the flash memory as hex bytes
+ - `$AVRDUDE` - A path to avrdude with needed flags. Just add "-U flash:r:-:h" to read the flash memory as hex bytes
 
 ## Setup Script for new Pi
 
@@ -44,6 +44,19 @@ Available environment variables:
 curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
 :|sudo apt install -y git automake build-essential libusb-1.0-0-dev python3-pip nodejs
 sudo pip install cpp-coveralls
+
+# AVRDUDE
+:|sudo apt -y install cmake flex bison libelf-dev libusb-dev libhidapi-dev libftdi1-dev libreadline-dev
+git clone https://github.com/avrdudes/avrdude.git
+cd avrdude
+./build.sh
+sudo cmake --build build_linux --target install
+
+#echo 'SUBSYSTEMS=="usb", ATTRS{idVendor}=="03eb", ATTRS{idProduct}=="2ff4", MODE="0666"' | sudo tee /etc/udev/rules.d/50-avrdude.rules > /dev/null
+#sudo udevadm control --reload-rules && sudo udevadm trigger
+
+# Edit the linuxspi reset gpio number to match the GPIO number used by the AVR Test HAT
+sudo sed 's/25;    # Pi GPIO number - this is J8:22/13;/' -i /usr/local/etc/avrdude.conf
 
 # Runner user
 sudo useradd -mN -g users -G plugdev,gpio action
