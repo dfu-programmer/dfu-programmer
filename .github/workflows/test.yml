@@ -17,7 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - run: ./bootstrap.sh
-      - run: ./configure CFLAGS="-Werror -Oo --coverage" --disable-dependency-tracking
+      - run: ./configure CFLAGS="-Werror -O0 --coverage" --disable-dependency-tracking
       - run: make -j4
       - run: npm install
       - run: npm test
