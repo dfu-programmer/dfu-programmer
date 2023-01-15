@@ -21,6 +21,8 @@ jobs:
       - run: make -j4
       - run: npm install
       - run: npm test
+        id: test
       - run: coveralls
+        if: success() || steps.test.outcome == 'failure'
         env:
           COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
