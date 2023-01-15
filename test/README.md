@@ -39,20 +39,23 @@ Available environment variables:
 ## Setup Script for new Pi
 
 ```bash
+# Dependencies
 :|sudo apt update
 curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
 :|sudo apt install -y git automake build-essential libusb-1.0-0-dev python3-pip nodejs
 sudo pip install cpp-coveralls
 
+# Runner user
 sudo useradd -mN -g users -G plugdev,gpio action
 sudo -iu action
 
 mkdir -p ~/runner
-curl -sL https://github.com/actions/runner/releases/download/v2.300.2/actions-runner-linux-arm64-2.300.2.tar.gz | tar xz -C ~/runner
 cd ~/runner
+curl -sL https://github.com/actions/runner/releases/download/v2.300.2/actions-runner-linux-arm64-2.300.2.tar.gz | tar xz
 ./config.sh --url https://github.com/dfu-programmer/dfu-programmer --token <token> # Get token from GitHub Action Self-Hosted Runner page
 exit
 
+# Setup Systemd service
 cat << EOF | sudo tee /etc/systemd/system/actions-runner.service > /dev/null
 [Unit]
 Description=GitHub Actions Runner
