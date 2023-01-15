@@ -20,28 +20,6 @@ function runDfu(args: string[] = []);
 function runDfuTargeted(args: string[] = []);
 ```
 
-## [`lock.ts`](lock.ts)
-
-Implementation of a lock that can be used to prevent multiple tests from running at the same time.
-
-```typescript
-/**
- * Get a lock to prevent multiple tests from running at the same time.
- * Will wait for any existing locks to be released.
- * 
- * Will also remove any stale locks.
- * 
- * @returns A Promise that resolves, when the lock is acquired, to a function that will unlock the lock.
- */
-async function getLock(): Promise<Unlock>;
-
-/**
- * A function that will unlock the lock.
- * @returns A Promise that resolves when the lock is released.
- */
-type Unlock = () => Promise<void>;
-```
-
 ## [`run.ts`](run.ts)
 
 A wrapper around the Node's `child_process.spawn` function that returns a `Result` object.

@@ -1,20 +1,11 @@
 import { describe, expect, test } from "@jest/globals";
 import { runDfuTargeted } from "./util/dfu";
-import { getLock } from "./util/lock";
 
 /**
  * Basic tests that should work with a sample device connected via USB.
  *
  * No side channel verification with avrdude.
  */
-
-let releaseLock: () => Promise<void>;
-beforeAll(async () => {
-  releaseLock = await getLock();
-});
-afterAll(async () => {
-  await releaseLock();
-});
 
 describe("Basic Communication with Hardware", () => {
   test("Command: launch", async () => {
