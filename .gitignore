@@ -1,3 +1,4 @@
+# Files generate by autotools
 Makefile
 Makefile.in
 aclocal.m4
@@ -9,16 +10,27 @@ fedora/dfu-programmer.spec
 src/.deps/*
 src/config.h
 src/config.h.in
-src/dfu-programmer
 src/stamp-h1
+
+# Output files
 src/*.o
-src/*.exe
-src/*.hex
+src/dfu-programmer
+
+# Hex files shouldn't generally be in the repo
+*.hex
+
+# No Windows libraries or executables
+*.dll
+*.exe
+
+# Ignore dist packages
 *.tar.gz
 
 # tab completion file
 dfu_programmer
 
+# Autotools dir
 m4/
 
+# Apple temp files
 *~
