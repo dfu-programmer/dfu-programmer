@@ -11,7 +11,7 @@ The project website is http://dfu-programmer.github.io and you can use that to c
 All official [builds](https://github.com/dfu-programmer/dfu-programmer/actions) and [releases](https://github.com/dfu-programmer/dfu-programmer/releases) are on [GitHub](https://github.com/dfu-programmer/dfu-programmer).
 
 [![Build dfu-programmer](https://github.com/dfu-programmer/dfu-programmer/actions/workflows/build.yml/badge.svg)](https://github.com/dfu-programmer/dfu-programmer/actions/workflows/build.yml)
-[![Coverage Status](https://coveralls.io/repos/github/dfu-programmer/dfu-programmer/badge.svg?branch=master)](https://coveralls.io/github/dfu-programmer/dfu-programmer?branch=master)
+[![Coverage Status](https://coveralls.io/repos/github/dfu-programmer/dfu-programmer/badge.svg)](https://coveralls.io/github/dfu-programmer/dfu-programmer)
 
 ## Simple install procedure for Unix/Linux/MAC
 
