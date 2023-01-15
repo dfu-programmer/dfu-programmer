@@ -13,12 +13,9 @@ describe("Basic Communication with Hardware", () => {
     const code = await res.exitCode;
     const { stdout, stderr } = res;
 
-    if (code === 3) {
-      // This is the expected error code when no device is connected
-
-      // TODO: Do we really just return here?
-      return;
-    }
+    // The expected error code when no device is connected.
+    // TODO: not return?
+    if (code === 3) return;
 
     expect(code).toBe(0);
 
