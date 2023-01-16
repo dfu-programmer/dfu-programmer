@@ -38,6 +38,9 @@ Available environment variables:
 
 ## Setup Script for new Pi
 
+You should be able to copy and paste this block into a new Pi install to get it ready to run the tests.
+The last step is the interactive `raspi-config` setup.
+
 ```bash
 # Dependencies
 :|sudo apt update
@@ -55,21 +58,75 @@ sudo cmake --build build_linux --target install
 #echo 'SUBSYSTEMS=="usb", ATTRS{idVendor}=="03eb", ATTRS{idProduct}=="2ff4", MODE="0666"' | sudo tee /etc/udev/rules.d/50-avrdude.rules > /dev/null
 #sudo udevadm control --reload-rules && sudo udevadm trigger
 
-# Edit the linuxspi reset gpio number to match the GPIO number used by the AVR Test HAT
-sudo sed 's/25;    # Pi GPIO number - this is J8:22/13;/' -i /usr/local/etc/avrdude.conf
+mkdir -p /home/pi/.config/avrdude
+cat << AVRDUDE_RC > /home/pi/.config/avrdude/avrdude.rc
+programmer parent "linuxspi"
+    id       = "avr-test-hat";
+    desc     = "linuxspi on the AVR Test HAT" ;
+    # baudrate = <num> ;                        # baudrate for avr910-programmer
+    # vcc      = <pin1> [, <pin2> ... ] ;       # pin number(s)
+    # buff     = <pin1> [, <pin2> ... ] ;       # pin number(s)
+    reset    = 13 ;                        # pin number
+    # errled   = <pin> ;                        # pin number
+    # rdyled   = <pin> ;                        # pin number
+    # pgmled   = <pin> ;                        # pin number
+    # vfyled   = <pin> ;                        # pin number
+;
+AVRDUDE_RC
+
+# AVRDUDE wrapper
+cat << 'AVRDUDE_WRAPPER' > /home/pi/avrdude.sh && chmod +x /home/pi/avrdude.sh
+#!/bin/bash
+
+set -e
+
+#AVRDUDE="/home/pi/avrdude/build_linux/src/avrdude"
+AVRDUDE="/usr/local/bin/avrdude"
+
+part="atmega8u2"
+programmer="avr-test-hat"
+
+args=("-c" ${programmer} "-p" ${part})
+
+# Override the default config file
+# args+=("-C" "/home/pi/avrdude.conf")
+
+# Fastest working bit clock
+# 0.5 - Works usually
+# 0.7
+args+=("-B" "1")
+
+# TODO: Setup GPIO
+
+function cleanup {
+  # TODO: Cleanup GPIO
+}
+trap cleanup EXIT
+
+$AVRDUDE "${args[@]}" "$@"
+AVRDUDE_WRAPPER
+
+# Action Pre/Post Scripts
+mkdir -p /home/pi/action-scripts
+cat << ACTION_BEFORE > /home/pi/action-scripts/before.sh
+# TODO: Reset flash?
+ACTION_BEFORE
+
+cat << ACTION_AFTER > /home/pi/action-scripts/after.sh
+# TODO: Turn off test hardware?
+ACTION_AFTER
 
 # Runner user
 sudo useradd -mN -g users -G plugdev,gpio action
-sudo -iu action
-
-mkdir -p ~/runner
-cd ~/runner
-curl -sL https://github.com/actions/runner/releases/download/v2.300.2/actions-runner-linux-arm64-2.300.2.tar.gz | tar xz
-./config.sh --url https://github.com/dfu-programmer/dfu-programmer --token <token> # Get token from GitHub Action Self-Hosted Runner page
-exit
+sudo ln -s /home/pi/.config /home/action/.config
+sudo -u action mkdir -p /home/action/runner
+cd /home/action/runner
+curl -sL $(curl -s https://api.github.com/repos/actions/runner/releases/latest | grep browser_download_url | cut -d\" -f4 | egrep 'linux-arm64-[0-9.]+tar.gz$') | sudo -u action tar xz
+sudo -u action ./config.sh --url https://github.com/dfu-programmer/dfu-programmer --token <token> # Get token from GitHub Action Self-Hosted Runner page
+cd
 
 # Setup Systemd service
-cat << EOF | sudo tee /etc/systemd/system/actions-runner.service > /dev/null
+cat << ACTION_SERVICE | sudo tee /etc/systemd/system/actions-runner.service > /dev/null && sudo systemctl daemon-reload
 [Unit]
 Description=GitHub Actions Runner
 After=network.target
@@ -82,12 +139,22 @@ ExecStart=/home/action/runner/run.sh
 Restart=always
 RestartSec=5
 
+Environment=ACTIONS_RUNNER_HOOK_JOB_STARTED=/home/pi/action-scripts/before.sh
+Environment=ACTIONS_RUNNER_HOOK_JOB_COMPLETED=/home/pi/action-scripts/after.sh
+
+Environment=AVRDUDE=/home/pi/avrdude.sh
+
 [Install]
 WantedBy=multi-user.target
-EOF
-sudo systemctl daemon-reload
+ACTION_SERVICE
 sudo systemctl enable --now actions-runner
 
-# Enable read-only filesystem with overlay using `raspi-config`
+# Configure Pi - Interactive!
+# TODO: Automate this
+# Changes:
+#  - Interface Options -> SPI -> Enable
+#  - Performance Options -> Overlay File System -> Enable
 sudo raspi-config
 ```
+
+*The `:|` is a trick to make `apt` not hog all of the pasted code.*
