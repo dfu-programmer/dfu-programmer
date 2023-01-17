@@ -47,9 +47,13 @@ Available environment variables:
 
 ## Setup Script for new Pi
 
-You should be able to copy and paste this block into a new Pi install to get it ready to run the tests.
+You should be able to copy and paste this block, except the `GH_ACTION_RUNNER_TOKEN`, into a new Pi install to get it ready to run the tests.
+
+Get token from GitHub Action Self-Hosted Runner page: https://github.com/{user}/{repo}/settings/actions/runners
 
 ```bash
+GH_ACTION_RUNNER_TOKEN="AFaKeToKeN"
+
 # Dependencies
 :|sudo apt update
 curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
@@ -129,7 +133,7 @@ sudo useradd -mN -g users -G plugdev,gpio action
 sudo ln -s /home/pi/.config /home/action/.config
 sudo -u action mkdir -p /home/action/runner
 curl -sL $(curl -s https://api.github.com/repos/actions/runner/releases/latest | grep '"browser_download_url":' | cut -d\" -f4 | egrep 'linux-arm64-[0-9.]+tar.gz$') | sudo -u action tar -C /home/action/runner -xz
-sudo -u action /home/action/runner/config.sh --disableupdate --url https://github.com/dfu-programmer/dfu-programmer --token <token> # Get token from GitHub Action Self-Hosted Runner page
+sudo -u action /home/action/runner/config.sh --disableupdate --url https://github.com/dfu-programmer/dfu-programmer --token ${GH_ACTION_RUNNER_TOKEN}
 
 # Setup Systemd service
 cat << ACTION_SERVICE | sudo tee /etc/systemd/system/actions-runner.service > /dev/null && sudo systemctl daemon-reload
