@@ -28,6 +28,16 @@ npm install
 npm test
 ```
 
+### Standalone Tests<!-- Happy to change the name of these or how tests are filtered -->
+
+Some tests expect a compatible `usb` device to be attached.
+
+To run only the standalone tests, use:
+
+```bash
+npm test -- standalone
+```
+
 ### Software Environment
 
 Available environment variables:
