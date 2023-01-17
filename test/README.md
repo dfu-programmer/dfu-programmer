@@ -158,6 +158,13 @@ WantedBy=multi-user.target
 ACTION_SERVICE
 sudo systemctl enable --now actions-runner
 
+# Disable unneeded services
+sudo systemctl disable --now cron.service
+sudo systemctl disable --now triggerhappy.service
+sudo systemctl disable --now bluetooth.service
+sudo systemctl disable --now ModemManager.service
+sudo systemctl disable --now getty@tty1.service
+
 # 0 = enabled, 1 = disabled
 sudo raspi-config nonint do_spi 0
 sudo raspi-config nonint do_overlayfs 0
