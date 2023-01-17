@@ -6,14 +6,14 @@ Our local unit test are run on an [AVR Test HAT](https://github.com/cinderblock/
 ### Minimum "Full" Test System Setup
 
 - ATmega8u2 connected to the USB port of the test system.
+- Permissions to access usb devices as the current user.
 - AVRDUDE setup to program the ATmega8u2
   - A program on the path called `avrdude.sh` that adds the correct `-c`, `-B`, `-P`, and `-p` options to the `avrdude` command. Running without arguments should successfully communicate and identify the ATmega8u2.
-- Permissions to access usb devices as the current user.
 
 ## Goals
 
 1. ✅ Functionality testing
-2. 💯% code coverage (This will take more hardware!)
+2. 💯% code coverage (This will take **much more** hardware!)
 
 ## Tests
 
@@ -32,7 +32,6 @@ npm test
 
 Available environment variables:
 
- - `$DFU` - The path to the recently built `dfu-programmer` executable.
  - `$TARGET` - The correct "target" argument that dfu-programmer should use for the attached device.
  - `$AVRDUDE` - A path to avrdude with needed flags. Just add "-U flash:r:-:h" to read the flash memory as hex bytes
 
