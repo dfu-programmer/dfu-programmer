@@ -14,7 +14,7 @@ jobs:
       - avr-test-hat
       - linux
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - run: ./bootstrap.sh
       - run: ./configure CFLAGS="-Werror -O0 --coverage" --disable-dependency-tracking
       - run: make -j4
