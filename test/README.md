@@ -129,7 +129,7 @@ sudo useradd -mN -g users -G plugdev,gpio action
 sudo ln -s /home/pi/.config /home/action/.config
 sudo -u action mkdir -p /home/action/runner
 cd /home/action/runner
-curl -sL $(curl -s https://api.github.com/repos/actions/runner/releases/latest | grep browser_download_url | cut -d\" -f4 | egrep 'linux-arm64-[0-9.]+tar.gz$') | sudo -u action tar xz
+curl -sL $(curl -s https://api.github.com/repos/actions/runner/releases/latest | grep '"browser_download_url":' | cut -d\" -f4 | egrep 'linux-arm64-[0-9.]+tar.gz$') | sudo -u action tar -xz
 sudo -u action ./config.sh --url https://github.com/dfu-programmer/dfu-programmer --token <token> # Get token from GitHub Action Self-Hosted Runner page
 cd
 
