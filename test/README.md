@@ -151,6 +151,7 @@ Environment=ACTIONS_RUNNER_HOOK_JOB_STARTED=/home/pi/action-scripts/before.sh
 Environment=ACTIONS_RUNNER_HOOK_JOB_COMPLETED=/home/pi/action-scripts/after.sh
 
 Environment=AVRDUDE=/home/pi/avrdude.sh
+Environment=TARGET=atmega8u2
 
 [Install]
 WantedBy=multi-user.target
