@@ -48,7 +48,6 @@ Available environment variables:
 ## Setup Script for new Pi
 
 You should be able to copy and paste this block into a new Pi install to get it ready to run the tests.
-The last step is the interactive `raspi-config` setup.
 
 ```bash
 # Dependencies
@@ -158,12 +157,9 @@ WantedBy=multi-user.target
 ACTION_SERVICE
 sudo systemctl enable --now actions-runner
 
-# Configure Pi - Interactive!
-# TODO: Automate this
-# Changes:
-#  - Interface Options -> SPI -> Enable
-#  - Performance Options -> Overlay File System -> Enable
-sudo raspi-config
+# 0 = enabled, 1 = disabled
+sudo raspi-config nonint do_spi 0
+sudo raspi-config nonint do_overlayfs 0
 ```
 
 *The `:|` is a trick to make `apt` not hog all of the pasted code.*
