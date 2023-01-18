@@ -63,9 +63,10 @@ sudo pip install cpp-coveralls
 # AVRDUDE
 :|sudo apt -y install cmake flex bison libelf-dev libusb-dev libhidapi-dev libftdi1-dev libreadline-dev
 git clone https://github.com/avrdudes/avrdude.git
-cd avrdude
+pushd avrdude > /dev/null
 ./build.sh
 sudo cmake --build build_linux --target install
+popd > /dev/null
 
 #echo 'SUBSYSTEMS=="usb", ATTRS{idVendor}=="03eb", ATTRS{idProduct}=="2ff4", MODE="0666"' | sudo tee /etc/udev/rules.d/50-avrdude.rules > /dev/null
 #sudo udevadm control --reload-rules && sudo udevadm trigger
