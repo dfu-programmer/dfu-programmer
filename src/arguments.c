@@ -525,7 +525,7 @@ static int32_t assign_target( struct programmer_arguments *args,
                VID and PID so why would we worry about this? Don't use the device-
                specific value, just ignore the error for all device types.
             */
-            args->honor_interfaceclass = false;
+            args->honor_interfaceclass = true;
             return 0;
         }
 
