@@ -134,7 +134,9 @@ sudo useradd -mN -g users -G plugdev,gpio action
 sudo ln -s /home/pi/.config /home/action/.config
 sudo -u action mkdir -p /home/action/runner
 curl -sL $(curl -s https://api.github.com/repos/actions/runner/releases/latest | grep '"browser_download_url":' | cut -d\" -f4 | egrep 'linux-arm64-[0-9.]+tar.gz$') | sudo -u action tar -C /home/action/runner -xz
+pushd /home/action/runner > /dev/null # Until https://github.com/actions/runner/pull/2373 is accepted
 sudo -u action /home/action/runner/config.sh --disableupdate --url https://github.com/dfu-programmer/dfu-programmer --token ${GH_ACTION_RUNNER_TOKEN}
+popd > /dev/null # Until https://github.com/actions/runner/pull/2373 is accepted
 
 # Setup Systemd service
 cat << ACTION_SERVICE | sudo tee /etc/systemd/system/actions-runner.service > /dev/null && sudo systemctl daemon-reload
