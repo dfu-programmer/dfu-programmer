@@ -163,6 +163,11 @@ WantedBy=multi-user.target
 ACTION_SERVICE
 sudo systemctl enable --now actions-runner
 
+# Device permissions
+cat << UDEV_RULES | sudo tee /etc/udev/rules.d/60-dfu.rules > /dev/null && sudo udevadm control --reload-rules && sudo udevadm trigger
+SUBSYSTEM=="usb",ACTION=="add",ATTRS{idVendor}=="03eb",GROUP="plugdev"
+UDEV_RULES
+
 # Disable unneeded services
 sudo systemctl disable --now cron.service
 sudo systemctl disable --now triggerhappy.service
