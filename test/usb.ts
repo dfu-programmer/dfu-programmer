@@ -8,10 +8,12 @@ import { runDfuTargeted } from "./util/dfu";
  */
 
 describe("Basic Communication with Hardware", () => {
-  afterEach(async () => {
-    // Wait 400ms before each test to ensure the hardware is stable
-    await new Promise((resolve) => setTimeout(resolve, 400));
+  let testSeparatorDelay: Promise<void>;
+  afterEach(() => {
+    // Wait 600ms between each test to ensure the hardware is stable
+    testSeparatorDelay = new Promise((resolve) => setTimeout(resolve, 600).unref());
   });
+  beforeEach(() => testSeparatorDelay);
 
   test("Command: reset", async () => {
     const res = runDfuTargeted(["reset"]);
