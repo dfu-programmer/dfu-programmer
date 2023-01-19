@@ -55,4 +55,14 @@ describe("Basic Communication with Hardware", () => {
       expect(stderr).toBe("dfu-programmer: no device present.\n");
     }
   });
+
+  test("Read flash to stdout", async () => {
+    const run = runDfuTargeted(["dump"]);
+    const exitCode = await run.exitCode;
+    const { stdout, stderr } = run;
+
+    expect(exitCode).toBe(0);
+    expect(stdout).not.toBe("");// TODO: Check for actual data
+    expect(stderr).toBe("");
+  });
 });
