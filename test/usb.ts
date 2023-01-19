@@ -8,6 +8,11 @@ import { runDfuTargeted } from "./util/dfu";
  */
 
 describe("Basic Communication with Hardware", () => {
+  afterEach(async () => {
+    // Wait 400ms before each test to ensure the hardware is stable
+    await new Promise((resolve) => setTimeout(resolve, 400));
+  });
+
   test("Command: reset", async () => {
     const res = runDfuTargeted(["reset"]);
     const code = await res.exitCode;
@@ -16,9 +21,6 @@ describe("Basic Communication with Hardware", () => {
     expect(code).toBe(0);
     expect(stdout).toBe("");
     expect(stderr).toBe("");
-
-    // Wait for 100ms to give AVR time to reset
-    await new Promise((resolve) => setTimeout(resolve, 100));
   });
 
   test("Command: launch", async () => {
@@ -29,8 +31,5 @@ describe("Basic Communication with Hardware", () => {
     expect(code).toBe(0);
     expect(stdout).toBe("");
     expect(stderr).toBe("");
-
-    // Wait for 100ms to give AVR time to reset
-    await new Promise((resolve) => setTimeout(resolve, 100));
   });
 });
