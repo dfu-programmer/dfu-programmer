@@ -34,4 +34,25 @@ describe("Basic Communication with Hardware", () => {
     expect(stdout).toBe("");
     expect(stderr).toBe("");
   });
+
+  test("Device missing", async () => {
+    {
+      // MAYBE: Use reset.sh script instead of this block
+      const run = runDfuTargeted(["reset"]);
+      const exitCode = await run.exitCode;
+      const { stdout, stderr } = run;
+      expect(exitCode).toBe(0);
+      expect(stdout).toBe("");
+      expect(stderr).toBe("");
+    }
+
+    {
+      const run = runDfuTargeted(["launch"]);
+      const exitCode = await run.exitCode;
+      const { stdout, stderr } = run;
+      expect(exitCode).toBe(3);
+      expect(stdout).toBe("");
+      expect(stderr).toBe("dfu-programmer: no device present.\n");
+    }
+  });
 });
