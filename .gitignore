@@ -26,6 +26,9 @@ src/dfu-programmer
 # Ignore dist packages
 *.tar.gz
 
+# Node.js dependencies for testing
+/node_modules/
+
 # tab completion file
 dfu_programmer
 

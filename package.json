@@ -1,0 +1,41 @@
+{
+  "name": "dfu-programmer",
+  "private": true,
+  "version": "1.0.0",
+  "description": "A Device Firmware Update based USB programmer for Atmel chips with a USB bootloader",
+  "license": "GPL-2.0",
+  "keywords": [
+    "dfu"
+  ],
+  "homepage": "https://github.com/dfu-programmer/dfu-programmer#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dfu-programmer/dfu-programmer.git"
+  },
+  "bugs": {
+    "url": "https://github.com/dfu-programmer/dfu-programmer/issues"
+  },
+  "directories": {
+    "doc": "docs",
+    "test": "test"
+  },
+  "scripts": {
+    "test": "jest"
+  },
+  "jest": {
+    "verbose": false,
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "testMatch": [
+      "<rootDir>/test/**/*.ts",
+      "!**/test/util/**"
+    ]
+  },
+  "devDependencies": {
+    "@types/jest": "^29.2.5",
+    "jest": "^29.3.1",
+    "prettier": "^2.8.2",
+    "ts-jest": "^29.0.3",
+    "typescript": "^4.9.4"
+  }
+}

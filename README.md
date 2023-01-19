@@ -11,6 +11,7 @@ The project website is http://dfu-programmer.github.io and you can use that to c
 All official [builds](https://github.com/dfu-programmer/dfu-programmer/actions) and [releases](https://github.com/dfu-programmer/dfu-programmer/releases) are on [GitHub](https://github.com/dfu-programmer/dfu-programmer).
 
 [![Build dfu-programmer](https://github.com/dfu-programmer/dfu-programmer/actions/workflows/build.yml/badge.svg)](https://github.com/dfu-programmer/dfu-programmer/actions/workflows/build.yml)
+[![Coverage Status](https://coveralls.io/repos/github/dfu-programmer/dfu-programmer/badge.svg)](https://coveralls.io/github/dfu-programmer/dfu-programmer)
 
 ## Simple install procedure for Unix/Linux/MAC
 
@@ -79,6 +80,11 @@ Atmel's [FLIP programmer](https://www.microchip.com/en-us/development-tool/flip)
 [Zadig](https://zadig.akeo.ie) is another popular tool for managing the current USB driver for devices on your system.
 It can be used to install the libusb-win32, libusbK, WinUSB, or "USB Serial (CDC)" drivers.
 All but "USB Serial (CDC)" will work with dfu-programmer.
+
+## Testing & Coverage
+
+Since most testing depends on hardware, we've set up a custom GitHub Action Runner on a dedicated Raspberry Pi.
+Read more about the tests [here](test/README.md).
 
 ## Currently Supported Chips
 

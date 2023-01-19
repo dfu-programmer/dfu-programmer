@@ -1,0 +1,27 @@
+name: Test dfu-programmer with coverage reporting
+
+on:
+  push:
+
+jobs:
+  avr:
+    # concurrency:
+    #   group: ${{ github.workflow }}
+    #   cancel-in-progress: true
+    name: Test with AVR Test HAT on a Raspberry Pi
+    runs-on:
+      - self-hosted
+      - avr-test-hat
+      - linux
+    steps:
+      - uses: actions/checkout@v3
+      - run: ./bootstrap.sh
+      - run: ./configure --disable-dependency-tracking CFLAGS="--coverage -O0"
+      - run: make -j4
+      - run: npm install
+      - run: npm test
+        id: test
+      - run: coveralls
+        if: success() || steps.test.outcome == 'failure'
+        env:
+          COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
