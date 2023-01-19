@@ -16,21 +16,21 @@ describe("Basic Communication with Hardware", () => {
   beforeEach(() => testSeparatorDelay);
 
   test("Command: reset", async () => {
-    const res = runDfuTargeted(["reset"]);
-    const code = await res.exitCode;
-    const { stdout, stderr } = res;
+    const run = runDfuTargeted(["reset"]);
+    const exitCode = await run.exitCode;
+    const { stdout, stderr } = run;
 
-    expect(code).toBe(0);
+    expect(exitCode).toBe(0);
     expect(stdout).toBe("");
     expect(stderr).toBe("");
   });
 
   test("Command: launch", async () => {
-    const res = runDfuTargeted(["launch"]);
-    const code = await res.exitCode;
-    const { stdout, stderr } = res;
+    const run = runDfuTargeted(["launch"]);
+    const exitCode = await run.exitCode;
+    const { stdout, stderr } = run;
 
-    expect(code).toBe(0);
+    expect(exitCode).toBe(0);
     expect(stdout).toBe("");
     expect(stderr).toBe("");
   });
