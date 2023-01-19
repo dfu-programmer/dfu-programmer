@@ -16,6 +16,9 @@ describe("Basic Communication with Hardware", () => {
     expect(code).toBe(0);
     expect(stdout).toBe("");
     expect(stderr).toBe("");
+
+    // Wait for 100ms to give AVR time to reset
+    await new Promise((resolve) => setTimeout(resolve, 100));
   });
 
   test("Command: launch", async () => {
@@ -26,5 +29,8 @@ describe("Basic Communication with Hardware", () => {
     expect(code).toBe(0);
     expect(stdout).toBe("");
     expect(stderr).toBe("");
+
+    // Wait for 100ms to give AVR time to reset
+    await new Promise((resolve) => setTimeout(resolve, 100));
   });
 });
