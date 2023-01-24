@@ -73,7 +73,7 @@ describe("Basic Communication with Hardware", () => {
 
       expect(exitCode).toBe(0);
       expect(stdout).toBe(":00000001FF\n");
-      expect(stderr).toBe("");
+      expect(stderr).toBe("Reading 0x1000 bytes...\nSuccess\nMemory is blank, returning a single blank page.\nUse --force to return the entire memory regardless.\nDumping 0x80 bytes from address offset 0x0.\n");
     }
   });
 });
