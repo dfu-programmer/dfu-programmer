@@ -19,7 +19,7 @@ jobs:
       - run: ./configure --disable-dependency-tracking CFLAGS="--coverage -O0"
       - run: make -j4
       - run: npm install
-      - run: npm test -- --silent=false
+      - run: npm test -- --colors --silent=false
         id: test
       - run: coveralls
         if: success() || steps.test.outcome == 'failure'
