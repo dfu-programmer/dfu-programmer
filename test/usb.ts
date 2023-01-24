@@ -1,6 +1,9 @@
 import { describe, expect, test } from "@jest/globals";
 import { runDfuTargeted } from "./util/dfu";
 
+// We currently use a consistent line ending for all platforms
+const EOL = "\n";
+
 /**
  * Basic tests that should work with a sample device connected via USB.
  *
@@ -41,6 +44,7 @@ describe("Basic Communication with Hardware", () => {
       const run = runDfuTargeted(["reset"]);
       const exitCode = await run.exitCode;
       const { stdout, stderr } = run;
+
       expect(exitCode).toBe(0);
       expect(stdout).toBe("");
       expect(stderr).toBe("");
@@ -50,9 +54,10 @@ describe("Basic Communication with Hardware", () => {
       const run = runDfuTargeted(["launch"]);
       const exitCode = await run.exitCode;
       const { stdout, stderr } = run;
+
       expect(exitCode).toBe(3);
       expect(stdout).toBe("");
-      expect(stderr).toBe("dfu-programmer: no device present.\n");
+      expect(stderr).toBe(`dfu-programmer: no device present.${EOL}`);
     }
   });
 
@@ -64,7 +69,7 @@ describe("Basic Communication with Hardware", () => {
 
       expect(exitCode).toBe(0);
       expect(stdout).toBe("");
-      expect(stderr).toBe("Erasing flash...  Success\nChecking memory from 0x0 to 0xFFF...  Empty.\n");
+      expect(stderr).toBe(`Erasing flash...  Success${EOL}Checking memory from 0x0 to 0xFFF...  Empty.${EOL}`);
     }
     {
       const run = runDfuTargeted(["read"]);
@@ -72,8 +77,10 @@ describe("Basic Communication with Hardware", () => {
       const { stdout, stderr } = run;
 
       expect(exitCode).toBe(0);
-      expect(stdout).toBe(":00000001FF\n");
-      expect(stderr).toBe("Reading 0x1000 bytes...\nSuccess\nMemory is blank, returning a single blank page.\nUse --force to return the entire memory regardless.\nDumping 0x80 bytes from address offset 0x0.\n");
+      expect(stdout).toBe(`:00000001FF${EOL}`);
+      expect(stderr).toBe(
+        `Reading 0x1000 bytes...${EOL}Success${EOL}Memory is blank, returning a single blank page.${EOL}Use --force to return the entire memory regardless.${EOL}Dumping 0x80 bytes from address offset 0x0.${EOL}`
+      );
     }
   });
 });
