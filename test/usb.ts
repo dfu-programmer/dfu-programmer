@@ -1,5 +1,6 @@
 import { describe, expect, test } from "@jest/globals";
 import { runDfuTargeted } from "./util/dfu";
+import { delay } from "./util/delay";
 
 // We currently use a consistent line ending for all platforms
 const EOL = "\n";
@@ -98,6 +99,10 @@ describe("Basic Communication with Hardware", () => {
       expect(stdout).toBe("");
       expect(stderr).toBe("");
     }
+
+    // TODO: Wait for device to be available instead of this delay
+    await delay(500);
+
     {
       const run = runDfuTargeted(["read", "--debug=100000"]);
       const exitCode = await run.exitCode;
