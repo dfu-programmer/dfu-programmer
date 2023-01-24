@@ -85,4 +85,36 @@ describe("Basic Communication with Hardware", () => {
       );
     }
   });
+
+  test("Read flash to stdout after reset", async () => {
+    {
+      const run = runDfuTargeted(["reset"]);
+      const exitCode = await run.exitCode;
+      const { stdout, stderr } = run;
+
+      expect(exitCode).toBe(0);
+      expect(stdout).toBe("");
+      expect(stderr).toBe("");
+    }
+    {
+      const run = runDfuTargeted(["read"]);
+      const exitCode = await run.exitCode;
+      const { stdout, stderr } = run;
+
+      const bytes = 0x1000;
+      const dump = 0x80;
+      const offset = 0;
+
+      expect(exitCode).toBe(0);
+      expect(stdout).toBe(`:00000001FF${EOL}`);
+      expect(stderr).toBe(
+        "" +
+          `Reading 0x${bytes.toString(16)} bytes...${EOL}` +
+          `Success${EOL}` +
+          `Memory is blank, returning a single blank page.${EOL}` +
+          `Use --force to return the entire memory regardless.${EOL}` +
+          `Dumping 0x${dump.toString(16)} bytes from address offset 0x${offset.toString(16)}.${EOL}`
+      );
+    }
+  });
 });
