@@ -50,6 +50,8 @@ describe("Basic Communication with Hardware", () => {
       expect(stderr).toBe("");
     }
 
+    // Run immediately after reset command.
+    // TODO: Hold the device in reset for a while to ensure it's not detected.
     {
       const run = runDfuTargeted(["launch"]);
       const exitCode = await run.exitCode;
