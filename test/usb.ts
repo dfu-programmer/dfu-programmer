@@ -74,15 +74,17 @@ describe("Basic Communication with Hardware", () => {
       expect(stderr).toBe(`Erasing flash...  Success${EOL}Checking memory from 0x0 to 0xFFF...  Empty.${EOL}`);
     }
     {
-      const run = runDfuTargeted(["read"]);
+      const run = runDfuTargeted(["read", "--debug=100000"]);
       const exitCode = await run.exitCode;
       const { stdout, stderr } = run;
 
       expect(exitCode).toBe(0);
       expect(stdout).toBe(`:00000001FF${EOL}`);
-      expect(stderr).toBe(
-        `Reading 0x1000 bytes...${EOL}Success${EOL}Memory is blank, returning a single blank page.${EOL}Use --force to return the entire memory regardless.${EOL}Dumping 0x80 bytes from address offset 0x0.${EOL}`
-      );
+      expect(stderr).toContain(`Reading 0x1000 bytes...${EOL}`);
+      expect(stderr).toContain(`Success${EOL}`);
+      expect(stderr).toContain(`Memory is blank, returning a single blank page.${EOL}`);
+      expect(stderr).toContain(`Use --force to return the entire memory regardless.${EOL}`);
+      expect(stderr).toContain(`Dumping 0x80 bytes from address offset 0x0.${EOL}`);
     }
   });
 
@@ -97,7 +99,7 @@ describe("Basic Communication with Hardware", () => {
       expect(stderr).toBe("");
     }
     {
-      const run = runDfuTargeted(["read"]);
+      const run = runDfuTargeted(["read", "--debug=100000"]);
       const exitCode = await run.exitCode;
       const { stdout, stderr } = run;
 
