@@ -56,13 +56,24 @@ describe("Basic Communication with Hardware", () => {
     }
   });
 
-  test("Read flash to stdout", async () => {
-    const run = runDfuTargeted(["dump"]);
-    const exitCode = await run.exitCode;
-    const { stdout, stderr } = run;
+  test("Read flash to stdout after erase", async () => {
+    {
+      const run = runDfuTargeted(["erase", "--force"]);
+      const exitCode = await run.exitCode;
+      const { stdout, stderr } = run;
 
-    expect(exitCode).toBe(0);
-    expect(stdout).not.toBe("");// TODO: Check for actual data
-    expect(stderr).toBe("");
+      expect(exitCode).toBe(0);
+      expect(stdout).toBe("");
+      expect(stderr).toBe("");
+    }
+    {
+      const run = runDfuTargeted(["dump"]);
+      const exitCode = await run.exitCode;
+      const { stdout, stderr } = run;
+
+      expect(exitCode).toBe(0);
+      expect(stdout).toBe("");
+      expect(stderr).toBe("");
+    }
   });
 });
