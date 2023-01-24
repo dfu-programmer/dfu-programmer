@@ -67,12 +67,12 @@ describe("Basic Communication with Hardware", () => {
       expect(stderr).toBe("Erasing flash...  Success\nChecking memory from 0x0 to 0xFFF...  Empty.\n");
     }
     {
-      const run = runDfuTargeted(["dump"]);
+      const run = runDfuTargeted(["read"]);
       const exitCode = await run.exitCode;
       const { stdout, stderr } = run;
 
       expect(exitCode).toBe(0);
-      expect(stdout).toBe("");
+      expect(stdout).toBe(":00000001FF\n");
       expect(stderr).toBe("");
     }
   });
