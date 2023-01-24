@@ -28,6 +28,7 @@
     "testEnvironment": "node",
     "testMatch": [
       "<rootDir>/test/**/*.ts",
+      "!**/test/assets/**",
       "!**/test/util/**"
     ]
   },
