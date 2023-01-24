@@ -1,5 +1,6 @@
 import { describe, expect, test } from "@jest/globals";
 import { runDfuTargeted } from "./util/dfu";
+import { log } from "console";
 import { delay } from "./util/delay";
 
 // We currently use a consistent line ending for all platforms
@@ -70,6 +71,12 @@ describe("Basic Communication with Hardware", () => {
       const exitCode = await run.exitCode;
       const { stdout, stderr } = run;
 
+      log("erase");
+      log(`stdout:`);
+      log(stdout);
+      log(`stderr:`);
+      log(stderr);
+
       expect(exitCode).toBe(0);
       expect(stdout).toBe("");
       expect(stderr).toBe(`Erasing flash...  Success${EOL}Checking memory from 0x0 to 0xFFF...  Empty.${EOL}`);
@@ -78,6 +85,12 @@ describe("Basic Communication with Hardware", () => {
       const run = runDfuTargeted(["read", "--debug=100000"]);
       const exitCode = await run.exitCode;
       const { stdout, stderr } = run;
+
+      log("read");
+      log(`stdout:`);
+      log(stdout);
+      log(`stderr:`);
+      log(stderr);
 
       expect(exitCode).toBe(0);
       expect(stdout).toBe(`:00000001FF${EOL}`);
@@ -95,6 +108,12 @@ describe("Basic Communication with Hardware", () => {
       const exitCode = await run.exitCode;
       const { stdout, stderr } = run;
 
+      log("reset");
+      log(`stdout:`);
+      log(stdout);
+      log(`stderr:`);
+      log(stderr);
+
       expect(exitCode).toBe(0);
       expect(stdout).toBe("");
       expect(stderr).toBe("");
@@ -107,6 +126,12 @@ describe("Basic Communication with Hardware", () => {
       const run = runDfuTargeted(["read", "--debug=100000"]);
       const exitCode = await run.exitCode;
       const { stdout, stderr } = run;
+
+      log("read");
+      log(`stdout:`);
+      log(stdout);
+      log(`stderr:`);
+      log(stderr);
 
       const bytes = 0x1000;
       const dump = 0x80;
