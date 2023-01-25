@@ -67,7 +67,7 @@ describe("Basic Communication with Hardware", () => {
 
   test("Read flash to stdout after erase", async () => {
     {
-      const run = runDfuTargeted(["erase", "--force"]);
+      const run = runDfuTargeted(["erase", "--force", "--debug=100000"]);
       const exitCode = await run.exitCode;
       const { stdout, stderr } = run;
 
@@ -104,7 +104,7 @@ describe("Basic Communication with Hardware", () => {
 
   test("Read flash to stdout after reset", async () => {
     {
-      const run = runDfuTargeted(["reset"]);
+      const run = runDfuTargeted(["reset", "--debug=100000"]);
       const exitCode = await run.exitCode;
       const { stdout, stderr } = run;
 
