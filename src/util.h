@@ -27,8 +27,7 @@
 extern "C" {
 #endif
 
-void dfu_debug( const char *file, const char *function, const int line,
-                const int level, const char *format, ... );
+void dfu_debug (const char *file, const char *function, const int line, const int level, const char *format, ...);
 
 #ifdef __cplusplus
 }

@@ -1,8 +1,8 @@
 #ifndef __DFU_DEVICE_H__
 #define __DFU_DEVICE_H__
 
-#include <stdint.h>
 #include <libusb-1.0/libusb.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -10,16 +10,16 @@ extern "C" {
 
 // Atmel device classes are now defined with one bit per class.
 // This simplifies checking in functions which handle more than one class.
-#define ADC_8051    (1<<0)
-#define ADC_AVR     (1<<1)
-#define ADC_AVR32   (1<<2)
-#define ADC_XMEGA   (1<<3)
-#define DC_STM32    (1<<4)
+#define ADC_8051  (1 << 0)
+#define ADC_AVR   (1 << 1)
+#define ADC_AVR32 (1 << 2)
+#define ADC_XMEGA (1 << 3)
+#define DC_STM32  (1 << 4)
 
 // Most commands fall into one of 2 groups.
-#define GRP_AVR32   (ADC_AVR32 | ADC_XMEGA)
-#define GRP_AVR     (ADC_AVR | ADC_8051)
-#define GRP_STM32   (DC_STM32)
+#define GRP_AVR32 (ADC_AVR32 | ADC_XMEGA)
+#define GRP_AVR   (ADC_AVR | ADC_8051)
+#define GRP_STM32 (DC_STM32)
 
 typedef unsigned atmel_device_class_t;
 
@@ -137,7 +137,6 @@ LEAVE DFU MODE      - DFU_DNLOAD with 0 data length
 - see an2606: STM32 microcontroller system memory boot mode
 - see an3156: USB DFU protocol used in the STM32 bootloader
 **************************************************************************/
-
 
 /******************* A T M E L   D F U   C O M M A N D S ******************
 // ---- A L L   D E V I C E S -----------------------------------

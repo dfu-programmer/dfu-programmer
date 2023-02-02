@@ -21,86 +21,71 @@
 #include <libusb-1.0/libusb.h>
 #include <string.h>
 
+#include "arguments.h"
+#include "atmel.h"
+#include "commands.h"
 #include "config.h"
 #include "dfu-device.h"
 #include "dfu.h"
-#include "arguments.h"
-#include "commands.h"
-#include "atmel.h"
 #include "libdfu.h"
-#include "config.h"
 
 // NOTE: Technically not thread safe... but since it's not changed when used as a library, it's safe.
 int debug;
 
 static const char *progname = PACKAGE;
 
-int dfu_programmer(struct programmer_arguments * args)
-{
+int
+dfu_programmer (struct programmer_arguments *args) {
     int retval = SUCCESS;
     dfu_device_t dfu_device;
     struct libusb_device *device = NULL;
     libusb_context *usbContext;
 
-    memset(&dfu_device, 0, sizeof(dfu_device));
+    memset (&dfu_device, 0, sizeof (dfu_device));
 
-    if (libusb_init(&usbContext))
-    {
-        fprintf(stderr, "%s: can't init libusb.\n", progname);
+    if (libusb_init (&usbContext)) {
+        fprintf (stderr, "%s: can't init libusb.\n", progname);
         return DEVICE_ACCESS_ERROR;
     }
 
-    if (debug >= 200)
-    {
+    if (debug >= 200) {
 #if LIBUSB_API_VERSION >= 0x01000106
-        libusb_set_option(usbContext, LIBUSB_OPTION_LOG_LEVEL, debug);
+        libusb_set_option (usbContext, LIBUSB_OPTION_LOG_LEVEL, debug);
 #else
-        libusb_set_debug(usbContext, debug);
+        libusb_set_debug (usbContext, debug);
 #endif
     }
 
-    device = dfu_device_init(args->vendor_id, args->chip_id,
-                                args->bus_id, args->device_address,
-                                &dfu_device,
-                                args->initial_abort,
-                                args->honor_interfaceclass,
-                                usbContext);
+    device = dfu_device_init (args->vendor_id, args->chip_id, args->bus_id, args->device_address, &dfu_device,
+                              args->initial_abort, args->honor_interfaceclass, usbContext);
 
-    if (NULL == device)
-    {
-        fprintf(stderr, "%s: no device present.\n", progname);
+    if (NULL == device) {
+        fprintf (stderr, "%s: no device present.\n", progname);
         retval = DEVICE_ACCESS_ERROR;
         goto error;
     }
 
-    retval = execute_command(&dfu_device, args);
+    retval = execute_command (&dfu_device, args);
 
 error:
-    if (NULL != dfu_device.handle)
-    {
+    if (NULL != dfu_device.handle) {
         int rv;
 
-        rv = libusb_release_interface(dfu_device.handle, dfu_device.interface);
+        rv = libusb_release_interface (dfu_device.handle, dfu_device.interface);
         /* The RESET command sometimes causes the usb_release_interface command to fail.
            It is not obvious why this happens but it may be a glitch due to the hardware
            reset in the attached device. In any event, since reset causes a USB detach
            this should not matter, so there is no point in raising an alarm.
         */
-        if (0 != rv && !(com_launch == args->command &&
-                         args->com_launch_config.noreset == 0))
-        {
-            fprintf(stderr, "%s: failed to release interface %d.\n",
-                    progname, dfu_device.interface);
+        if (0 != rv && !(com_launch == args->command && args->com_launch_config.noreset == 0)) {
+            fprintf (stderr, "%s: failed to release interface %d.\n", progname, dfu_device.interface);
             retval = DEVICE_ACCESS_ERROR;
         }
     }
 
-    if (NULL != dfu_device.handle)
-    {
-        libusb_close(dfu_device.handle);
-    }
+    if (NULL != dfu_device.handle) { libusb_close (dfu_device.handle); }
 
-    libusb_exit(usbContext);
+    libusb_exit (usbContext);
 
     return retval;
 }
