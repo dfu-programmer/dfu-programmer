@@ -364,6 +364,7 @@ static void usage()
                      "                     [--suppress-validation]\n"
                      "                     [--suppress-bootloader-mem]\n"
                      "                     [--validate-first]\n"
+                     "                     [--erase-first]\n"
                      "                     [--ignore-outside]\n"
                      "                     [--serial=hexdigits:offset] {file|STDIN}\n" );
     fprintf( stderr, "        setsecure\n" );
@@ -596,6 +597,24 @@ static int32_t assign_global_options( struct programmer_arguments *args,
                 case com_eflash:
                 case com_user:
                     args->com_flash_data.validate_first = 1;
+                    break;
+                default:
+                    /* not supported. */
+                    return -1;
+            }
+            break;
+        }
+    }
+
+    /* Find '--erase-first' if it is here - even though it is not
+     * used by all this is easier. */
+    for( i = 0; i < argc; i++ ) {
+        if( 0 == strcmp("--erase-first", argv[i]) ) {
+            *argv[i] = '\0';
+
+            switch( args->command ) {
+                case com_flash:
+                    args->com_flash_data.erase_first = 1;
                     break;
                 default:
                     /* not supported. */

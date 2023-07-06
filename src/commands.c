@@ -383,6 +383,19 @@ static int32_t execute_flash( dfu_device_t *device,
     if( mem_type == mem_user ) {
         result = atmel_user( device, &bout );
     } else {
+        if ( 1 == args->com_flash_data.erase_first ) {
+            if( args->device_type & GRP_STM32 ) {
+                result = stm32_erase_flash( device, args->quiet );
+            } else {
+                result = atmel_erase_flash( device, ATMEL_ERASE_ALL, args->quiet );
+            }
+
+            if( 0 != result ) {
+                DEBUG( "Error erasing flash. (err %d)\n", result );
+                return result;
+            }
+        }
+
         if( args->device_type & GRP_STM32 ) {
             result = stm32_write_flash( device, &bout,
                     mem_type == mem_eeprom ? true : false,

@@ -225,6 +225,7 @@ struct programmer_arguments {
                                      bootloader - force overwrite required */
             bool validate_first; /* Do a validate before flashing */
             bool ignore_outside; /* Ignore validate errors outside region */
+            bool erase_first; /* Erase flash before writing */
             enum atmel_memory_unit_enum segment;
         } com_flash_data;
 
