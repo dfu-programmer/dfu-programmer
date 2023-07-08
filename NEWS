@@ -1,5 +1,5 @@
 == Release 1.1.0 [2023-07-08]
- * Add `--erase-first` option
+ * Add `--erase-first` option #90 #92
  * Fix missing `update-bash-completion.sh` #91
  * Fix missing header files #93 #94
 
