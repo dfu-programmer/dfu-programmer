@@ -250,7 +250,7 @@ jobs:
         run: |
           mkdir -p test-build
           tar xzf dfu-programmer-*.tar.gz -C test-build
-          cd test-build/dfu-programmer-${{ steps.version.outputs.version }}
+          cd test-build/dfu-programmer-*
           ./bootstrap.sh
           ./configure CFLAGS="-Werror -O2" --disable-dependency-tracking
           make -j4
