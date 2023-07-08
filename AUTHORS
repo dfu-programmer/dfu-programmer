@@ -99,3 +99,5 @@ Contributors:
     - Nicolas Brûlez (@N-Bz)
         - '--validate-first' and '--ignore-outside' options
         - Disabled progress bar when not using a tty
+    - Peter Korsgaard (@jacmet)
+        - Add '--erase-first' option
