@@ -250,7 +250,10 @@ jobs:
         run: |
           mkdir -p test-build
           tar xzf dfu-programmer-*.tar.gz -C test-build
-          make -C test-build
+          cd test-build/dfu-programmer-${{ steps.version.outputs.version }}
+          ./bootstrap.sh
+          ./configure CFLAGS="-Werror -O2" --disable-dependency-tracking
+          make -j4
 
       - name: Release
         uses: softprops/action-gh-release@v1
