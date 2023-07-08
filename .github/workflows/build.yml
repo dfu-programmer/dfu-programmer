@@ -245,6 +245,12 @@ jobs:
         run: |
           7z a -tzip ../dfu-programmer-linux-${{ steps.version.outputs.version }}.zip dfu-programmer
           7z a -t7z  ../dfu-programmer-linux-${{ steps.version.outputs.version }}.7z  dfu-programmer
+      
+      - name: Test Release Archives
+        run: |
+          mkdir -p test-build
+          tar xzf dfu-programmer-*.tar.gz -C test-build
+          make -C test-build
 
       - name: Release
         uses: softprops/action-gh-release@v1
