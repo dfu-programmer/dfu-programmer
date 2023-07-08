@@ -254,6 +254,7 @@ jobs:
           ./bootstrap.sh
           ./configure CFLAGS="-Werror -O2" --disable-dependency-tracking
           make -j4
+          src/dfu-programmer --help
 
       - name: Release
         uses: softprops/action-gh-release@v1
