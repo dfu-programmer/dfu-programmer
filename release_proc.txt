@@ -4,7 +4,7 @@ Update info files
   Make sure the following files are up to date:
   - NEWS
   - AUTHORS
-  - README
+  - README.md
   - docs/dfu-programmer.1
   - docs/dfu-programmer.html
   - fedora/dfu-programmer.spec.in
