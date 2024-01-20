@@ -3,7 +3,7 @@
 ## Should be usable with other related or RPM-based distros with minimal changes.
 
 Name:           dfu-programmer
-Version:        1.1.0
+Version:        @VERSION@
 Release:        1%{?dist}
 Summary:        A Device Firmware Update based USB programmer for Atmel chips
 
