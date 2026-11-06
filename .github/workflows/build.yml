@@ -126,21 +126,21 @@ jobs:
           export PATH=/usr/bin:/usr/local/bin
 
           # While some of these are already available, they are cygwin versions which are incompatible with MSYS2
-          pacman --color always --noconfirm -Sy automake-wrapper autoconf-wrapper make mingw-w64-x86_64-gcc mingw-w64-x86_64-libusb
+          pacman --color always --noconfirm -Sy automake-wrapper autoconf-wrapper make mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-libusb
 
       - name: Bootstrap
         run: |
-          export PATH=/usr/bin:/usr/local/bin:/mingw64/bin
+          export PATH=/usr/bin:/usr/local/bin:/ucrt64/bin
           ./bootstrap.sh
 
       - name: Configure
         run: |
-          export PATH=/usr/bin:/usr/local/bin:/mingw64/bin
+          export PATH=/usr/bin:/usr/local/bin:/ucrt64/bin
           ./configure CFLAGS="-Werror -O2" --disable-dependency-tracking ${{ steps.override.outputs.override }}
 
       - name: Build
         run: |
-          export PATH=/usr/bin:/usr/local/bin:/mingw64/bin
+          export PATH=/usr/bin:/usr/local/bin:/ucrt64/bin
           make -j4
 
       - name: Prep dist
@@ -155,8 +155,8 @@ jobs:
           cp docs/dfu-programmer.html dist/
 
           # Libusb 1.0
-          cp C:/msys64/mingw64/bin/libusb-1.0.dll dist/
-          cp C:/msys64/mingw64/share/licenses     dist/ -Recurse
+          cp C:/msys64/ucrt64/bin/libusb-1.0.dll dist/
+          cp C:/msys64/ucrt64/share/licenses     dist/ -Recurse
 
       - name: Upload dist as Build Artifact
         uses: actions/upload-artifact@v7
