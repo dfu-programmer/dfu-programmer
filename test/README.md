@@ -17,9 +17,11 @@ Our local unit test are run on an [AVR Test HAT](https://github.com/cinderblock/
 
 ## Tests
 
-We're using [Jest](https://jestjs.io) to run the tests with a thin wrapper around the executable.
+The tests use Node's built-in test runner ([`node:test`](https://nodejs.org/api/test.html)) with a thin wrapper around the executable. Node runs the TypeScript directly, so there is no build step.
 
-To run these tests on your system, you just need a recent-ish version of [Node.js](https://nodejs.org) installed.
+To run these tests on your system, you need [Node.js](https://nodejs.org) 22.18 or newer.
+
+`npm run test:standalone` runs only the tests that need no hardware (CI runs these on every push and pull request).
 
 Then run:
 
