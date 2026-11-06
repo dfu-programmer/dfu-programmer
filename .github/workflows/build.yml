@@ -38,7 +38,7 @@ jobs:
           export PATH=/usr/bin:/usr/local/bin
 
           # While some of these are already available, they are cygwin versions which are incompatible with MSYS2
-          pacman --color always --noconfirm -S automake-wrapper autoconf-wrapper make mingw-w64-i686-gcc mingw-w64-i686-libusb
+          pacman --color always --noconfirm -Sy automake-wrapper autoconf-wrapper make mingw-w64-i686-gcc mingw-w64-i686-libusb
 
       - name: Bootstrap
         run: |
@@ -126,7 +126,7 @@ jobs:
           export PATH=/usr/bin:/usr/local/bin
 
           # While some of these are already available, they are cygwin versions which are incompatible with MSYS2
-          pacman --color always --noconfirm -S automake-wrapper autoconf-wrapper make mingw-w64-x86_64-gcc mingw-w64-x86_64-libusb
+          pacman --color always --noconfirm -Sy automake-wrapper autoconf-wrapper make mingw-w64-x86_64-gcc mingw-w64-x86_64-libusb
 
       - name: Bootstrap
         run: |
@@ -278,10 +278,10 @@ jobs:
 
   macOS:
     name: macOS x64
-    runs-on: macos-latest
+    runs-on: macos-15-intel
 
     steps:
-      - run: brew install automake
+      - run: brew install automake libusb pkgconf
 
       - uses: actions/checkout@v7
 
