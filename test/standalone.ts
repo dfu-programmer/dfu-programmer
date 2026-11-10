@@ -1,5 +1,6 @@
-import { describe, expect, test } from "@jest/globals";
-import { runDfu } from "./util/dfu";
+import { describe, test } from "node:test";
+import assert from "node:assert/strict";
+import { runDfu } from "./util/dfu.ts";
 
 /**
  * Standalone tests that should work without any hardware connected.
@@ -8,38 +9,38 @@ import { runDfu } from "./util/dfu";
 describe("standalone", () => {
   test("it runs without arguments and returns an error code and usage", async () => {
     const res = runDfu();
-    expect(await res.exitCode).toBe(2);
+    assert.equal(await res.exitCode, 2);
     const { stdout, stderr } = res;
 
     // No output on stdout
-    expect(stdout).toBe("");
+    assert.equal(stdout, "");
 
     // Starts with "dfu-programmer <version>"
-    expect(stderr).toMatch(/^dfu-programmer/g);
+    assert.match(stderr, /^dfu-programmer/g);
   });
 
   test("it prints usage with --help", async () => {
     const res = runDfu(["--help"]);
-    expect(await res.exitCode).toBe(0);
+    assert.equal(await res.exitCode, 0);
     const { stdout, stderr } = res;
 
     // No output on stdout
-    expect(stdout).toBe("");
+    assert.equal(stdout, "");
 
     // Starts with "dfu-programmer <version>"
-    expect(stderr).toMatch(/^dfu-programmer/g);
+    assert.match(stderr, /^dfu-programmer/g);
 
     // Contains the usage
-    expect(stderr).toMatch(/^Usage: dfu-programmer target\[:usb-bus,usb-addr\] command \[options\] \[global-options\] \[file\|data\]/m);
+    assert.match(stderr, /^Usage: dfu-programmer target\[:usb-bus,usb-addr\] command \[options\] \[global-options\] \[file\|data\]/m);
 
     // Contains the global options
-    expect(stderr).toMatch(/^global-options:/m);
+    assert.match(stderr, /^global-options:/m);
 
     // Contains the command summary
-    expect(stderr).toMatch(/^command summary:/m);
+    assert.match(stderr, /^command summary:/m);
 
     // Contains the additional details
-    expect(stderr).toMatch(/^additional details:/m);
+    assert.match(stderr, /^additional details:/m);
 
     // ...
   });

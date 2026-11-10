@@ -14,11 +14,14 @@ jobs:
       - avr-test-hat
       - linux
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
       - run: ./bootstrap.sh
       - run: ./configure --disable-dependency-tracking CFLAGS="--coverage -O0"
       - run: make -j4
-      - run: npm install
+      - run: npm ci
       - run: npm test
         id: test
       - run: coveralls

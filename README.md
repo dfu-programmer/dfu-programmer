@@ -56,14 +56,16 @@ sudo make install # install dfu-programmer
 ## Build procedure for Windows
 
 Building Windows apps from source is never quite as simple...
-Firstly you need to have MinGW and MSys with developer tools.
-Get them from http://sourceforge.net/projects/mingw/files/.
+Firstly you need [MSYS2](https://www.msys2.org) with its developer tools.
 See `.github/workflows/build.yml` for examples of building on Windows and the needed tools.
 
-If you install the correct package with `pacman`, header and lib files will be installed in the correct locations.
+If you install the correct packages with `pacman` from an MSYS2 **UCRT64** shell, header and lib files will be installed in the correct locations:
 
-- **32-bit:** `pacman -S mingw-w64-i686-libusb`
-- **64-bit:** `pacman -S mingw-w64-x86_64-libusb`
+```sh
+pacman -S automake-wrapper autoconf-wrapper make mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-libusb
+```
+
+MSYS2 no longer ships 32-bit (i686) packages, so only 64-bit Windows builds are published.
 
 Follow the same install instructions as above.
 

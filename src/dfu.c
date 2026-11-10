@@ -395,9 +395,18 @@ retry:
             if (!tmp) {
                 return device;
             }
-            
-            retries--;
-            goto retry;
+
+            /* The device was reset: find it again, a bounded number of times. */
+            if( 0 < retries-- ) {
+                goto retry;
+            }
+
+            DEBUG( "Device kept resetting; giving up.\n" );
+            libusb_release_interface( dfu_device->handle, dfu_device->interface );
+            libusb_close( dfu_device->handle );
+            dfu_device->handle = NULL;
+            dfu_device->interface = 0;
+            return NULL;
         }
 
         DEBUG( "Failed to put the device in dfuIDLE mode.\n" );
@@ -583,6 +592,7 @@ static int32_t dfu_make_idle( dfu_device_t *device,
     while( 0 < retries ) {
         if( 0 != dfu_get_status(device, &status) ) {
             dfu_clear_status( device );
+            retries--;
             continue;
         }
 

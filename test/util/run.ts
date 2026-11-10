@@ -1,4 +1,4 @@
-import { spawn, ChildProcess } from "child_process";
+import { spawn, type ChildProcess } from "node:child_process";
 
 type Cleanup = () => unknown;
 

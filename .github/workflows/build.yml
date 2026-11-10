@@ -6,97 +6,9 @@ name: Build dfu-programmer
 
 on:
   push:
-  # pull_request:
+  pull_request:
 
 jobs:
-  Windows-x86:
-    name: Windows x86
-    runs-on: windows-latest
-
-    defaults:
-      run:
-        shell: C:/msys64/usr/bin/bash.exe --noprofile --norc -e -x -o pipefail {0}
-
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Override Version String
-        if: "!startsWith(github.ref, 'refs/tags/v')"
-        id: override
-        shell: bash
-        run: echo 'override=PACKAGE_STRING="dfu-programmer ${{ github.ref_name }} ${{ github.sha }}"' >> $GITHUB_OUTPUT
-
-      - name: Get version
-        if: startsWith(github.ref, 'refs/tags/v')
-        id: version
-        shell: bash
-        run: echo version=${GITHUB_REF#refs/tags/v} >> $GITHUB_OUTPUT
-
-      - name: Dependencies
-        run: |
-          # Fix issues with MSYS2 and cygwin tools conflicting by just using MSYS2
-          export PATH=/usr/bin:/usr/local/bin
-
-          # While some of these are already available, they are cygwin versions which are incompatible with MSYS2
-          pacman --color always --noconfirm -S automake-wrapper autoconf-wrapper make mingw-w64-i686-gcc mingw-w64-i686-libusb
-
-      - name: Bootstrap
-        run: |
-          export PATH=/usr/bin:/usr/local/bin:/mingw32/bin
-          ./bootstrap.sh
-
-      - name: Configure
-        run: |
-          export PATH=/usr/bin:/usr/local/bin:/mingw32/bin
-          ./configure CFLAGS="-Werror -O2" --disable-dependency-tracking ${{ steps.override.outputs.override }}
-
-      - name: Build
-        run: |
-          export PATH=/usr/bin:/usr/local/bin:/mingw32/bin
-          make -j4
-
-      - name: Prep dist
-        shell: pwsh
-        run: |
-          mkdir dist
-
-          # The binary
-          cp src/dfu-programmer.exe dist/
-
-          # The docs
-          cp docs/dfu-programmer.html dist/
-
-          # Libusb 1.0
-          cp C:/msys64/mingw32/bin/libusb-1.0.dll dist/
-          cp C:/msys64/mingw32/share/licenses     dist/ -Recurse
-
-      - name: Upload dist as Build Artifact
-        uses: actions/upload-artifact@v3.1.0
-        with:
-          name: Windows x86 - dfu-programmer
-          path: dist
-
-      - name: Test
-        shell: pwsh
-        run: dist/dfu-programmer.exe --help
-
-      - name: Make release archives of binaries
-        if: startsWith(github.ref, 'refs/tags/v')
-        shell: pwsh
-        working-directory: dist
-        run: |
-          7z a -tzip ../dfu-programmer-x86-${{ steps.version.outputs.version }}.zip *
-          7z a -t7z  ../dfu-programmer-x86-${{ steps.version.outputs.version }}.7z  *
-
-      - name: Release
-        uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/v')
-        with:
-          fail_on_unmatched_files: true
-          files: |
-            dfu-programmer-x86-${{ steps.version.outputs.version }}.zip
-            dfu-programmer-x86-${{ steps.version.outputs.version }}.7z
-
   Windows-x64:
     name: Windows x64
     runs-on: windows-latest
@@ -106,7 +18,7 @@ jobs:
         shell: C:/msys64/usr/bin/bash.exe --noprofile --norc -e -x -o pipefail {0}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
 
       - name: Override Version String
         if: "!startsWith(github.ref, 'refs/tags/v')"
@@ -126,21 +38,21 @@ jobs:
           export PATH=/usr/bin:/usr/local/bin
 
           # While some of these are already available, they are cygwin versions which are incompatible with MSYS2
-          pacman --color always --noconfirm -S automake-wrapper autoconf-wrapper make mingw-w64-x86_64-gcc mingw-w64-x86_64-libusb
+          pacman --color always --noconfirm -Sy automake-wrapper autoconf-wrapper make mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-libusb
 
       - name: Bootstrap
         run: |
-          export PATH=/usr/bin:/usr/local/bin:/mingw64/bin
+          export PATH=/usr/bin:/usr/local/bin:/ucrt64/bin
           ./bootstrap.sh
 
       - name: Configure
         run: |
-          export PATH=/usr/bin:/usr/local/bin:/mingw64/bin
+          export PATH=/usr/bin:/usr/local/bin:/ucrt64/bin
           ./configure CFLAGS="-Werror -O2" --disable-dependency-tracking ${{ steps.override.outputs.override }}
 
       - name: Build
         run: |
-          export PATH=/usr/bin:/usr/local/bin:/mingw64/bin
+          export PATH=/usr/bin:/usr/local/bin:/ucrt64/bin
           make -j4
 
       - name: Prep dist
@@ -155,11 +67,11 @@ jobs:
           cp docs/dfu-programmer.html dist/
 
           # Libusb 1.0
-          cp C:/msys64/mingw64/bin/libusb-1.0.dll dist/
-          cp C:/msys64/mingw64/share/licenses     dist/ -Recurse
+          cp C:/msys64/ucrt64/bin/libusb-1.0.dll dist/
+          cp C:/msys64/ucrt64/share/licenses     dist/ -Recurse
 
       - name: Upload dist as Build Artifact
-        uses: actions/upload-artifact@v3.1.0
+        uses: actions/upload-artifact@v7
         with:
           name: Windows x64 - dfu-programmer
           path: dist
@@ -177,7 +89,7 @@ jobs:
           7z a -t7z  ../dfu-programmer-x64-${{ steps.version.outputs.version }}.7z  *
 
       - name: Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v3
         if: startsWith(github.ref, 'refs/tags/v')
         with:
           fail_on_unmatched_files: true
@@ -192,7 +104,7 @@ jobs:
     steps:
       - run: sudo apt-get install -y libusb-1.0-0-dev
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
 
       - name: Override Version String
         if: "!startsWith(github.ref, 'refs/tags/v')"
@@ -224,8 +136,17 @@ jobs:
       - name: Test
         run: src/dfu-programmer --help
 
+      # Hardware-free tests (test/standalone.ts). The USB tests need the
+      # AVR Test HAT runner and live in test.yml.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run test:standalone
+
       - name: Upload Binary as Build Artifact
-        uses: actions/upload-artifact@v3.1.0
+        uses: actions/upload-artifact@v7
         with:
           name: Linux x64 - dfu-programmer binary
           path: src/dfu-programmer
@@ -234,7 +155,7 @@ jobs:
         run: make -j4 dist
 
       - name: Upload Tarball as Build Artifact
-        uses: actions/upload-artifact@v3.1.0
+        uses: actions/upload-artifact@v7
         with:
           name: Linux x64 - dfu-programmer dist
           path: "*.tar.gz"
@@ -257,7 +178,7 @@ jobs:
           src/dfu-programmer --help
 
       - name: Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v3
         if: startsWith(github.ref, 'refs/tags/v')
         with:
           body_path: CHANGES
@@ -269,12 +190,12 @@ jobs:
 
   macOS:
     name: macOS x64
-    runs-on: macos-latest
+    runs-on: macos-15-intel
 
     steps:
-      - run: brew install automake
+      - run: brew install automake libusb pkgconf
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
 
       - name: Override Version String
         if: "!startsWith(github.ref, 'refs/tags/v')"
@@ -299,7 +220,7 @@ jobs:
         run: src/dfu-programmer --help
 
       - name: Upload Binary as Build Artifact
-        uses: actions/upload-artifact@v3.1.0
+        uses: actions/upload-artifact@v7
         with:
           name: macOS - dfu-programmer binary
           path: src/dfu-programmer
@@ -308,7 +229,7 @@ jobs:
         run: make -j4 dist
 
       - name: Upload Tarball as Build Artifact
-        uses: actions/upload-artifact@v3.1.0
+        uses: actions/upload-artifact@v7
         with:
           name: macOS - dfu-programmer dist
           path: "*.tar.gz"
@@ -321,7 +242,7 @@ jobs:
           7z a -t7z  ../dfu-programmer-macOS-${{ steps.version.outputs.version }}.7z  dfu-programmer
 
       - name: Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v3
         if: startsWith(github.ref, 'refs/tags/v')
         with:
           fail_on_unmatched_files: true
