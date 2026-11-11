@@ -1,0 +1,52 @@
+# SPEC file for building RPM packages
+## Based on the SPEC file used for Fedora 38.
+## Should be usable with other related or RPM-based distros with minimal changes.
+
+# Defined by redhat-rpm-config; fall back to the standard path elsewhere.
+%{!?bash_completions_dir:%global bash_completions_dir %{_datadir}/bash-completion/completions}
+
+Name:           dfu-programmer
+Version:        @VERSION@
+Release:        1%{?dist}
+Summary:        A Device Firmware Update based USB programmer for Atmel chips
+
+License:        GPL-2.0-or-later
+URL:            https://dfu-programmer.github.io/
+Source:         https://github.com/%{name}/%{name}/releases/download/v%{version}/%{name}-%{version}.tar.gz
+
+BuildRequires:  gcc
+BuildRequires:  pkgconfig(libusb-1.0) >= 1.0.0
+BuildRequires:  make
+
+%description 
+A linux based command-line programmer for Atmel chips with a USB
+bootloader supporting ISP. This is a mostly Device Firmware Update
+(DFU) 1.0 compliant user-space application. Supports all DFU enabled
+Atmel chips with USB support.
+
+%prep
+%autosetup -p1
+
+%build
+%configure
+%make_build
+
+%install
+%make_install
+
+# Bash completion. `make` already generated dfu_programmer from dfu_completion.
+# The file is named after the command so bash-completion can load it on demand.
+install -Dpm0644 dfu_programmer %{buildroot}%{bash_completions_dir}/%{name}
+
+%files
+%license COPYING
+%doc AUTHORS NEWS README.md
+%{_bindir}/%{name}
+%{_mandir}/man1/%{name}.1*
+%{bash_completions_dir}/%{name}
+
+%changelog
+* Fri Dec 29 2023 Erovia <erovia@users.noreply.github.com> - 1.1.0-1
+- Update to 1.1.0
+- Based on Fedora's dfu-programmer package; see its history at
+  https://src.fedoraproject.org/rpms/dfu-programmer

@@ -7,7 +7,7 @@ Update info files
   - README.md
   - docs/dfu-programmer.1
   - docs/dfu-programmer.html
-  - fedora/dfu-programmer.spec.in
+  - dfu-programmer.spec.in
 
   Note that the list of devices shown in README and the docs can be auto-generated
   using dfu-programmer --targets / --targets-tex / --targets-html
