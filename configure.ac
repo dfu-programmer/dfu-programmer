@@ -21,12 +21,12 @@ AC_PROG_CC
 AC_CHECK_HEADERS([stddef.h stdint.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
-AC_C_CONST
+# (No AC_C_CONST: every C89 compiler has const, and with -Werror in CFLAGS
+# its probe fails under clang and silently defines const away.)
 AC_TYPE_SIZE_T
 
-# Checks for library functions.
+# Checks for library functions. dfu.c provides rpl_malloc for AC_FUNC_MALLOC.
 AC_FUNC_MALLOC
-AC_FUNC_MEMCMP
 
 # Checks for libusb. 1.0.22 is the oldest release with libusb_set_option(),
 # which dfu-programmer uses. Prefer pkg-config, which knows where the headers
