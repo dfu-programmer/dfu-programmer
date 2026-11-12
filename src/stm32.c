@@ -194,7 +194,7 @@ static int32_t stm32_write_block( dfu_device_t *device,
     return -1;
   }
 
-  if( xfer_len != dfu_download(device, xfer_len, buffer) ) {
+  if( (int32_t) xfer_len != dfu_download(device, xfer_len, buffer) ) {
     DEBUG( "dfu_download failed\n" );
     return -3;
   }
@@ -476,8 +476,9 @@ finally:
 
 int32_t stm32_write_flash( dfu_device_t *device, intel_buffer_out_t *bout,
     const bool eeprom, const bool force, const bool quiet ) {
-  TRACE( "%s( %p, %p, %s, %s )\n", __FUNCTION__, device, bout,
+  TRACE( "%s( %p, %p, %s, %s, %s )\n", __FUNCTION__, device, bout,
           ((true == eeprom) ? "true" : "false"),
+          ((true == force) ? "true" : "false"),
           ((true == quiet) ? "true" : "false") );
 
   uint32_t i;

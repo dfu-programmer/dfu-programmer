@@ -357,7 +357,7 @@ static int32_t execute_flash( dfu_device_t *device,
             // words are blocked / written.
             //  ----------- the below for loop is not currently in use -----------
             for ( i = bout.info.total_size - 8; i < bout.info.total_size; i++ ) {
-                if ( -1 != bout.data[i] ) {
+                if ( UINT16_MAX != bout.data[i] ) {
                     fprintf( stderr,
                             "ERROR: data overlap with bootloader configuration word(s).\n" );
                     DEBUG( "At position %d, value is %d.\n", i, bout.data[i] );
@@ -631,7 +631,7 @@ static int32_t execute_get( dfu_device_t *device,
 
 static int32_t execute_dump( dfu_device_t *device,
                              struct programmer_arguments *args ) {
-    int32_t i = 0;
+    uint32_t i = 0;
     int32_t retval = UNSPECIFIED_ERROR;
     int32_t result;             // result of fcn calls
     intel_buffer_in_t buin;     // buffer in for storing read mem
@@ -836,8 +836,10 @@ int32_t execute_command( dfu_device_t *device,
             return execute_flash( device, args );
         case com_start_app:
             args->com_launch_config.noreset = true;
+            /* fall through */
         case com_reset:
             args->command = com_launch;
+            /* fall through */
         case com_launch:
             return execute_launch( device, args );
         case com_get:

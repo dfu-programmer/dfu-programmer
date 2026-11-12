@@ -28,6 +28,8 @@ extern int debug;       /* defined in libdfu.c */
 void dfu_debug( const char *file, const char *function, const int line,
                 const int level, const char *format, ... )
 {
+    (void) function;    /* kept in the signature for the DEBUG/TRACE macros */
+
     if( level < debug ) {
         va_list va_arg;
 
