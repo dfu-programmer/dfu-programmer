@@ -858,7 +858,7 @@ int32_t execute_command( dfu_device_t *device,
             args->com_read_data.bin = 1;
             return execute_dump( device, args );
         case com_udump:
-            args->com_read_data.segment = mem_eeprom;
+            args->com_read_data.segment = mem_user;
             args->com_read_data.force = true;
             args->command = com_read;
             args->com_read_data.bin = 1;
