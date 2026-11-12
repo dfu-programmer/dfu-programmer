@@ -1,16 +1,21 @@
 #!/bin/bash
 
+# Usage: update-bash-completion.sh [SRCDIR] [OUTPUT]
+# SRCDIR defaults to the current directory, OUTPUT to dfu_programmer.
+# make passes both, so out-of-tree (VPATH) builds work.
+SRCDIR=${1:-.}
+
 # sed - without printing by default (-n)
 # Remove lines up to and including the start line, which includes: START_TARGET_LIST_LINE
 # Remove lines after and including the end line, which includes: END_TARGET_LIST_LINE
 # Get the part between the quotes and the last number
-TARGET_INFO=$( sed -n '1,/START_TARGET_LIST_LINE/d; /END_TARGET_LIST_LINE/,$d; s/.*"\(.*\)".*,\s*\([xX0-9A-Fa-f]*\)\s*},/\1::\2/p' src/arguments.c )
+TARGET_INFO=$( sed -n '1,/START_TARGET_LIST_LINE/d; /END_TARGET_LIST_LINE/,$d; s/.*"\(.*\)".*,\s*\([xX0-9A-Fa-f]*\)\s*},/\1::\2/p' "$SRCDIR/src/arguments.c" )
 
 # Output file
-DFU_COMP=dfu_programmer
+DFU_COMP=${2:-dfu_programmer}
 
 # Write the header with the TARGET_INFO
-cat << EOF > $DFU_COMP
+cat << EOF > "$DFU_COMP"
 # autocomplete script
 # code sourced from \`dfu_completion\`
 # DO NOT EDIT IN THIS FILE
@@ -20,9 +25,9 @@ TARGET_INFO="$TARGET_INFO"
 EOF
 
 # Remove everything up to and including the first empty line
-sed 1,/^\$/d dfu_completion >> $DFU_COMP
+sed 1,/^\$/d "$SRCDIR/dfu_completion" >> "$DFU_COMP"
 
-chmod +x $DFU_COMP
+chmod +x "$DFU_COMP"
 
 #if [ "$(cat /etc/*release | grep DISTRIB_ID | sed 's/DISTRIB_ID=//')" = "Ubuntu" ]]; then
 echo "To install tab completion run"
