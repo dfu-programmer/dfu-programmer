@@ -21,7 +21,6 @@
 #ifndef __DFU_H__
 #define __DFU_H__
 
-#include <libusb-1.0/libusb.h>
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>

@@ -2,7 +2,13 @@
 #define __DFU_DEVICE_H__
 
 #include <stdint.h>
+/* configure defines DFU_LIBUSB_FLAT_INCLUDE when pkg-config points the
+ * include path at the libusb-1.0 directory itself. */
+#ifdef DFU_LIBUSB_FLAT_INCLUDE
+#include <libusb.h>
+#else
 #include <libusb-1.0/libusb.h>
+#endif
 
 #ifdef __cplusplus
 extern "C" {

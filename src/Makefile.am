@@ -1,4 +1,5 @@
-AM_CFLAGS = -Wall
+AM_CPPFLAGS = $(LIBUSB_INCLUDE_FLAGS)
+AM_CFLAGS = -Wall $(WERROR_CFLAGS)
 bin_PROGRAMS = dfu-programmer
 dfu_programmer_SOURCES = main.c
 dfu_programmer_SOURCES += libdfu.c libdfu.h
