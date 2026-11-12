@@ -15,7 +15,7 @@ URL:            https://dfu-programmer.github.io/
 Source:         https://github.com/%{name}/%{name}/releases/download/v%{version}/%{name}-%{version}.tar.gz
 
 BuildRequires:  gcc
-BuildRequires:  pkgconfig(libusb-1.0) >= 1.0.0
+BuildRequires:  pkgconfig(libusb-1.0) >= 1.0.22
 BuildRequires:  make
 
 %description 
@@ -37,6 +37,9 @@ Atmel chips with USB support.
 # Bash completion. `make` already generated dfu_programmer from dfu_completion.
 # The file is named after the command so bash-completion can load it on demand.
 install -Dpm0644 dfu_programmer %{buildroot}%{bash_completions_dir}/%{name}
+
+%check
+%make_build check
 
 %files
 %license COPYING

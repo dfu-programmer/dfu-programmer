@@ -48,12 +48,17 @@ jobs:
       - name: Configure
         run: |
           export PATH=/usr/bin:/usr/local/bin:/ucrt64/bin
-          ./configure CFLAGS="-Werror -O2" --disable-dependency-tracking ${{ steps.override.outputs.override }}
+          ./configure CFLAGS="-O2" --enable-werror --disable-dependency-tracking ${{ steps.override.outputs.override }}
 
       - name: Build
         run: |
           export PATH=/usr/bin:/usr/local/bin:/ucrt64/bin
           make -j4
+
+      - name: Unit tests
+        run: |
+          export PATH=/usr/bin:/usr/local/bin:/ucrt64/bin
+          make -j4 check || { cat test-suite.log test/unit/*.log; exit 1; }
 
       - name: Prep dist
         shell: pwsh
@@ -128,10 +133,13 @@ jobs:
         run: ./bootstrap.sh
 
       - name: configure
-        run: ./configure CFLAGS="-Werror -O2" --disable-dependency-tracking ${{ steps.override.outputs.override }}
+        run: ./configure CFLAGS="-O2" --enable-werror --disable-dependency-tracking ${{ steps.override.outputs.override }}
 
       - name: make
         run: make -j4
+
+      - name: Unit tests
+        run: make -j4 check || { cat test-suite.log test/unit/*.log; exit 1; }
 
       - name: Test
         run: src/dfu-programmer --help
@@ -166,15 +174,11 @@ jobs:
         run: |
           7z a -tzip ../dfu-programmer-linux-${{ steps.version.outputs.version }}.zip dfu-programmer
           7z a -t7z  ../dfu-programmer-linux-${{ steps.version.outputs.version }}.7z  dfu-programmer
-      
-      - name: Test Release Archives
-        run: |
-          mkdir -p test-build
-          tar xzf dfu-programmer-*.tar.gz -C test-build
-          cd test-build/dfu-programmer-*
-          ./configure CFLAGS="-Werror -O2" --disable-dependency-tracking
-          make -j4
-          src/dfu-programmer --help
+
+      # Builds the tarball the way users and packagers do (no bootstrap.sh),
+      # out of tree, then runs make check, install, uninstall and distclean.
+      - name: make distcheck
+        run: make -j4 distcheck DISTCHECK_CONFIGURE_FLAGS=--enable-werror
 
       - name: Release
         uses: softprops/action-gh-release@v3
@@ -210,10 +214,13 @@ jobs:
         run: ./bootstrap.sh
 
       - name: configure
-        run: ./configure CFLAGS="-Werror -O2" --disable-dependency-tracking ${{ steps.override.outputs.override }}
+        run: ./configure CFLAGS="-O2" --enable-werror --disable-dependency-tracking ${{ steps.override.outputs.override }}
 
       - name: make
         run: make -j4
+
+      - name: Unit tests
+        run: make -j4 check || { cat test-suite.log test/unit/*.log; exit 1; }
 
       - name: Test
         run: src/dfu-programmer --help
@@ -248,3 +255,76 @@ jobs:
           files: |
             dfu-programmer-macOS-${{ steps.version.outputs.version }}.zip
             dfu-programmer-macOS-${{ steps.version.outputs.version }}.7z
+
+  # Extra platforms and compilers. These don't publish release artifacts.
+  Portability:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux arm64 (gcc)
+            os: ubuntu-24.04-arm
+            cc: gcc
+          - name: Linux x64 (clang)
+            os: ubuntu-24.04
+            cc: clang
+          - name: Linux x64 (ASan + UBSan)
+            os: ubuntu-24.04
+            cc: gcc
+            cflags: -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer -fno-sanitize-recover=all
+            ldflags: -fsanitize=address,undefined
+          # Homebrew on Apple Silicon lives in /opt/homebrew, so this one
+          # proves configure finds libusb through pkg-config.
+          - name: macOS arm64
+            os: macos-latest
+            cc: clang
+
+    steps:
+      - name: Dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libusb-1.0-0-dev clang
+
+      - name: Dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: brew install automake libusb pkgconf
+
+      - uses: actions/checkout@v7
+
+      - name: bootstrap
+        run: ./bootstrap.sh
+
+      - name: configure
+        run: ./configure --enable-werror --disable-dependency-tracking CC="${{ matrix.cc }}" CFLAGS="${{ matrix.cflags || '-O2' }}" LDFLAGS="${{ matrix.ldflags }}"
+
+      - name: make
+        run: make -j4
+
+      - name: Unit tests
+        run: make -j4 check || { cat test-suite.log test/unit/*.log; exit 1; }
+
+      - name: Test
+        run: src/dfu-programmer --help
+
+  # Build the RPM from the release tarball, the way Fedora does, so the
+  # spec file can't rot unnoticed.
+  Fedora-RPM:
+    name: Fedora RPM
+    runs-on: ubuntu-latest
+    container: fedora:latest
+
+    steps:
+      - name: Dependencies
+        run: dnf install -y autoconf automake gcc make git tar gzip libusb1-devel pkgconf-pkg-config rpm-build rpmlint redhat-rpm-config
+
+      - uses: actions/checkout@v7
+
+      - name: make dist
+        run: ./bootstrap.sh && ./configure --disable-dependency-tracking && make dist
+
+      - name: rpmbuild
+        run: rpmbuild -ta dfu-programmer-*.tar.gz
+
+      - name: rpmlint
+        run: rpmlint ~/rpmbuild/SRPMS/*.rpm ~/rpmbuild/RPMS/*/*.rpm
