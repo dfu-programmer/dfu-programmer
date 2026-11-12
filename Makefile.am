@@ -18,7 +18,7 @@ check_PROGRAMS = test/unit/test_intel_hex
 TESTS = $(check_PROGRAMS)
 
 UNIT_CPPFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/test/unit -I$(top_builddir)/src $(LIBUSB_INCLUDE_FLAGS)
-UNIT_CFLAGS = -Wall $(WERROR_CFLAGS)
+UNIT_CFLAGS = -Wall -Wextra $(WERROR_CFLAGS)
 
 test_unit_test_intel_hex_SOURCES = test/unit/test_intel_hex.c test/unit/unit.h \
 	src/intel_hex.c src/util.c
