@@ -37,3 +37,12 @@ m4/
 
 # Apple temp files
 *~
+
+# make check output
+test-suite.log
+*.log
+*.trs
+test/unit/test_intel_hex
+test/unit/*.o
+*.tmp.hex
+*.tmp.out
