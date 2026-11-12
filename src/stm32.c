@@ -665,8 +665,8 @@ int32_t stm32_get_commands( dfu_device_t *device ) {
   TRACE("%s( %p )\n", __FUNCTION__, device);
   int32_t result;
   uint8_t i;
-  const size_t xfer_len = 80;
-  uint8_t buffer[xfer_len];
+  uint8_t buffer[80];
+  const size_t xfer_len = sizeof( buffer );
 
   /* check status before read */
   if( (result = stm32_get_status(device)) ) {
