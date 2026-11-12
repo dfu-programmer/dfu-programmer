@@ -619,7 +619,7 @@ int32_t intel_init_buffer_in( intel_buffer_in_t *buin,
 int32_t intel_validate_buffer( intel_buffer_in_t *buin,
                                intel_buffer_out_t *bout,
                                bool quiet) {
-    int32_t i;
+    uint32_t i;
     int32_t invalid_data_region = 0;
     int32_t invalid_outside_data_region = 0;
 
@@ -670,7 +670,7 @@ int32_t intel_validate_buffer( intel_buffer_in_t *buin,
 
 int32_t intel_flash_prep_buffer( intel_buffer_out_t *bout ) {
     uint16_t *page;
-    int32_t i;
+    size_t i;
 
     TRACE( "%s( %p )\n", __FUNCTION__, bout );
 

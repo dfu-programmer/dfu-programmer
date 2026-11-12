@@ -185,7 +185,7 @@ static struct target_mapping_structure target_map[] = {
     { "stm32f4_C",      tar_stm32f4_C,      DC_STM32,  0xdf11, 0x0483, 0x40000, 0x0000, BL_EXTRA,  512,   0,      0 },
     { "stm32f4_E",      tar_stm32f4_E,      DC_STM32,  0xdf11, 0x0483, 0x80000, 0x0000, BL_EXTRA,  512,   0,      0 },
     { "stm32f4_G",      tar_stm32f4_G,      DC_STM32,  0xdf11, 0x0483, 0x100000,0x0000, BL_EXTRA,  512,   0,      0 },
-    { NULL }
+    { 0 }
     // END_TARGET_LIST_LINE .. used for autocompletion script
 };
 
@@ -209,7 +209,7 @@ static struct option_mapping_structure command_map[] = {
     { "start",        com_start_app },
     { "bin2hex",      com_bin2hex   },
     { "hex2bin",      com_hex2bin   },
-    { NULL }
+    { 0 }
 };
 
 /* ----- configure specific structures -------------------------------------- */
@@ -219,7 +219,7 @@ static struct option_mapping_structure configure_map[] = {
     { "SSB", conf_SSB },
     { "EB",  conf_EB  },
     { "HSB", conf_HSB },
-    { NULL }
+    { 0 }
 };
 
 /* ----- get specific structures -------------------------------------- */
@@ -236,7 +236,7 @@ static struct option_mapping_structure get_map[] = {
     { "product-name",       get_product_name },
     { "product-revision",   get_product_rev  },
     { "HSB",                get_HSB          },
-    { NULL }
+    { 0 }
 };
 
 /* ----- getfuse specific structures ---------------------------------- */
@@ -250,7 +250,7 @@ static struct option_mapping_structure getfuse_map[] = {
     { "ISP_BOD_EN",     get_isp_bod_en     },
     { "ISP_IO_COND_EN", get_isp_io_cond_en },
     { "ISP_FORCE",      get_isp_force      },
-    { NULL }
+    { 0 }
 };
 
 /* ----- setfuse specific structures ---------------------------------- */
@@ -264,7 +264,7 @@ static struct option_mapping_structure setfuse_map[] = {
     { "ISP_BOD_EN",     set_isp_bod_en     },
     { "ISP_IO_COND_EN", set_isp_io_cond_en },
     { "ISP_FORCE",      set_isp_force      },
-    { NULL }
+    { 0 }
 };
 
 static void list_targets(int mode)
@@ -903,6 +903,8 @@ static int32_t assign_com_flash_option( struct programmer_arguments *args,
                                         const int32_t parameter,
                                         char *value )
 {
+    (void) parameter;
+
     /* file */
     args->com_flash_data.original_first_char = *value;
     args->com_flash_data.file = value;
@@ -914,6 +916,8 @@ static int32_t assign_com_convert_option( struct programmer_arguments *args,
                                           const int32_t parameter,
                                           char *value )
 {
+    (void) parameter;
+
     /* file */
     args->com_convert_data.original_first_char = *value;
     args->com_convert_data.file = value;
@@ -926,6 +930,8 @@ static int32_t assign_com_getfuse_option( struct programmer_arguments *args,
                                       const int32_t parameter,
                                       char *value )
 {
+    (void) parameter;
+
     /* name */
     if( 0 != assign_option((int32_t *) &(args->com_getfuse_data.name),
                            value, getfuse_map) )
@@ -940,6 +946,8 @@ static int32_t assign_com_get_option( struct programmer_arguments *args,
                                       const int32_t parameter,
                                       char *value )
 {
+    (void) parameter;
+
     /* name */
     if( 0 != assign_option((int32_t *) &(args->com_get_data.name),
                            value, get_map) )
@@ -1031,7 +1039,7 @@ static void print_args( struct programmer_arguments *args )
     }
 
     for( i = 0; i < sizeof(command_map) / sizeof(command_map[0]); i++ ) {
-        if( args->command == command_map[i].value ) {
+        if( (int32_t) args->command == command_map[i].value ) {
             command = command_map[i].name;
             break;
         }
@@ -1212,7 +1220,7 @@ int32_t parse_arguments( struct programmer_arguments *args,
                          const size_t argc,
                          char **argv )
 {
-    int32_t i;
+    size_t i;
     int32_t status = 0;
 
     if( NULL == args )

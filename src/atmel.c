@@ -291,7 +291,7 @@ int32_t atmel_read_config( dfu_device_t *device,
 
     int32_t result;
     int32_t retVal = 0;
-    int32_t i = 0;
+    size_t i = 0;
 
     TRACE( "%s( %p, %p )\n", __FUNCTION__, device, info );
 
@@ -1416,7 +1416,7 @@ static int32_t __atmel_flash_block( dfu_device_t *device,
     size_t message_length;
     int32_t result;
     dfu_status_t status;
-    int32_t i;
+    size_t i;
     size_t control_block_size;  /* USB control block size */
     size_t alignment;
 
@@ -1473,7 +1473,7 @@ static int32_t __atmel_flash_block( dfu_device_t *device,
 
     result = dfu_download( device, message_length, message );
 
-    if( message_length != result ) {
+    if( (int32_t) message_length != result ) {
         if( -EPIPE == result ) {
             /* The control pipe stalled - this is an error
              * caused by the device saying "you can't do that"
