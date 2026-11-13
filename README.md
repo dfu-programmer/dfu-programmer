@@ -53,6 +53,19 @@ sudo make install # install dfu-programmer
 
 > Instructions for installing autocompletion will also be displayed during `make` (or `make bash-completion`).
 
+### Running without root on Linux
+
+`make install` also installs `70-dfu-programmer.rules` into udev's rules directory (found with `pkg-config udev`; choose another with `./configure --with-udevrulesdir=DIR`, or skip it with `--without-udevrulesdir`).
+The rules give the logged-in user access to every supported bootloader.
+Load them with `sudo udevadm control --reload-rules`, then replug the device.
+
+If you didn't install from source, `dfu-programmer --targets-udev` prints the same rules:
+
+```bash
+dfu-programmer --targets-udev | sudo tee /etc/udev/rules.d/70-dfu-programmer.rules
+sudo udevadm control --reload-rules
+```
+
 ## Build procedure for Windows
 
 Building Windows apps from source is never quite as simple...

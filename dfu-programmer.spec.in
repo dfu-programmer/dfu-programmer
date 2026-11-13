@@ -17,6 +17,7 @@ Source:         https://github.com/%{name}/%{name}/releases/download/v%{version}
 BuildRequires:  gcc
 BuildRequires:  pkgconfig(libusb-1.0) >= 1.0.22
 BuildRequires:  make
+BuildRequires:  systemd-rpm-macros
 
 %description 
 A linux based command-line programmer for Atmel chips with a USB
@@ -28,7 +29,7 @@ Atmel chips with USB support.
 %autosetup -p1
 
 %build
-%configure
+%configure --with-udevrulesdir=%{_udevrulesdir}
 %make_build
 
 %install
@@ -47,6 +48,7 @@ install -Dpm0644 dfu_programmer %{buildroot}%{bash_completions_dir}/%{name}
 %{_bindir}/%{name}
 %{_mandir}/man1/%{name}.1*
 %{bash_completions_dir}/%{name}
+%{_udevrulesdir}/70-%{name}.rules
 
 %changelog
 * Fri Dec 29 2023 Erovia <erovia@users.noreply.github.com> - 1.1.0-1
