@@ -31,11 +31,31 @@ AC_FUNC_MALLOC
 # Checks for libusb. 1.0.22 is the oldest release with libusb_set_option(),
 # which dfu-programmer uses. Prefer pkg-config, which knows where the headers
 # are (e.g. Homebrew on Apple Silicon), and fall back to a plain link test.
+#
+# --enable-static-libusb links libusb's static archive instead, plus the
+# system libraries it needs (from pkg-config --static), so release binaries
+# don't need libusb installed. Distro packages should leave it off.
+AC_ARG_ENABLE([static-libusb],
+  [AS_HELP_STRING([--enable-static-libusb],
+    [link libusb statically, for self-contained release binaries (needs pkg-config)])],
+  [], [enable_static_libusb=no])
 m4_ifdef([PKG_CHECK_MODULES],
   [PKG_CHECK_MODULES([LIBUSB], [libusb-1.0 >= 1.0.22],
     [CPPFLAGS="$CPPFLAGS $LIBUSB_CFLAGS"
-     LIBS="$LIBUSB_LIBS $LIBS"],
-    [AC_MSG_NOTICE([libusb-1.0 >= 1.0.22 not found with pkg-config, trying without it])])])
+     AS_IF([test "x$enable_static_libusb" = "xyes"], [
+       libusb_archive="`$PKG_CONFIG --variable=libdir libusb-1.0`/libusb-1.0.a"
+       AS_IF([test -f "$libusb_archive"], [],
+         [AC_MSG_ERROR([--enable-static-libusb: $libusb_archive not found])])
+       # Everything libusb links against, minus libusb itself and -L paths.
+       libusb_static_deps=`$PKG_CONFIG --static --libs libusb-1.0 | sed -e 's/-lusb-1\.0//g' -e 's/-L[[^ ]]*//g'`
+       AC_MSG_NOTICE([linking libusb statically: $libusb_archive $libusb_static_deps])
+       LIBS="$libusb_archive $libusb_static_deps $LIBS"],
+       [LIBS="$LIBUSB_LIBS $LIBS"])],
+    [AS_IF([test "x$enable_static_libusb" = "xyes"],
+       [AC_MSG_ERROR([--enable-static-libusb needs libusb-1.0 >= 1.0.22 from pkg-config])])
+     AC_MSG_NOTICE([libusb-1.0 >= 1.0.22 not found with pkg-config, trying without it])])],
+  [AS_IF([test "x$enable_static_libusb" = "xyes"],
+     [AC_MSG_ERROR([--enable-static-libusb needs pkg-config])])])
 AC_SEARCH_LIBS([libusb_set_option], [usb-1.0], [],
   [AC_MSG_ERROR([libusb 1.0.22 or newer not found])])
 # The sources include <libusb-1.0/libusb.h>, or <libusb.h> when the include
