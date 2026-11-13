@@ -8,16 +8,41 @@ on:
   push:
   pull_request:
 
+# Release binaries link libusb statically (--enable-static-libusb), so users
+# don't need libusb installed. The Release job collects every platform's
+# binary into release-preview on every run; on a v* tag it also publishes
+# them with SHA256SUMS and build provenance attestations.
+
 jobs:
-  Windows-x64:
-    name: Windows x64
-    runs-on: windows-latest
+  Windows:
+    name: Windows ${{ matrix.arch }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            os: windows-latest
+            msystem: UCRT64
+            pkg: mingw-w64-ucrt-x86_64
+          - arch: arm64
+            os: windows-11-arm
+            msystem: CLANGARM64
+            pkg: mingw-w64-clang-aarch64
 
     defaults:
       run:
-        shell: C:/msys64/usr/bin/bash.exe --noprofile --norc -e -x -o pipefail {0}
+        shell: msys2 {0}
 
     steps:
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: ${{ matrix.msystem }}
+          update: true
+          install: >-
+            autoconf-wrapper automake-wrapper make
+            ${{ matrix.pkg }}-cc ${{ matrix.pkg }}-libusb ${{ matrix.pkg }}-pkgconf
+
       - uses: actions/checkout@v7
 
       - name: Override Version String
@@ -26,88 +51,65 @@ jobs:
         shell: bash
         run: echo 'override=PACKAGE_STRING="dfu-programmer ${{ github.ref_name }} ${{ github.sha }}"' >> $GITHUB_OUTPUT
 
-      - name: Get version
-        if: startsWith(github.ref, 'refs/tags/v')
-        id: version
-        shell: bash
-        run: echo version=${GITHUB_REF#refs/tags/v} >> $GITHUB_OUTPUT
-
-      - name: Dependencies
-        run: |
-          # Fix issues with MSYS2 and cygwin tools conflicting by just using MSYS2
-          export PATH=/usr/bin:/usr/local/bin
-
-          # While some of these are already available, they are cygwin versions which are incompatible with MSYS2
-          pacman --color always --noconfirm -Sy automake-wrapper autoconf-wrapper make mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-libusb
-
       - name: Bootstrap
-        run: |
-          export PATH=/usr/bin:/usr/local/bin:/ucrt64/bin
-          ./bootstrap.sh
+        run: ./bootstrap.sh
 
+      # -static also pulls in the compiler runtime, so the .exe needs no DLLs.
       - name: Configure
-        run: |
-          export PATH=/usr/bin:/usr/local/bin:/ucrt64/bin
-          ./configure CFLAGS="-O2" --enable-werror --disable-dependency-tracking ${{ steps.override.outputs.override }}
+        run: ./configure CFLAGS="-O2" LDFLAGS="-static" --enable-werror --enable-static-libusb --disable-dependency-tracking ${{ steps.override.outputs.override }}
 
       - name: Build
-        run: |
-          export PATH=/usr/bin:/usr/local/bin:/ucrt64/bin
-          make -j4
+        run: make -j4
 
       - name: Unit tests
+        run: make -j4 check || { cat test-suite.log test/unit/*.log; exit 1; }
+
+      - name: Check the exe is self-contained
         run: |
-          export PATH=/usr/bin:/usr/local/bin:/ucrt64/bin
-          make -j4 check || { cat test-suite.log test/unit/*.log; exit 1; }
+          OBJDUMP=$(command -v llvm-objdump || command -v objdump)
+          "$OBJDUMP" -p src/dfu-programmer.exe | grep "DLL Name" | tee dlls.txt
+          if grep -iE "libusb|libgcc|libwinpthread|libc\+\+|libunwind" dlls.txt; then
+            echo "::error::dfu-programmer.exe still needs a non-system DLL"
+            exit 1
+          fi
+
+      - name: Test
+        run: src/dfu-programmer.exe --help
 
       - name: Prep dist
-        shell: pwsh
         run: |
-          mkdir dist
-
-          # The binary
-          cp src/dfu-programmer.exe dist/
-
-          # The docs
-          cp docs/dfu-programmer.html dist/
-
-          # Libusb 1.0
-          cp C:/msys64/ucrt64/bin/libusb-1.0.dll dist/
-          cp C:/msys64/ucrt64/share/licenses     dist/ -Recurse
+          mkdir -p dist/licenses
+          cp src/dfu-programmer.exe docs/dfu-programmer.html COPYING dist/
+          # libusb (LGPL-2.1+) and the MinGW thread library are linked in,
+          # so ship their licenses.
+          for l in libusb libwinpthread; do
+            if [ -d "$MINGW_PREFIX/share/licenses/$l" ]; then
+              cp -r "$MINGW_PREFIX/share/licenses/$l" dist/licenses/
+            fi
+          done
+          test -d dist/licenses/libusb
 
       - name: Upload dist as Build Artifact
         uses: actions/upload-artifact@v7
         with:
-          name: Windows x64 - dfu-programmer
+          name: windows-${{ matrix.arch }}
           path: dist
 
-      - name: Test
-        shell: pwsh
-        run: dist/dfu-programmer.exe --help
-
-      - name: Make release archives of binaries
-        if: startsWith(github.ref, 'refs/tags/v')
-        shell: pwsh
-        working-directory: dist
-        run: |
-          7z a -tzip ../dfu-programmer-x64-${{ steps.version.outputs.version }}.zip *
-          7z a -t7z  ../dfu-programmer-x64-${{ steps.version.outputs.version }}.7z  *
-
-      - name: Release
-        uses: softprops/action-gh-release@v3
-        if: startsWith(github.ref, 'refs/tags/v')
-        with:
-          fail_on_unmatched_files: true
-          files: |
-            dfu-programmer-x64-${{ steps.version.outputs.version }}.zip
-            dfu-programmer-x64-${{ steps.version.outputs.version }}.7z
-
   Linux:
-    name: Linux x64
-    runs-on: ubuntu-latest
+    name: Linux ${{ matrix.arch }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            os: ubuntu-latest
+          - arch: arm64
+            os: ubuntu-24.04-arm
 
     steps:
-      - run: sudo apt-get install -y libusb-1.0-0-dev
+      # libudev-dev: static libusb links against libudev.
+      - run: sudo apt-get update && sudo apt-get install -y libusb-1.0-0-dev libudev-dev
 
       - uses: actions/checkout@v7
 
@@ -115,31 +117,23 @@ jobs:
         if: "!startsWith(github.ref, 'refs/tags/v')"
         id: override
         run: echo 'override=PACKAGE_STRING="dfu-programmer ${{ github.ref_name }} ${{ github.sha }}"' >> $GITHUB_OUTPUT
-
-      - name: Get version
-        if: startsWith(github.ref, 'refs/tags/v')
-        id: version
-        run: echo version=${GITHUB_REF#refs/tags/v} >> $GITHUB_OUTPUT
-
-      - name: Get Changes
-        if: startsWith(github.ref, 'refs/tags/v')
-        id: changes
-        run: |
-          echo "## Changes" > CHANGES
-          echo "" >> CHANGES
-          sed -ne '2,/^== Release/p' NEWS | head -n -2 >> CHANGES
 
       - name: bootstrap
         run: ./bootstrap.sh
 
       - name: configure
-        run: ./configure CFLAGS="-O2" --enable-werror --disable-dependency-tracking ${{ steps.override.outputs.override }}
+        run: ./configure CFLAGS="-O2" --enable-werror --enable-static-libusb --disable-dependency-tracking ${{ steps.override.outputs.override }}
 
       - name: make
         run: make -j4
 
       - name: Unit tests
         run: make -j4 check || { cat test-suite.log test/unit/*.log; exit 1; }
+
+      - name: Check libusb is linked in
+        run: |
+          ldd src/dfu-programmer
+          ! ldd src/dfu-programmer | grep -q libusb
 
       - name: Test
         run: src/dfu-programmer --help
@@ -156,44 +150,35 @@ jobs:
       - name: Upload Binary as Build Artifact
         uses: actions/upload-artifact@v7
         with:
-          name: Linux x64 - dfu-programmer binary
+          name: linux-${{ matrix.arch }}
           path: src/dfu-programmer
 
-      - name: make dist
-        run: make -j4 dist
-
-      - name: Upload Tarball as Build Artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: Linux x64 - dfu-programmer dist
-          path: "*.tar.gz"
-
-      - name: Make release archives of binaries
-        if: startsWith(github.ref, 'refs/tags/v')
-        working-directory: src
-        run: |
-          7z a -tzip ../dfu-programmer-linux-${{ steps.version.outputs.version }}.zip dfu-programmer
-          7z a -t7z  ../dfu-programmer-linux-${{ steps.version.outputs.version }}.7z  dfu-programmer
-
       # Builds the tarball the way users and packagers do (no bootstrap.sh),
-      # out of tree, then runs make check, install, uninstall and distclean.
+      # out of tree, against the shared libusb, then runs make check,
+      # install, uninstall and distclean.
       - name: make distcheck
         run: make -j4 distcheck DISTCHECK_CONFIGURE_FLAGS=--enable-werror
 
-      - name: Release
-        uses: softprops/action-gh-release@v3
-        if: startsWith(github.ref, 'refs/tags/v')
+      - name: Upload Tarball as Build Artifact
+        if: matrix.arch == 'x64'
+        uses: actions/upload-artifact@v7
         with:
-          body_path: CHANGES
-          fail_on_unmatched_files: true
-          files: |
-            dfu-programmer-*.tar.gz
-            dfu-programmer-linux-${{ steps.version.outputs.version }}.zip
-            dfu-programmer-linux-${{ steps.version.outputs.version }}.7z
+          name: source-tarball
+          path: "*.tar.gz"
 
   macOS:
-    name: macOS x64
-    runs-on: macos-15-intel
+    name: macOS ${{ matrix.arch }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            os: macos-15-intel
+          # Homebrew on Apple Silicon lives in /opt/homebrew, so this one
+          # also proves configure finds libusb through pkg-config.
+          - arch: arm64
+            os: macos-latest
 
     steps:
       - run: brew install automake libusb pkgconf
@@ -205,16 +190,11 @@ jobs:
         id: override
         run: echo 'override=PACKAGE_STRING="dfu-programmer ${{ github.ref_name }} ${{ github.sha }}"' >> $GITHUB_OUTPUT
 
-      - name: Get version
-        if: startsWith(github.ref, 'refs/tags/v')
-        id: version
-        run: echo version=${GITHUB_REF#refs/tags/v} >> $GITHUB_OUTPUT
-
       - name: bootstrap
         run: ./bootstrap.sh
 
       - name: configure
-        run: ./configure CFLAGS="-O2" --enable-werror --disable-dependency-tracking ${{ steps.override.outputs.override }}
+        run: ./configure CFLAGS="-O2" --enable-werror --enable-static-libusb --disable-dependency-tracking ${{ steps.override.outputs.override }}
 
       - name: make
         run: make -j4
@@ -222,41 +202,41 @@ jobs:
       - name: Unit tests
         run: make -j4 check || { cat test-suite.log test/unit/*.log; exit 1; }
 
+      - name: Check libusb is linked in
+        run: |
+          otool -L src/dfu-programmer
+          ! otool -L src/dfu-programmer | grep -q libusb
+
       - name: Test
         run: src/dfu-programmer --help
 
       - name: Upload Binary as Build Artifact
         uses: actions/upload-artifact@v7
         with:
-          name: macOS - dfu-programmer binary
+          name: macos-${{ matrix.arch }}
           path: src/dfu-programmer
 
-      - name: make dist
-        run: make -j4 dist
+  macOS-universal:
+    name: macOS universal binary
+    needs: macOS
+    runs-on: macos-latest
 
-      - name: Upload Tarball as Build Artifact
-        uses: actions/upload-artifact@v7
+    steps:
+      - uses: actions/download-artifact@v8
         with:
-          name: macOS - dfu-programmer dist
-          path: "*.tar.gz"
-
-      - name: Make release archives of binaries
-        if: startsWith(github.ref, 'refs/tags/v')
-        working-directory: src
+          pattern: macos-*
+      - name: lipo
         run: |
-          7z a -tzip ../dfu-programmer-macOS-${{ steps.version.outputs.version }}.zip dfu-programmer
-          7z a -t7z  ../dfu-programmer-macOS-${{ steps.version.outputs.version }}.7z  dfu-programmer
-
-      - name: Release
-        uses: softprops/action-gh-release@v3
-        if: startsWith(github.ref, 'refs/tags/v')
+          lipo -create macos-x64/dfu-programmer macos-arm64/dfu-programmer -output dfu-programmer
+          chmod +x dfu-programmer
+          lipo -archs dfu-programmer
+          ./dfu-programmer --help
+      - uses: actions/upload-artifact@v7
         with:
-          fail_on_unmatched_files: true
-          files: |
-            dfu-programmer-macOS-${{ steps.version.outputs.version }}.zip
-            dfu-programmer-macOS-${{ steps.version.outputs.version }}.7z
+          name: macos-universal
+          path: dfu-programmer
 
-  # Extra platforms and compilers. These don't publish release artifacts.
+  # Extra compilers and sanitizers. These don't publish release artifacts.
   Portability:
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
@@ -264,9 +244,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: Linux arm64 (gcc)
-            os: ubuntu-24.04-arm
-            cc: gcc
           - name: Linux x64 (clang)
             os: ubuntu-24.04
             cc: clang
@@ -275,20 +252,10 @@ jobs:
             cc: gcc
             cflags: -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer -fno-sanitize-recover=all
             ldflags: -fsanitize=address,undefined
-          # Homebrew on Apple Silicon lives in /opt/homebrew, so this one
-          # proves configure finds libusb through pkg-config.
-          - name: macOS arm64
-            os: macos-latest
-            cc: clang
 
     steps:
-      - name: Dependencies (Linux)
-        if: runner.os == 'Linux'
+      - name: Dependencies
         run: sudo apt-get update && sudo apt-get install -y libusb-1.0-0-dev clang
-
-      - name: Dependencies (macOS)
-        if: runner.os == 'macOS'
-        run: brew install automake libusb pkgconf
 
       - uses: actions/checkout@v7
 
@@ -328,3 +295,79 @@ jobs:
 
       - name: rpmlint
         run: rpmlint ~/rpmbuild/SRPMS/*.rpm ~/rpmbuild/RPMS/*/*.rpm
+
+  # Packs every platform's binary the way a release ships them, with
+  # SHA256SUMS. Runs on every push and PR (as the release-preview
+  # artifact), so the release path is tested before a tag needs it.
+  Release:
+    name: Release
+    needs: [Windows, Linux, macOS-universal]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write       # create the GitHub release
+      id-token: write       # sign the provenance attestation
+      attestations: write   # store it
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Version
+        id: version
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+          fi
+
+      - uses: actions/download-artifact@v8
+        with:
+          path: in
+
+      # Asset names for Windows x64, Linux x64 and macOS match earlier
+      # releases, so existing download links keep working.
+      - name: Pack
+        env:
+          V: ${{ steps.version.outputs.version }}
+        run: |
+          mkdir out
+          pack() { # pack <dir> <name>
+            # Artifacts drop the exec bit; put it back on Unix binaries.
+            if [ -f "$1/dfu-programmer" ]; then chmod +x "$1/dfu-programmer"; fi
+            (cd "$1" && 7z a -tzip "$GITHUB_WORKSPACE/out/$2.zip" . >/dev/null)
+            (cd "$1" && 7z a -t7z  "$GITHUB_WORKSPACE/out/$2.7z"  . >/dev/null)
+          }
+          pack in/windows-x64    "dfu-programmer-x64-$V"
+          pack in/windows-arm64  "dfu-programmer-windows-arm64-$V"
+          pack in/linux-x64      "dfu-programmer-linux-$V"
+          pack in/linux-arm64    "dfu-programmer-linux-arm64-$V"
+          pack in/macos-universal "dfu-programmer-macOS-$V"
+          cp in/source-tarball/*.tar.gz out/
+          (cd out && sha256sum * > SHA256SUMS && cat SHA256SUMS)
+
+      - name: Upload release preview
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-preview
+          path: out
+
+      - name: Release notes from NEWS
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          echo "## Changes" > CHANGES
+          echo "" >> CHANGES
+          sed -ne '2,/^== Release/p' NEWS | head -n -2 >> CHANGES
+
+      - name: Attest build provenance
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: out/*
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v3
+        with:
+          body_path: CHANGES
+          fail_on_unmatched_files: true
+          files: out/*
