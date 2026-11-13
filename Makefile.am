@@ -13,9 +13,26 @@ EXTRA_DIST += dfu_completion
 EXTRA_DIST += dfu-programmer.spec
 EXTRA_DIST += update-bash-completion.sh
 
+# ---- udev rules (Linux) ----
+# udev/70-dfu-programmer.rules is the output of `dfu-programmer --targets-udev`.
+# After changing the target table, run `make update-udev-rules`;
+# `make check` fails until the two match.
+EXTRA_DIST += udev/70-dfu-programmer.rules
+if INSTALL_UDEV_RULES
+udevrules_DATA = udev/70-dfu-programmer.rules
+endif
+AM_DISTCHECK_CONFIGURE_FLAGS = --with-udevrulesdir='$${libdir}/udev/rules.d'
+
+update-udev-rules: src/dfu-programmer$(EXEEXT)
+	$(AM_V_GEN)src/dfu-programmer$(EXEEXT) --targets-udev > $(srcdir)/udev/70-dfu-programmer.rules
+.PHONY: update-udev-rules
+
 # ---- make check: hardware-free unit tests ----
 check_PROGRAMS = test/unit/test_intel_hex
-TESTS = $(check_PROGRAMS)
+TESTS = $(check_PROGRAMS) test/udev-rules.sh
+TEST_EXTENSIONS = .sh
+SH_LOG_COMPILER = $(SHELL)
+EXTRA_DIST += test/udev-rules.sh
 
 UNIT_CPPFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/test/unit -I$(top_builddir)/src $(LIBUSB_INCLUDE_FLAGS)
 UNIT_CFLAGS = -Wall $(WERROR_CFLAGS)
@@ -27,3 +44,4 @@ test_unit_test_intel_hex_CFLAGS = $(UNIT_CFLAGS)
 test_unit_test_intel_hex_LDADD =
 
 CLEANFILES += test_intel_hex.tmp.hex test_intel_hex.tmp.out
+CLEANFILES += udev-rules.tmp udev-rules.want

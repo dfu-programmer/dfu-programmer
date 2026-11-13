@@ -232,9 +232,14 @@ For AVR32 chips an erase operation over USB will remove protection until the
 device is rebooted. To remove the protection more permanently requires a
 JTAG erase (which will also erase the bootloader).
 .PP
-You may need to be a member of the
-.B uucp
-group in order to have access to the device without needing to be root.
+On Linux, the udev rules installed as
+.I 70\-dfu\-programmer.rules
+give the logged\-in user access to the supported bootloaders, so
+.B dfu\-programmer
+runs without root.
+Without them, run it as root or add a rule for the device yourself;
+.B dfu\-programmer \-\-targets\-udev
+prints the rules.
 .SH AUTHOR
 Weston Schmidt <weston_schmidt@alumni.purdue.edu>
 .SH SEE ALSO

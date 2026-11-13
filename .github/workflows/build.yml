@@ -316,7 +316,7 @@ jobs:
 
     steps:
       - name: Dependencies
-        run: dnf install -y autoconf automake gcc make git tar gzip libusb1-devel pkgconf-pkg-config rpm-build rpmlint redhat-rpm-config
+        run: dnf install -y autoconf automake gcc make git tar gzip libusb1-devel pkgconf-pkg-config rpm-build rpmlint redhat-rpm-config systemd-rpm-macros
 
       - uses: actions/checkout@v7
 

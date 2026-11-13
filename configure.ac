@@ -6,6 +6,7 @@ AC_INIT([dfu-programmer],[1.1.0],[https://github.com/dfu-programmer/dfu-programm
 AC_CONFIG_AUX_DIR([m4])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_SRCDIR([src/atmel.c])
+AC_CANONICAL_HOST
 AM_INIT_AUTOMAKE([foreign -Wall subdir-objects])
 AC_CONFIG_HEADERS([src/config.h])
 
@@ -52,6 +53,23 @@ AC_ARG_ENABLE([werror],
   [], [enable_werror=no])
 AS_IF([test "x$enable_werror" = "xyes"], [WERROR_CFLAGS="-Werror"], [WERROR_CFLAGS=""])
 AC_SUBST([WERROR_CFLAGS])
+
+# udev rules, so the logged-in user can reach the bootloaders without root
+# (Linux only). Default: udev's own rules directory, from pkg-config.
+AC_ARG_WITH([udevrulesdir],
+  [AS_HELP_STRING([--with-udevrulesdir=DIR],
+    [install udev rules into DIR (default: from pkg-config udev on Linux; no to skip)])],
+  [], [with_udevrulesdir=auto])
+AS_IF([test "x$with_udevrulesdir" = "xauto"], [
+  with_udevrulesdir=no
+  AS_CASE([$host_os], [linux*], [
+    m4_ifdef([PKG_CHECK_VAR],
+      [PKG_CHECK_VAR([UDEVDIR], [udev], [udevdir], [with_udevrulesdir="$UDEVDIR/rules.d"])])])])
+AS_IF([test "x$with_udevrulesdir" = "xyes"],
+  [AC_MSG_ERROR([--with-udevrulesdir needs a directory])])
+AC_SUBST([udevrulesdir], [$with_udevrulesdir])
+AM_CONDITIONAL([INSTALL_UDEV_RULES], [test "x$with_udevrulesdir" != "xno"])
+AC_MSG_NOTICE([udev rules directory: $with_udevrulesdir])
 
 AC_CONFIG_FILES([dfu-programmer.spec Makefile docs/Makefile src/Makefile])
 AC_OUTPUT
