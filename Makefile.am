@@ -27,12 +27,21 @@ update-udev-rules: src/dfu-programmer$(EXEEXT)
 	$(AM_V_GEN)src/dfu-programmer$(EXEEXT) --targets-udev > $(srcdir)/udev/70-dfu-programmer.rules
 .PHONY: update-udev-rules
 
+# ---- generated docs ----
+# The supported-chips lists in README.md and the man page come from
+# `dfu-programmer --targets-markdown/-tex/-html`. After changing the target
+# table, run `make update-docs`; `make check` fails until they match.
+EXTRA_DIST += update-docs.sh
+update-docs: src/dfu-programmer$(EXEEXT)
+	$(AM_V_GEN)$(SHELL) $(srcdir)/update-docs.sh src/dfu-programmer$(EXEEXT) $(srcdir) $(srcdir)
+.PHONY: update-docs
+
 # ---- make check: hardware-free unit tests ----
 check_PROGRAMS = test/unit/test_intel_hex
-TESTS = $(check_PROGRAMS) test/udev-rules.sh
+TESTS = $(check_PROGRAMS) test/udev-rules.sh test/docs-targets.sh
 TEST_EXTENSIONS = .sh
 SH_LOG_COMPILER = $(SHELL)
-EXTRA_DIST += test/udev-rules.sh
+EXTRA_DIST += test/udev-rules.sh test/docs-targets.sh
 
 UNIT_CPPFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/test/unit -I$(top_builddir)/src $(LIBUSB_INCLUDE_FLAGS)
 UNIT_CFLAGS = -Wall $(WERROR_CFLAGS)
@@ -45,3 +54,6 @@ test_unit_test_intel_hex_LDADD =
 
 CLEANFILES += test_intel_hex.tmp.hex test_intel_hex.tmp.out
 CLEANFILES += udev-rules.tmp udev-rules.want
+
+clean-local:
+	-rm -rf docs-targets.tmp

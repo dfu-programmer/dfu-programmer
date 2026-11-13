@@ -44,8 +44,8 @@ The rest need a real chip and run on the AVR Test HAT CI runner. See [test/READM
 ## Adding a target
 
 1. Add the chip to `target_map` in `src/arguments.c` and to `targets_enum` in `src/arguments.h`.
-2. Run `make update-udev-rules` to regenerate `udev/70-dfu-programmer.rules`.
-3. Add it to the supported chips list in `README.md` and in `docs/dfu-programmer.1` and `docs/dfu-programmer.html` (`--targets-tex` and `--targets-html` print those lists).
+2. Run `make update-udev-rules` and `make update-docs` to regenerate the udev rules and the supported chips lists in `README.md` and the man page.
+   `make check` fails until both are up to date.
 
 ## Pull requests
 

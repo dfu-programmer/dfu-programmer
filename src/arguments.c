@@ -34,6 +34,7 @@
 #define LIST_STD        0
 #define LIST_TEX        1
 #define LIST_HTML       2
+#define LIST_MD         3
 
 /* Bootloader location options
    For AVR32 the bootloader is at the bottom of memory space and is included
@@ -297,6 +298,10 @@ static void list_targets(int mode)
                     if( map != target_map )
                         fprintf( stdout, "\n</p>\n" );
                     fprintf( stdout, "<h3>%s based controllers:</h3>\n<p>\n", dev_type_name );
+                } else if( LIST_MD == mode ) {
+                    if( map != target_map )
+                        fprintf( stdout, "\n</details>\n\n" );
+                    fprintf( stdout, "<details><summary>%s based controllers</summary>\n\n", dev_type_name );
                 } else {
                     if( 0 != col )
                         fprintf( stdout, "\n" );
@@ -306,7 +311,9 @@ static void list_targets(int mode)
                 col = 0;
             }
         }
-        if( LIST_STD == mode ) {
+        if( LIST_MD == mode ) {
+            fprintf( stdout, "- %s\n", map->name );
+        } else if( LIST_STD == mode ) {
             if( 0 == col ) {
                 fprintf( stdout, " " );
             }
@@ -322,7 +329,17 @@ static void list_targets(int mode)
             } else {
                 fprintf( stdout, ", " );
             }
-            fprintf( stdout, "%s", map->name );
+            if( LIST_TEX == mode ) {
+                /* roff wants "\-" for a literal hyphen. */
+                const char *c;
+                for( c = map->name; '\0' != *c; c++ ) {
+                    if( '-' == *c )
+                        fputc( '\\', stdout );
+                    fputc( *c, stdout );
+                }
+            } else {
+                fprintf( stdout, "%s", map->name );
+            }
             if( 4 == ++col ) {
                 col = 0;
             }
@@ -330,10 +347,14 @@ static void list_targets(int mode)
         map++;
         group_count++;
     }
-    if( 0 != col )
+    /* TEX and HTML lines end with the separator, so always finish the last
+     * one. The plain list ends its own rows. */
+    if( 0 != col || LIST_TEX == mode || LIST_HTML == mode )
         fprintf( stdout, "\n" );
     if( LIST_HTML == mode )
         fprintf( stdout, "</p>\n" );
+    if( LIST_MD == mode )
+        fprintf( stdout, "\n</details>\n" );
 }
 
 /* Print a udev rules file giving the logged-in user access to every
@@ -1290,6 +1311,10 @@ int32_t parse_arguments( struct programmer_arguments *args,
         }
         if( 0 == strcasecmp(argv[1], "--targets-html") ) {
             list_targets( LIST_HTML );
+            return 1;
+        }
+        if( 0 == strcasecmp(argv[1], "--targets-markdown") ) {
+            list_targets( LIST_MD );
             return 1;
         }
         if( 0 == strcasecmp(argv[1], "--targets-udev") ) {
